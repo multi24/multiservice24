@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Multiservice24</title>
+  <title>Multi24 | Servicios programados y emergencias</title>
 
   <link rel="stylesheet" href="style.css" />
 
@@ -15,99 +15,318 @@
 </head>
 <body>
 
-  <header class="topbar">
-    <div class="brand">
-      <div class="brand-logo">
-        <i class="fa-solid fa-screwdriver-wrench"></i>
-      </div>
-      <div>
-        <h1>Multiservice24</h1>
-        <p>Servicios, mantenimiento y soluciones rápidas</p>
-      </div>
-    </div>
+  <header class="ms-topbar">
+    <button class="ms-menu-btn" id="btnMenuMobile" type="button" aria-label="Menú">
+      <i class="fa-solid fa-bars"></i>
+    </button>
 
-    <button id="btnLogin" class="btn-secondary">
-      <i class="fa-solid fa-user"></i>
+    <a class="ms-brand" href="#inicio" aria-label="Multi24 inicio">
+      <span class="ms-brand-icon">
+        <i class="fa-solid fa-screwdriver-wrench"></i>
+      </span>
+
+      <span class="ms-brand-text">
+        <strong>MULTI<span>24</span></strong>
+        <small>Soluciones programadas y emergencias</small>
+      </span>
+    </a>
+
+    <nav class="ms-nav" id="msNav">
+      <a href="#inicio">Inicio</a>
+      <a href="#servicios">Servicios</a>
+      <a href="#comoFunciona">Cómo funciona</a>
+      <a href="#paneles">Mi espacio</a>
+    </nav>
+
+    <button id="btnCuenta" class="ms-btn ms-btn-outline" type="button">
+      <i class="fa-brands fa-google"></i>
       Ingresar
     </button>
   </header>
 
   <main>
 
-    <section class="hero">
-      <div class="hero-content">
-        <span class="tag">Atención rápida</span>
-        <h2>Pedí contacto o cargá una solicitud de servicio</h2>
+    <!-- HOME -->
+    <section id="inicio" class="ms-hero">
+      <div class="ms-hero-bg-detail detail-red"></div>
+      <div class="ms-hero-bg-detail detail-blue"></div>
+
+      <div class="ms-hero-content">
+        <span class="ms-kicker">
+          <i class="fa-solid fa-clock"></i>
+          Atención personalizada
+        </span>
+
+        <h1>
+          Tu contacto para resolver
+          <span>cualquier imprevisto</span>
+        </h1>
+
         <p>
-          Dejanos tus datos y te contactamos por WhatsApp para coordinar el servicio.
+          Servicios programados para hogares, comercios y oficinas.
+          También contamos con emergencias de cerrajería.
         </p>
 
-        <div class="hero-actions">
-          <button id="btnContactoRapido" class="btn-primary">
+        <div class="ms-hero-actions">
+          <button id="btnAbrirContacto" class="ms-btn ms-btn-primary" type="button">
             <i class="fa-brands fa-whatsapp"></i>
             Quiero que me escriban
           </button>
 
-          <button id="btnVerFormulario" class="btn-light">
+          <button id="btnAbrirSolicitud" class="ms-btn ms-btn-light" type="button">
+            <i class="fa-solid fa-calendar-check"></i>
             Solicitar servicio
           </button>
         </div>
+
+        <div class="ms-hero-points">
+          <span><i class="fa-solid fa-circle-check"></i> Rápido</span>
+          <span><i class="fa-solid fa-circle-check"></i> Confiable</span>
+          <span><i class="fa-solid fa-circle-check"></i> Profesional</span>
+        </div>
       </div>
 
-      <div class="hero-card">
-        <i class="fa-solid fa-house-chimney"></i>
-        <h3>Servicios para hogares y comercios</h3>
-        <p>Consultas, reclamos, historial y atención personalizada.</p>
+      <div class="ms-hero-card">
+        <div class="ms-hero-card-top">
+          <span class="ms-badge-red">24/7</span>
+          <span class="ms-badge-soft">Presupuestos online</span>
+        </div>
+
+        <div class="ms-phone-big">
+          <i class="fa-brands fa-whatsapp"></i>
+          11 3004-2287
+        </div>
+
+        <div class="ms-mini-grid">
+          <div>
+            <i class="fa-solid fa-key"></i>
+            <span>Cerrajería</span>
+          </div>
+          <div>
+            <i class="fa-solid fa-bolt"></i>
+            <span>Electricidad</span>
+          </div>
+          <div>
+            <i class="fa-solid fa-faucet-drip"></i>
+            <span>Plomería</span>
+          </div>
+          <div>
+            <i class="fa-solid fa-fire-flame-curved"></i>
+            <span>Gas</span>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section class="flyers">
-      <h2>Servicios destacados</h2>
+    <!-- SERVICIOS -->
+    <section id="servicios" class="ms-section">
+      <div class="ms-section-head">
+        <span class="ms-kicker">Servicios</span>
+        <h2>Todo en un solo lugar</h2>
+        <p>
+          La idea es funcionar como una plataforma de servicios programados,
+          con atención, seguimiento e historial.
+        </p>
+      </div>
 
-      <div class="flyer-grid">
-        <article class="flyer-card">
-          <i class="fa-solid fa-bolt"></i>
-          <h3>Electricidad</h3>
-          <p>Revisiones, reparaciones y mantenimiento.</p>
+      <div id="serviciosGrid" class="ms-services-grid"></div>
+    </section>
+
+    <!-- COMO FUNCIONA -->
+    <section id="comoFunciona" class="ms-section ms-section-soft">
+      <div class="ms-section-head">
+        <span class="ms-kicker">Proceso</span>
+        <h2>Cómo funciona</h2>
+      </div>
+
+      <div class="ms-steps">
+        <article>
+          <span>1</span>
+          <h3>Pedís contacto</h3>
+          <p>Cargás una solicitud rápida o detallada desde la web.</p>
         </article>
 
-        <article class="flyer-card">
-          <i class="fa-solid fa-faucet-drip"></i>
-          <h3>Plomería</h3>
-          <p>Soluciones rápidas para pérdidas y arreglos.</p>
+        <article>
+          <span>2</span>
+          <h3>Te atendemos</h3>
+          <p>Admin o colaboradores reciben el aviso y coordinan por WhatsApp.</p>
         </article>
 
-        <article class="flyer-card">
-          <i class="fa-solid fa-paint-roller"></i>
-          <h3>Mantenimiento</h3>
-          <p>Trabajos generales para casas, locales y oficinas.</p>
+        <article>
+          <span>3</span>
+          <h3>Se deriva el trabajo</h3>
+          <p>Un prestador habilitado puede postularse para cotizar.</p>
+        </article>
+
+        <article>
+          <span>4</span>
+          <h3>Queda historial</h3>
+          <p>El cliente podrá ver sus servicios, fechas, archivos y garantías.</p>
         </article>
       </div>
     </section>
 
-    <section id="formularioBox" class="solicitud hidden">
-      <h2>Solicitud de servicio</h2>
+    <!-- PANELES -->
+    <section id="paneles" class="ms-section">
+      <div class="ms-section-head">
+        <span class="ms-kicker">Mi espacio</span>
+        <h2>Cuenta y seguimiento</h2>
+        <p>
+          Ingresá con Google para ver tus solicitudes, inscribirte como prestador
+          o administrar la atención.
+        </p>
+      </div>
 
-      <form id="formSolicitud">
+      <div id="boxSinLogin" class="ms-empty-box">
+        <i class="fa-brands fa-google"></i>
+        <h3>Ingresá con Google</h3>
+        <p>Para ver tu cuenta, solicitudes y paneles disponibles.</p>
+        <button id="btnLoginDesdePanel" class="ms-btn ms-btn-primary" type="button">
+          Ingresar con Google
+        </button>
+      </div>
+
+      <div id="panelUsuario" class="ms-panel hidden">
+        <div class="ms-panel-head">
+          <div>
+            <h2>Mi cuenta</h2>
+            <p id="txtUsuarioActual">Usuario</p>
+          </div>
+
+          <button id="btnPanelNuevaSolicitud" class="ms-btn ms-btn-primary" type="button">
+            <i class="fa-solid fa-plus"></i>
+            Nueva solicitud
+          </button>
+        </div>
+
+        <div class="ms-panel-grid">
+          <div class="ms-panel-card">
+            <h3>Mis solicitudes</h3>
+            <div id="listaMisSolicitudes" class="ms-list"></div>
+          </div>
+
+          <div class="ms-panel-card">
+            <h3>Prestador</h3>
+            <p class="ms-muted">
+              Si ofrecés servicios, podés inscribirte para ser evaluado y habilitado.
+            </p>
+
+            <button id="btnInscripcionPrestador" class="ms-btn ms-btn-light" type="button">
+              <i class="fa-solid fa-helmet-safety"></i>
+              Inscribirme como prestador
+            </button>
+
+            <div id="estadoPrestador" class="ms-prestador-status"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="panelPrestador" class="ms-panel hidden">
+        <div class="ms-panel-head">
+          <div>
+            <h2>Panel prestador</h2>
+            <p>Solicitudes disponibles según tus habilidades habilitadas.</p>
+          </div>
+        </div>
+
+        <div id="listaSolicitudesPrestador" class="ms-list"></div>
+      </div>
+
+      <div id="panelEquipo" class="ms-panel hidden">
+        <div class="ms-panel-head">
+          <div>
+            <h2>Panel interno</h2>
+            <p>Solicitudes, avisos y postulaciones.</p>
+          </div>
+
+          <span id="contadorAvisos" class="ms-counter">0 avisos</span>
+        </div>
+
+        <div class="ms-panel-grid">
+          <div class="ms-panel-card">
+            <h3>Solicitudes recibidas</h3>
+            <div id="listaSolicitudesEquipo" class="ms-list"></div>
+          </div>
+
+          <div class="ms-panel-card">
+            <h3>Avisos internos</h3>
+            <div id="listaAvisosEquipo" class="ms-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL CONTACTO RÁPIDO -->
+  <div id="modalContacto" class="ms-modal hidden">
+    <div class="ms-modal-card">
+      <button class="ms-modal-close" data-close-modal="modalContacto" type="button">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <span class="ms-kicker">Contacto rápido</span>
+      <h2>Quiero que me escriban</h2>
+      <p class="ms-muted">
+        Dejanos tus datos y se abre WhatsApp con la consulta preparada.
+      </p>
+
+      <form id="formContactoRapido" class="ms-form">
+        <label>
+          Nombre
+          <input id="contactoNombre" type="text" required />
+        </label>
+
+        <label>
+          WhatsApp
+          <input id="contactoTelefono" type="tel" required />
+        </label>
+
+        <label>
+          Zona
+          <input id="contactoZona" type="text" placeholder="Ej: Tristán Suárez" />
+        </label>
+
+        <label>
+          Motivo
+          <textarea id="contactoMensaje" rows="3" placeholder="Ej: Quiero consultar por un servicio"></textarea>
+        </label>
+
+        <button class="ms-btn ms-btn-primary" type="submit">
+          <i class="fa-brands fa-whatsapp"></i>
+          Enviar y abrir WhatsApp
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL SOLICITUD -->
+  <div id="modalSolicitud" class="ms-modal hidden">
+    <div class="ms-modal-card ms-modal-wide">
+      <button class="ms-modal-close" data-close-modal="modalSolicitud" type="button">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <span class="ms-kicker">Solicitud de servicio</span>
+      <h2>Programar un servicio</h2>
+      <p class="ms-muted">
+        La solicitud queda registrada y el equipo puede verla desde el panel interno.
+      </p>
+
+      <form id="formSolicitudServicio" class="ms-form ms-form-two">
         <label>
           Nombre
           <input id="solNombre" type="text" required />
         </label>
 
         <label>
-          Teléfono / WhatsApp
+          WhatsApp
           <input id="solTelefono" type="tel" required />
         </label>
 
         <label>
           Servicio
-          <select id="solServicio" required>
-            <option value="">Elegir servicio</option>
-            <option value="Electricidad">Electricidad</option>
-            <option value="Plomería">Plomería</option>
-            <option value="Mantenimiento">Mantenimiento</option>
-            <option value="Otro">Otro</option>
-          </select>
+          <select id="solServicio" required></select>
         </label>
 
         <label>
@@ -115,71 +334,115 @@
           <input id="solZona" type="text" placeholder="Ej: Tristán Suárez" />
         </label>
 
-        <label>
-          Mensaje
-          <textarea id="solMensaje" rows="4" placeholder="Contanos qué necesitás"></textarea>
+        <label class="ms-full">
+          Dirección
+          <input id="solDireccion" type="text" placeholder="Calle, número, localidad" />
         </label>
 
-        <button class="btn-primary" type="submit">
+        <label>
+          Fecha deseada
+          <input id="solFechaDeseada" type="date" />
+        </label>
+
+        <label>
+          Horario deseado
+          <input id="solHorarioDeseado" type="text" placeholder="Ej: por la tarde" />
+        </label>
+
+        <label class="ms-check">
+          <input id="solEmergencia" type="checkbox" />
+          <span>Es emergencia</span>
+        </label>
+
+        <label class="ms-full">
+          Descripción del trabajo
+          <textarea id="solDescripcion" rows="4" placeholder="Contanos qué necesitás"></textarea>
+        </label>
+
+        <button class="ms-btn ms-btn-primary ms-full" type="submit">
           <i class="fa-solid fa-paper-plane"></i>
-          Enviar solicitud
+          Guardar solicitud y abrir WhatsApp
         </button>
       </form>
-    </section>
-
-    <section id="panelCliente" class="panel hidden">
-      <h2>Mi cuenta</h2>
-      <p>Acá el cliente va a poder ver sus solicitudes y reclamos.</p>
-
-      <div id="misSolicitudes" class="lista"></div>
-    </section>
-
-    <section id="panelAdmin" class="panel hidden">
-      <h2>Panel interno</h2>
-      <p>Solicitudes recibidas</p>
-
-      <div id="adminSolicitudes" class="lista"></div>
-    </section>
-
-  </main>
-
-  <div id="modalLogin" class="modal hidden">
-    <div class="modal-content">
-      <button id="cerrarLogin" class="modal-close">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-
-      <h2>Ingresar</h2>
-
-      <label>
-        Email
-        <input id="loginEmail" type="email" />
-      </label>
-
-      <label>
-        Contraseña
-        <input id="loginPass" type="password" />
-      </label>
-
-      <button id="hacerLogin" class="btn-primary">
-        Ingresar
-      </button>
-
-      <button id="crearCuenta" class="btn-light">
-        Crear cuenta
-      </button>
-
-      <button id="cerrarSesion" class="btn-secondary hidden">
-        Cerrar sesión
-      </button>
-
-      <p id="loginMsg" class="msg"></p>
     </div>
   </div>
 
-  <a id="whatsappFloat" class="whatsapp-float" href="#" target="_blank">
+  <!-- MODAL PRESTADOR -->
+  <div id="modalPrestador" class="ms-modal hidden">
+    <div class="ms-modal-card ms-modal-wide">
+      <button class="ms-modal-close" data-close-modal="modalPrestador" type="button">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <span class="ms-kicker">Prestadores</span>
+      <h2>Inscripción para prestar servicios</h2>
+      <p class="ms-muted">
+        Esta inscripción no habilita automáticamente. Primero queda pendiente para entrevista y aprobación del admin.
+      </p>
+
+      <form id="formPrestador" class="ms-form">
+        <label>
+          Nombre completo
+          <input id="prestadorNombre" type="text" required />
+        </label>
+
+        <label>
+          WhatsApp
+          <input id="prestadorTelefono" type="tel" required />
+        </label>
+
+        <label>
+          Zona donde trabaja
+          <input id="prestadorZona" type="text" />
+        </label>
+
+        <div>
+          <strong class="ms-label-title">Habilidades / servicios</strong>
+          <div id="prestadorHabilidades" class="ms-check-grid"></div>
+        </div>
+
+        <label>
+          Comentario para el admin
+          <textarea id="prestadorComentario" rows="4"></textarea>
+        </label>
+
+        <button class="ms-btn ms-btn-primary" type="submit">
+          <i class="fa-solid fa-paper-plane"></i>
+          Enviar inscripción
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL CUENTA -->
+  <div id="modalCuenta" class="ms-modal hidden">
+    <div class="ms-modal-card">
+      <button class="ms-modal-close" data-close-modal="modalCuenta" type="button">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <span class="ms-kicker">Cuenta</span>
+      <h2 id="cuentaNombre">Multi24</h2>
+      <p id="cuentaEmail" class="ms-muted"></p>
+      <p id="cuentaRol" class="ms-role-pill">Público</p>
+
+      <button id="btnLoginGoogle" class="ms-btn ms-btn-primary" type="button">
+        <i class="fa-brands fa-google"></i>
+        Ingresar con Google
+      </button>
+
+      <button id="btnCerrarSesion" class="ms-btn ms-btn-light hidden" type="button">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        Cerrar sesión
+      </button>
+    </div>
+  </div>
+
+  <a id="btnWhatsappFlotante" class="ms-whatsapp-float" href="#" aria-label="WhatsApp">
     <i class="fa-brands fa-whatsapp"></i>
   </a>
+
+  <div id="toast" class="ms-toast hidden"></div>
 
   <script type="module" src="app.js"></script>
 </body>
