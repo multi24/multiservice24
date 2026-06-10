@@ -1,6 +1,6 @@
 /* =========================================================
-   MULTI24 - APP V1 SERIA
-   GitHub Pages + Firebase Auth Google + Firestore
+   MULTI24 - APP V2
+   Google Login + Roles + Solicitudes + Admin
 ========================================================= */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -44,81 +44,37 @@ const db = getFirestore(app);
 const providerGoogle = new GoogleAuthProvider();
 
 /* =========================================================
-   CONFIG MULTI24
+   CONFIG
 ========================================================= */
 
 const WHATSAPP_NUMERO = "5491130042287";
 
 const ADMIN_EMAILS = [
-  "vidaabundante.tristansuarez@gmail.com"
+  "multi24pro@gmail.com"
 ];
 
-/*
-  Roles posibles:
-  usuario
-  prestador
-  colaborador
-  admin
-*/
+const ROLES = [
+  "usuario",
+  "prestador",
+  "colaborador",
+  "admin"
+];
 
 const SERVICIOS = [
-  {
-    nombre: "Cerrajería",
-    icono: "fa-solid fa-key",
-    emergencia: true
-  },
-  {
-    nombre: "Electricidad",
-    icono: "fa-solid fa-bolt"
-  },
-  {
-    nombre: "Plomería",
-    icono: "fa-solid fa-faucet-drip"
-  },
-  {
-    nombre: "Destapaciones",
-    icono: "fa-solid fa-toilet"
-  },
-  {
-    nombre: "Gas",
-    icono: "fa-solid fa-fire-flame-curved"
-  },
-  {
-    nombre: "Seguridad",
-    icono: "fa-solid fa-shield-halved"
-  },
-  {
-    nombre: "Fumigación",
-    icono: "fa-solid fa-bug"
-  },
-  {
-    nombre: "Aire acondicionado",
-    icono: "fa-solid fa-snowflake"
-  },
-  {
-    nombre: "Albañilería",
-    icono: "fa-solid fa-trowel-bricks"
-  },
-  {
-    nombre: "Pintura",
-    icono: "fa-solid fa-paint-roller"
-  },
-  {
-    nombre: "Colocación de cerámicas",
-    icono: "fa-solid fa-border-all"
-  },
-  {
-    nombre: "Corte de pasto",
-    icono: "fa-solid fa-seedling"
-  },
-  {
-    nombre: "Maestranza",
-    icono: "fa-solid fa-broom"
-  },
-  {
-    nombre: "Envíos",
-    icono: "fa-solid fa-truck-fast"
-  }
+  { nombre: "Cerrajería", icono: "fa-solid fa-key" },
+  { nombre: "Electricidad", icono: "fa-solid fa-bolt" },
+  { nombre: "Plomería", icono: "fa-solid fa-faucet-drip" },
+  { nombre: "Destapaciones", icono: "fa-solid fa-toilet" },
+  { nombre: "Gas", icono: "fa-solid fa-fire-flame-curved" },
+  { nombre: "Seguridad", icono: "fa-solid fa-shield-halved" },
+  { nombre: "Fumigación", icono: "fa-solid fa-bug" },
+  { nombre: "Aire acondicionado", icono: "fa-solid fa-snowflake" },
+  { nombre: "Albañilería", icono: "fa-solid fa-trowel-bricks" },
+  { nombre: "Pintura", icono: "fa-solid fa-paint-roller" },
+  { nombre: "Colocación de cerámicas", icono: "fa-solid fa-border-all" },
+  { nombre: "Corte de pasto", icono: "fa-solid fa-seedling" },
+  { nombre: "Maestranza", icono: "fa-solid fa-broom" },
+  { nombre: "Envíos", icono: "fa-solid fa-truck-fast" }
 ];
 
 /* =========================================================
@@ -151,6 +107,9 @@ const btnInscripcionPrestador = $("btnInscripcionPrestador");
 
 const serviciosGrid = $("serviciosGrid");
 const solServicio = $("solServicio");
+const solEmergencia = $("solEmergencia");
+const emergenciaNota = $("emergenciaNota");
+
 const prestadorHabilidades = $("prestadorHabilidades");
 
 const formContactoRapido = $("formContactoRapido");
@@ -167,6 +126,9 @@ const listaMisSolicitudes = $("listaMisSolicitudes");
 const listaSolicitudesEquipo = $("listaSolicitudesEquipo");
 const listaAvisosEquipo = $("listaAvisosEquipo");
 const listaSolicitudesPrestador = $("listaSolicitudesPrestador");
+const listaUsuariosRoles = $("listaUsuariosRoles");
+const listaPrestadoresAdmin = $("listaPrestadoresAdmin");
+
 const estadoPrestador = $("estadoPrestador");
 const contadorAvisos = $("contadorAvisos");
 
@@ -195,6 +157,10 @@ function emailLower(email) {
 
 function esEmailAdmin(email) {
   return ADMIN_EMAILS.map(emailLower).includes(emailLower(email));
+}
+
+function esAdminActual() {
+  return perfilActual?.rol === "admin" || esEmailAdmin(usuarioActual?.email);
 }
 
 function puedeVerPanelEquipo() {
@@ -255,6 +221,7 @@ function cerrarTodosLosModales() {
   document.querySelectorAll(".ms-modal").forEach(modal => {
     modal.classList.add("hidden");
   });
+
   document.body.classList.remove("modal-open");
 }
 
@@ -270,30 +237,33 @@ function abrirWhatsAppConMensaje(mensaje, ventanaPrevia = null) {
   window.open(url, "_blank");
 }
 
-function mensajeWhatsAppSolicitud(data, id = "") {
-  const partes = [];
+function escaparHtml(texto) {
+  return String(texto || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
-  partes.push("Hola, quiero solicitar un servicio en Multi24.");
-  partes.push("");
+function estadoBonito(estado) {
+  const mapa = {
+    nuevo: "Nuevo",
+    contacto_rapido: "Contacto rápido",
+    pendiente_derivar: "Pendiente de derivar",
+    contactado: "Contactado",
+    derivado: "Derivado",
+    cotizando: "Cotizando",
+    programado: "Programado",
+    realizado: "Realizado",
+    cerrado: "Cerrado",
+    garantia: "Garantía",
+    pendiente_entrevista: "Pendiente entrevista",
+    habilitado: "Habilitado",
+    rechazado: "Rechazado"
+  };
 
-  if (id) partes.push(`Solicitud: ${id}`);
-
-  partes.push(`Nombre: ${data.clienteNombre || "Sin nombre"}`);
-  partes.push(`WhatsApp: ${data.clienteTelefono || "Sin teléfono"}`);
-  partes.push(`Servicio: ${data.servicio || "Sin servicio"}`);
-
-  if (data.emergencia) partes.push("Emergencia: Sí");
-  if (data.zona) partes.push(`Zona: ${data.zona}`);
-  if (data.direccion) partes.push(`Dirección: ${data.direccion}`);
-  if (data.fechaDeseada) partes.push(`Fecha deseada: ${data.fechaDeseada}`);
-  if (data.horarioDeseado) partes.push(`Horario deseado: ${data.horarioDeseado}`);
-
-  if (data.descripcion) {
-    partes.push("");
-    partes.push(`Detalle: ${data.descripcion}`);
-  }
-
-  return partes.join("\n");
+  return mapa[estado] || estado || "Nuevo";
 }
 
 function mensajeWhatsAppContacto(data, id = "") {
@@ -317,36 +287,38 @@ function mensajeWhatsAppContacto(data, id = "") {
   return partes.join("\n");
 }
 
-function estadoBonito(estado) {
-  const mapa = {
-    nuevo: "Nuevo",
-    contacto_rapido: "Contacto rápido",
-    pendiente_derivar: "Pendiente de derivar",
-    contactado: "Contactado",
-    derivado: "Derivado",
-    cotizando: "Cotizando",
-    programado: "Programado",
-    realizado: "Realizado",
-    cerrado: "Cerrado",
-    garantia: "Garantía",
-    pendiente_entrevista: "Pendiente entrevista",
-    habilitado: "Habilitado"
-  };
+function mensajeWhatsAppSolicitud(data, id = "") {
+  const partes = [];
 
-  return mapa[estado] || estado || "Nuevo";
-}
+  partes.push("Hola, quiero solicitar un servicio en Multi24.");
+  partes.push("");
 
-function escaparHtml(texto) {
-  return String(texto || "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
+  if (id) partes.push(`Solicitud: ${id}`);
+
+  partes.push(`Nombre: ${data.clienteNombre || "Sin nombre"}`);
+  partes.push(`WhatsApp: ${data.clienteTelefono || "Sin teléfono"}`);
+  partes.push(`Servicio: ${data.servicio || "Sin servicio"}`);
+
+  if (data.emergencia) {
+    partes.push("Emergencia: Sí");
+    partes.push("Condición emergencia: resolución dentro de las próximas 4 horas a la confirmación y pago de $20000 ARS o 15 USD.");
+  }
+
+  if (data.zona) partes.push(`Zona: ${data.zona}`);
+  if (data.direccion) partes.push(`Dirección: ${data.direccion}`);
+  if (data.fechaDeseada) partes.push(`Fecha deseada: ${data.fechaDeseada}`);
+  if (data.horarioDeseado) partes.push(`Horario deseado: ${data.horarioDeseado}`);
+
+  if (data.descripcion) {
+    partes.push("");
+    partes.push(`Detalle: ${data.descripcion}`);
+  }
+
+  return partes.join("\n");
 }
 
 /* =========================================================
-   RENDER BASE
+   RENDER SERVICIOS
 ========================================================= */
 
 function renderServicios() {
@@ -354,19 +326,26 @@ function renderServicios() {
 
   serviciosGrid.innerHTML = SERVICIOS.map(servicio => {
     return `
-      <article class="ms-service-card ${servicio.emergencia ? "emergencia" : ""}">
+      <article class="ms-service-card" data-servicio-card="${servicio.nombre}">
         <div class="ms-service-icon">
           <i class="${servicio.icono}"></i>
         </div>
         <h3>${servicio.nombre}</h3>
-        ${
-          servicio.emergencia
-            ? `<span class="ms-status red">Emergencias</span>`
-            : `<span class="ms-status">Programado</span>`
-        }
       </article>
     `;
   }).join("");
+
+  document.querySelectorAll("[data-servicio-card]").forEach(card => {
+    card.addEventListener("click", () => {
+      const servicio = card.dataset.servicioCard || "";
+
+      if (solServicio) {
+        solServicio.value = servicio;
+      }
+
+      abrirModal(modalSolicitud);
+    });
+  });
 }
 
 function renderSelectServicios() {
@@ -389,15 +368,21 @@ function renderSelectServicios() {
   }
 }
 
+function actualizarNotaEmergencia() {
+  if (!solEmergencia || !emergenciaNota) return;
+
+  emergenciaNota.classList.toggle("hidden", !solEmergencia.checked);
+}
+
 /* =========================================================
-   FIRESTORE: USUARIOS / ROLES
+   FIRESTORE USUARIOS
 ========================================================= */
 
 async function obtenerOCrearPerfil(user) {
   const ref = doc(db, "usuarios", user.uid);
   const snap = await getDoc(ref);
 
-  const ahoraAdmin = esEmailAdmin(user.email);
+  const debeSerAdmin = esEmailAdmin(user.email);
 
   if (!snap.exists()) {
     const nuevoPerfil = {
@@ -405,7 +390,7 @@ async function obtenerOCrearPerfil(user) {
       nombre: user.displayName || "",
       email: user.email || "",
       foto: user.photoURL || "",
-      rol: ahoraAdmin ? "admin" : "usuario",
+      rol: debeSerAdmin ? "admin" : "usuario",
       creadoEn: serverTimestamp(),
       actualizadoEn: serverTimestamp()
     };
@@ -416,7 +401,7 @@ async function obtenerOCrearPerfil(user) {
 
   const perfil = snap.data();
 
-  if (ahoraAdmin && perfil.rol !== "admin") {
+  if (debeSerAdmin && perfil.rol !== "admin") {
     await setDoc(ref, {
       rol: "admin",
       actualizadoEn: serverTimestamp()
@@ -451,7 +436,7 @@ async function obtenerPrestador(uid) {
 }
 
 /* =========================================================
-   AUTH GOOGLE
+   AUTH
 ========================================================= */
 
 async function loginGoogle() {
@@ -465,7 +450,7 @@ async function loginGoogle() {
   }
 }
 
-async function cerrarSesion() {
+async function cerrarSesionActual() {
   try {
     await signOut(auth);
     cerrarTodosLosModales();
@@ -477,20 +462,28 @@ async function cerrarSesion() {
 }
 
 /* =========================================================
-   SOLICITUDES / AVISOS
+   AVISOS INTERNOS
 ========================================================= */
 
 async function crearAvisoInterno(data) {
-  await addDoc(collection(db, "notificaciones"), {
-    tipo: data.tipoAviso || "nueva_solicitud",
-    titulo: data.titulo || "Nueva solicitud",
-    mensaje: data.mensaje || "",
-    solicitudId: data.solicitudId || "",
-    rolesDestino: ["admin", "colaborador"],
-    visto: false,
-    creadoEn: serverTimestamp()
-  });
+  try {
+    await addDoc(collection(db, "notificaciones"), {
+      tipo: data.tipoAviso || "nueva_solicitud",
+      titulo: data.titulo || "Nueva solicitud",
+      mensaje: data.mensaje || "",
+      solicitudId: data.solicitudId || "",
+      rolesDestino: ["admin", "colaborador"],
+      visto: false,
+      creadoEn: serverTimestamp()
+    });
+  } catch (error) {
+    console.warn("No se pudo crear aviso interno, pero no se cancela la solicitud:", error);
+  }
 }
+
+/* =========================================================
+   GUARDAR CONTACTO / SOLICITUD
+========================================================= */
 
 async function guardarContactoRapido(data) {
   const ref = await addDoc(collection(db, "solicitudes"), {
@@ -551,7 +544,7 @@ async function guardarSolicitudServicio(data) {
 }
 
 /* =========================================================
-   PRESTADORES
+   PRESTADOR
 ========================================================= */
 
 async function guardarInscripcionPrestador(data) {
@@ -561,9 +554,7 @@ async function guardarInscripcionPrestador(data) {
     return;
   }
 
-  const refPrestador = doc(db, "prestadores", usuarioActual.uid);
-
-  await setDoc(refPrestador, {
+  await setDoc(doc(db, "prestadores", usuarioActual.uid), {
     uid: usuarioActual.uid,
     email: usuarioActual.email || "",
     nombre: data.nombre,
@@ -577,9 +568,7 @@ async function guardarInscripcionPrestador(data) {
     actualizadoEn: serverTimestamp()
   }, { merge: true });
 
-  const refUsuario = doc(db, "usuarios", usuarioActual.uid);
-
-  await setDoc(refUsuario, {
+  await setDoc(doc(db, "usuarios", usuarioActual.uid), {
     rol: "prestador",
     actualizadoEn: serverTimestamp()
   }, { merge: true });
@@ -634,7 +623,7 @@ async function postularmeASolicitud(solicitud) {
 }
 
 /* =========================================================
-   CARGAS DE DATOS
+   CARGAR DATOS
 ========================================================= */
 
 async function obtenerTodasLasSolicitudes() {
@@ -660,7 +649,8 @@ async function obtenerMisSolicitudes() {
   const todas = await obtenerTodasLasSolicitudes();
 
   return todas.filter(s => {
-    return s.clienteUid === usuarioActual.uid || emailLower(s.clienteEmail) === emailLower(usuarioActual.email);
+    return s.clienteUid === usuarioActual.uid
+      || emailLower(s.clienteEmail) === emailLower(usuarioActual.email);
   });
 }
 
@@ -681,27 +671,57 @@ async function obtenerAvisosEquipo() {
   return items;
 }
 
+async function obtenerUsuarios() {
+  const snap = await getDocs(collection(db, "usuarios"));
+
+  const items = snap.docs.map(d => ({
+    id: d.id,
+    ...d.data()
+  }));
+
+  items.sort((a, b) => {
+    return emailLower(a.email).localeCompare(emailLower(b.email));
+  });
+
+  return items;
+}
+
+async function obtenerPrestadoresTodos() {
+  const snap = await getDocs(collection(db, "prestadores"));
+
+  const items = snap.docs.map(d => ({
+    id: d.id,
+    ...d.data()
+  }));
+
+  items.sort((a, b) => {
+    return limpiar(a.nombre).localeCompare(limpiar(b.nombre));
+  });
+
+  return items;
+}
+
+/* =========================================================
+   RENDER ITEMS
+========================================================= */
+
 function renderSolicitudItem(s, modo = "usuario") {
   const fecha = fechaTexto(s.creadoEn);
-  const nombreSeguro = escaparHtml(s.clienteNombre || "Sin nombre");
-  const telSeguro = escaparHtml(s.clienteTelefono || "Sin teléfono");
-  const servicioSeguro = escaparHtml(s.servicio || "Solicitud");
-  const estado = estadoBonito(s.estado);
   const emergencia = s.emergencia ? `<span class="ms-status red">Emergencia</span>` : "";
 
   return `
     <article class="ms-item" data-solicitud-id="${s.id}">
-      <h4>${servicioSeguro}</h4>
+      <h4>${escaparHtml(s.servicio || "Solicitud")}</h4>
 
-      <p><strong>Cliente:</strong> ${nombreSeguro}</p>
-      <p><strong>WhatsApp:</strong> ${telSeguro}</p>
+      <p><strong>Cliente:</strong> ${escaparHtml(s.clienteNombre || "Sin nombre")}</p>
+      <p><strong>WhatsApp:</strong> ${escaparHtml(s.clienteTelefono || "Sin teléfono")}</p>
       <p><strong>Zona:</strong> ${escaparHtml(s.zona || "Sin zona")}</p>
       <p><strong>Dirección:</strong> ${escaparHtml(s.direccion || "Sin dirección")}</p>
       <p><strong>Detalle:</strong> ${escaparHtml(s.descripcion || "Sin detalle")}</p>
       <p><strong>Fecha:</strong> ${fecha}</p>
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
-        <span class="ms-status">${estado}</span>
+        <span class="ms-status">${estadoBonito(s.estado)}</span>
         ${emergencia}
       </div>
 
@@ -755,6 +775,64 @@ function renderAvisoItem(a) {
   `;
 }
 
+function renderUsuarioRolItem(u) {
+  const rolActual = u.rol || "usuario";
+
+  return `
+    <article class="ms-item">
+      <h4>${escaparHtml(u.nombre || "Sin nombre")}</h4>
+      <p><strong>Email:</strong> ${escaparHtml(u.email || "Sin email")}</p>
+      <p><strong>Rol actual:</strong> <span class="ms-status">${escaparHtml(rolActual)}</span></p>
+
+      <div class="ms-role-actions">
+        ${ROLES.map(rol => `
+          <button
+            class="ms-mini-btn ${rol === rolActual ? "red" : ""}"
+            data-cambiar-rol="${u.id}"
+            data-rol="${rol}"
+            type="button"
+          >
+            ${rol}
+          </button>
+        `).join("")}
+      </div>
+    </article>
+  `;
+}
+
+function renderPrestadorAdminItem(p) {
+  const habilitado = !!p.habilitado;
+
+  return `
+    <article class="ms-item">
+      <h4>${escaparHtml(p.nombre || "Prestador")}</h4>
+      <p><strong>Email:</strong> ${escaparHtml(p.email || "Sin email")}</p>
+      <p><strong>WhatsApp:</strong> ${escaparHtml(p.telefono || "Sin teléfono")}</p>
+      <p><strong>Zona:</strong> ${escaparHtml(p.zona || "Sin zona")}</p>
+      <p><strong>Habilidades:</strong> ${Array.isArray(p.habilidades) ? p.habilidades.map(escaparHtml).join(", ") : "Sin habilidades"}</p>
+      <p><strong>Comentario:</strong> ${escaparHtml(p.comentario || "Sin comentario")}</p>
+
+      <span class="ms-status ${habilitado ? "" : "red"}">
+        ${habilitado ? "Habilitado" : "Pendiente"}
+      </span>
+
+      <div class="ms-item-actions">
+        <button class="ms-mini-btn red" data-habilitar-prestador="${p.id}" type="button">
+          Habilitar
+        </button>
+
+        <button class="ms-mini-btn" data-deshabilitar-prestador="${p.id}" type="button">
+          Deshabilitar
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+/* =========================================================
+   RENDER PANELES
+========================================================= */
+
 async function renderMisSolicitudes() {
   if (!listaMisSolicitudes) return;
 
@@ -797,6 +875,133 @@ async function renderEquipo() {
   }
 
   activarBotonesDeSolicitudes(solicitudes);
+
+  if (esAdminActual()) {
+    await renderUsuariosRoles();
+    await renderPrestadoresAdmin();
+  }
+}
+
+async function renderUsuariosRoles() {
+  if (!listaUsuariosRoles) return;
+
+  try {
+    const usuarios = await obtenerUsuarios();
+
+    if (!usuarios.length) {
+      listaUsuariosRoles.innerHTML = `
+        <article class="ms-item">
+          <p>Todavía no hay usuarios registrados.</p>
+        </article>
+      `;
+      return;
+    }
+
+    listaUsuariosRoles.innerHTML = usuarios.map(renderUsuarioRolItem).join("");
+
+    document.querySelectorAll("[data-cambiar-rol]").forEach(btn => {
+      btn.onclick = async () => {
+        const uid = btn.dataset.cambiarRol;
+        const rol = btn.dataset.rol;
+
+        try {
+          await setDoc(doc(db, "usuarios", uid), {
+            rol,
+            actualizadoEn: serverTimestamp()
+          }, { merge: true });
+
+          toastMsg(`Rol actualizado: ${rol}`);
+
+          if (usuarioActual?.uid === uid) {
+            perfilActual = await obtenerOCrearPerfil(usuarioActual);
+          }
+
+          await renderPaneles();
+        } catch (error) {
+          console.error(error);
+          toastMsg("No se pudo actualizar el rol");
+        }
+      };
+    });
+  } catch (error) {
+    console.error(error);
+    listaUsuariosRoles.innerHTML = `
+      <article class="ms-item">
+        <p>No se pudieron cargar los usuarios.</p>
+      </article>
+    `;
+  }
+}
+
+async function renderPrestadoresAdmin() {
+  if (!listaPrestadoresAdmin) return;
+
+  try {
+    const prestadores = await obtenerPrestadoresTodos();
+
+    if (!prestadores.length) {
+      listaPrestadoresAdmin.innerHTML = `
+        <article class="ms-item">
+          <p>Todavía no hay prestadores inscriptos.</p>
+        </article>
+      `;
+      return;
+    }
+
+    listaPrestadoresAdmin.innerHTML = prestadores.map(renderPrestadorAdminItem).join("");
+
+    document.querySelectorAll("[data-habilitar-prestador]").forEach(btn => {
+      btn.onclick = async () => {
+        const uid = btn.dataset.habilitarPrestador;
+
+        try {
+          await setDoc(doc(db, "prestadores", uid), {
+            habilitado: true,
+            entrevistaEstado: "habilitado",
+            actualizadoEn: serverTimestamp()
+          }, { merge: true });
+
+          await setDoc(doc(db, "usuarios", uid), {
+            rol: "prestador",
+            actualizadoEn: serverTimestamp()
+          }, { merge: true });
+
+          toastMsg("Prestador habilitado");
+          await renderPaneles();
+        } catch (error) {
+          console.error(error);
+          toastMsg("No se pudo habilitar");
+        }
+      };
+    });
+
+    document.querySelectorAll("[data-deshabilitar-prestador]").forEach(btn => {
+      btn.onclick = async () => {
+        const uid = btn.dataset.deshabilitarPrestador;
+
+        try {
+          await setDoc(doc(db, "prestadores", uid), {
+            habilitado: false,
+            entrevistaEstado: "pendiente_entrevista",
+            actualizadoEn: serverTimestamp()
+          }, { merge: true });
+
+          toastMsg("Prestador deshabilitado");
+          await renderPaneles();
+        } catch (error) {
+          console.error(error);
+          toastMsg("No se pudo deshabilitar");
+        }
+      };
+    });
+  } catch (error) {
+    console.error(error);
+    listaPrestadoresAdmin.innerHTML = `
+      <article class="ms-item">
+        <p>No se pudieron cargar los prestadores.</p>
+      </article>
+    `;
+  }
 }
 
 async function renderPrestador() {
@@ -897,6 +1102,10 @@ async function renderPaneles() {
   await renderEquipo();
 }
 
+/* =========================================================
+   BOTONES DE SOLICITUDES
+========================================================= */
+
 function activarBotonesDeSolicitudes(solicitudes) {
   const mapa = new Map();
   solicitudes.forEach(s => mapa.set(s.id, s));
@@ -958,8 +1167,7 @@ msNav?.querySelectorAll("a").forEach(link => {
 
 document.querySelectorAll("[data-close-modal]").forEach(btn => {
   btn.addEventListener("click", () => {
-    const id = btn.dataset.closeModal;
-    cerrarModal($(id));
+    cerrarModal($(btn.dataset.closeModal));
   });
 });
 
@@ -972,7 +1180,7 @@ document.querySelectorAll(".ms-modal").forEach(modal => {
 btnCuenta?.addEventListener("click", () => abrirModal(modalCuenta));
 btnLoginDesdePanel?.addEventListener("click", () => abrirModal(modalCuenta));
 btnLoginGoogle?.addEventListener("click", loginGoogle);
-btnCerrarSesion?.addEventListener("click", cerrarSesion);
+btnCerrarSesion?.addEventListener("click", cerrarSesionActual);
 
 btnAbrirContacto?.addEventListener("click", () => abrirModal(modalContacto));
 btnAbrirSolicitud?.addEventListener("click", () => abrirModal(modalSolicitud));
@@ -995,6 +1203,8 @@ btnWhatsappFlotante?.addEventListener("click", (e) => {
     "Hola, quiero hacer una consulta por un servicio de Multi24."
   );
 });
+
+solEmergencia?.addEventListener("change", actualizarNotaEmergencia);
 
 /* =========================================================
    FORM CONTACTO RÁPIDO
@@ -1042,7 +1252,7 @@ formContactoRapido?.addEventListener("submit", async (e) => {
   } catch (error) {
     console.error(error);
     if (ventanaWhatsApp) ventanaWhatsApp.close();
-    toastMsg("No se pudo guardar el contacto");
+    toastMsg("No se pudo guardar el contacto. Revisá reglas de Firestore.");
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<i class="fa-brands fa-whatsapp"></i> Enviar y abrir WhatsApp`;
@@ -1099,13 +1309,14 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
     );
 
     formSolicitudServicio.reset();
+    actualizarNotaEmergencia();
     cerrarModal(modalSolicitud);
     toastMsg("Solicitud guardada y WhatsApp preparado");
     await renderPaneles();
   } catch (error) {
     console.error(error);
     if (ventanaWhatsApp) ventanaWhatsApp.close();
-    toastMsg("No se pudo guardar la solicitud");
+    toastMsg("No se pudo guardar la solicitud. Revisá reglas de Firestore.");
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Guardar solicitud y abrir WhatsApp`;
@@ -1203,3 +1414,4 @@ onAuthStateChanged(auth, async (user) => {
 
 renderServicios();
 renderSelectServicios();
+actualizarNotaEmergencia();
