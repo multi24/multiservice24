@@ -63,8 +63,8 @@
         </h1>
 
         <p>
-          Servicios programados para hogares, comercios y oficinas.
-          También contamos con emergencias de cerrajería.
+Servicios programados para hogares, comercios y oficinas.
+También contamos con asistencias de emergencia.
         </p>
 
         <div class="ms-hero-actions">
@@ -232,28 +232,44 @@
         <div id="listaSolicitudesPrestador" class="ms-list"></div>
       </div>
 
-      <div id="panelEquipo" class="ms-panel hidden">
-        <div class="ms-panel-head">
-          <div>
-            <h2>Panel interno</h2>
-            <p>Solicitudes, avisos y postulaciones.</p>
-          </div>
+<div id="panelEquipo" class="ms-panel hidden">
+  <div class="ms-panel-head">
+    <div>
+      <h2>Panel interno</h2>
+      <p>Solicitudes, avisos, usuarios, roles y prestadores.</p>
+    </div>
 
-          <span id="contadorAvisos" class="ms-counter">0 avisos</span>
-        </div>
+    <span id="contadorAvisos" class="ms-counter">0 avisos</span>
+  </div>
 
-        <div class="ms-panel-grid">
-          <div class="ms-panel-card">
-            <h3>Solicitudes recibidas</h3>
-            <div id="listaSolicitudesEquipo" class="ms-list"></div>
-          </div>
+  <div class="ms-panel-grid">
+    <div class="ms-panel-card">
+      <h3>Solicitudes recibidas</h3>
+      <div id="listaSolicitudesEquipo" class="ms-list"></div>
+    </div>
 
-          <div class="ms-panel-card">
-            <h3>Avisos internos</h3>
-            <div id="listaAvisosEquipo" class="ms-list"></div>
-          </div>
-        </div>
-      </div>
+    <div class="ms-panel-card">
+      <h3>Avisos internos</h3>
+      <div id="listaAvisosEquipo" class="ms-list"></div>
+    </div>
+
+    <div class="ms-panel-card ms-full-panel">
+      <h3>Usuarios y roles</h3>
+      <p class="ms-muted">
+        Desde acá el admin puede asignar usuario, prestador, colaborador o admin.
+      </p>
+      <div id="listaUsuariosRoles" class="ms-list"></div>
+    </div>
+
+    <div class="ms-panel-card ms-full-panel">
+      <h3>Prestadores</h3>
+      <p class="ms-muted">
+        Inscripciones pendientes, entrevistas y habilitación de prestadores.
+      </p>
+      <div id="listaPrestadoresAdmin" class="ms-list"></div>
+    </div>
+  </div>
+</div>
     </section>
 
   </main>
@@ -334,25 +350,42 @@
           <input id="solZona" type="text" placeholder="Ej: Tristán Suárez" />
         </label>
 
-        <label class="ms-full">
-          Dirección
-          <input id="solDireccion" type="text" placeholder="Calle, número, localidad" />
-        </label>
+<label class="ms-full">
+  Dirección
+  <input id="solDireccion" type="text" list="direccionesSugeridas" placeholder="Calle, número, localidad" />
+
+  <datalist id="direccionesSugeridas">
+    <option value="Tristán Suárez">
+    <option value="Ezeiza">
+    <option value="La Unión">
+    <option value="Monte Grande">
+    <option value="Canning">
+    <option value="Spegazzini">
+    <option value="Carlos Spegazzini">
+    <option value="Luis Guillón">
+    <option value="El Jagüel">
+  </datalist>
+</label>
 
         <label>
           Fecha deseada
           <input id="solFechaDeseada" type="date" />
         </label>
 
-        <label>
-          Horario deseado
-          <input id="solHorarioDeseado" type="text" placeholder="Ej: por la tarde" />
-        </label>
+<label>
+  Horario deseado
+  <input id="solHorarioDeseado" type="time" step="60" />
+</label>
 
-        <label class="ms-check">
-          <input id="solEmergencia" type="checkbox" />
-          <span>Es emergencia</span>
-        </label>
+<label class="ms-check">
+  <input id="solEmergencia" type="checkbox" />
+  <span>Es emergencia</span>
+</label>
+
+<p id="emergenciaNota" class="ms-emergency-note hidden">
+  Las emergencias se resuelven dentro de las próximas 4 horas a la confirmación de la solicitud
+  y se confirman con un pago de $20000 argentinos o 15 dólares.
+</p>
 
         <label class="ms-full">
           Descripción del trabajo
