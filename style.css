@@ -1123,3 +1123,39 @@ main{
     grid-template-columns:1fr;
   }
 }
+
+/* =========================================================
+   AJUSTES V2 - EMERGENCIA / ROLES / ADMIN
+========================================================= */
+
+.ms-emergency-note{
+  grid-column:1 / -1;
+  margin:0;
+  padding:12px 14px;
+  border-radius:16px;
+  background:rgba(225,31,42,.09);
+  border:1px solid rgba(225,31,42,.20);
+  color:var(--rojo-oscuro);
+  font-weight:800;
+  line-height:1.45;
+}
+
+.ms-panel-card.ms-full-panel{
+  grid-column:1 / -1;
+}
+
+.ms-role-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:12px;
+}
+
+.ms-service-card{
+  cursor:pointer;
+}
+
+.ms-service-card:hover .ms-service-icon{
+  background:rgba(225,31,42,.10);
+  color:var(--rojo);
+}
