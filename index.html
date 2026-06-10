@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Multiservice24</title>
+
+  <link rel="stylesheet" href="style.css" />
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+  />
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-logo">
+        <i class="fa-solid fa-screwdriver-wrench"></i>
+      </div>
+      <div>
+        <h1>Multiservice24</h1>
+        <p>Servicios, mantenimiento y soluciones rápidas</p>
+      </div>
+    </div>
+
+    <button id="btnLogin" class="btn-secondary">
+      <i class="fa-solid fa-user"></i>
+      Ingresar
+    </button>
+  </header>
+
+  <main>
+
+    <section class="hero">
+      <div class="hero-content">
+        <span class="tag">Atención rápida</span>
+        <h2>Pedí contacto o cargá una solicitud de servicio</h2>
+        <p>
+          Dejanos tus datos y te contactamos por WhatsApp para coordinar el servicio.
+        </p>
+
+        <div class="hero-actions">
+          <button id="btnContactoRapido" class="btn-primary">
+            <i class="fa-brands fa-whatsapp"></i>
+            Quiero que me escriban
+          </button>
+
+          <button id="btnVerFormulario" class="btn-light">
+            Solicitar servicio
+          </button>
+        </div>
+      </div>
+
+      <div class="hero-card">
+        <i class="fa-solid fa-house-chimney"></i>
+        <h3>Servicios para hogares y comercios</h3>
+        <p>Consultas, reclamos, historial y atención personalizada.</p>
+      </div>
+    </section>
+
+    <section class="flyers">
+      <h2>Servicios destacados</h2>
+
+      <div class="flyer-grid">
+        <article class="flyer-card">
+          <i class="fa-solid fa-bolt"></i>
+          <h3>Electricidad</h3>
+          <p>Revisiones, reparaciones y mantenimiento.</p>
+        </article>
+
+        <article class="flyer-card">
+          <i class="fa-solid fa-faucet-drip"></i>
+          <h3>Plomería</h3>
+          <p>Soluciones rápidas para pérdidas y arreglos.</p>
+        </article>
+
+        <article class="flyer-card">
+          <i class="fa-solid fa-paint-roller"></i>
+          <h3>Mantenimiento</h3>
+          <p>Trabajos generales para casas, locales y oficinas.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="formularioBox" class="solicitud hidden">
+      <h2>Solicitud de servicio</h2>
+
+      <form id="formSolicitud">
+        <label>
+          Nombre
+          <input id="solNombre" type="text" required />
+        </label>
+
+        <label>
+          Teléfono / WhatsApp
+          <input id="solTelefono" type="tel" required />
+        </label>
+
+        <label>
+          Servicio
+          <select id="solServicio" required>
+            <option value="">Elegir servicio</option>
+            <option value="Electricidad">Electricidad</option>
+            <option value="Plomería">Plomería</option>
+            <option value="Mantenimiento">Mantenimiento</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </label>
+
+        <label>
+          Zona
+          <input id="solZona" type="text" placeholder="Ej: Tristán Suárez" />
+        </label>
+
+        <label>
+          Mensaje
+          <textarea id="solMensaje" rows="4" placeholder="Contanos qué necesitás"></textarea>
+        </label>
+
+        <button class="btn-primary" type="submit">
+          <i class="fa-solid fa-paper-plane"></i>
+          Enviar solicitud
+        </button>
+      </form>
+    </section>
+
+    <section id="panelCliente" class="panel hidden">
+      <h2>Mi cuenta</h2>
+      <p>Acá el cliente va a poder ver sus solicitudes y reclamos.</p>
+
+      <div id="misSolicitudes" class="lista"></div>
+    </section>
+
+    <section id="panelAdmin" class="panel hidden">
+      <h2>Panel interno</h2>
+      <p>Solicitudes recibidas</p>
+
+      <div id="adminSolicitudes" class="lista"></div>
+    </section>
+
+  </main>
+
+  <div id="modalLogin" class="modal hidden">
+    <div class="modal-content">
+      <button id="cerrarLogin" class="modal-close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <h2>Ingresar</h2>
+
+      <label>
+        Email
+        <input id="loginEmail" type="email" />
+      </label>
+
+      <label>
+        Contraseña
+        <input id="loginPass" type="password" />
+      </label>
+
+      <button id="hacerLogin" class="btn-primary">
+        Ingresar
+      </button>
+
+      <button id="crearCuenta" class="btn-light">
+        Crear cuenta
+      </button>
+
+      <button id="cerrarSesion" class="btn-secondary hidden">
+        Cerrar sesión
+      </button>
+
+      <p id="loginMsg" class="msg"></p>
+    </div>
+  </div>
+
+  <a id="whatsappFloat" class="whatsapp-float" href="#" target="_blank">
+    <i class="fa-brands fa-whatsapp"></i>
+  </a>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
