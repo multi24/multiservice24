@@ -57,7 +57,7 @@ const db = getFirestore(app);
   5491112345678
 */
 
-const WHATSAPP_NUMERO = "5491112345678";
+const WHATSAPP_NUMERO = "5491130042287";
 
 /*
   Email admin:
