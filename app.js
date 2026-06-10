@@ -269,20 +269,24 @@ function estadoBonito(estado) {
 function mensajeWhatsAppContacto(data, id = "") {
   const partes = [];
 
-  partes.push("Hola, quiero que me contacten por Multi24.");
+  partes.push("*MULTI24 - Solicitud de contacto*");
   partes.push("");
+  partes.push("Hola, quiero que me contacten.");
+  partes.push("");
+  partes.push(`*Nombre:* ${data.clienteNombre || "Sin nombre"}`);
+  partes.push(`*WhatsApp:* ${data.clienteTelefono || "Sin teléfono"}`);
 
-  if (id) partes.push(`Consulta: ${id}`);
-
-  partes.push(`Nombre: ${data.clienteNombre || "Sin nombre"}`);
-  partes.push(`WhatsApp: ${data.clienteTelefono || "Sin teléfono"}`);
-
-  if (data.zona) partes.push(`Zona: ${data.zona}`);
+  if (data.zona) {
+    partes.push(`*Zona:* ${data.zona}`);
+  }
 
   if (data.descripcion) {
     partes.push("");
-    partes.push(`Mensaje: ${data.descripcion}`);
+    partes.push(`*Mensaje:* ${data.descripcion}`);
   }
+
+  partes.push("");
+  partes.push("Gracias.");
 
   return partes.join("\n");
 }
@@ -290,29 +294,44 @@ function mensajeWhatsAppContacto(data, id = "") {
 function mensajeWhatsAppSolicitud(data, id = "") {
   const partes = [];
 
-  partes.push("Hola, quiero solicitar un servicio en Multi24.");
+  partes.push("*MULTI24 - Solicitud de servicio*");
   partes.push("");
-
-  if (id) partes.push(`Solicitud: ${id}`);
-
-  partes.push(`Nombre: ${data.clienteNombre || "Sin nombre"}`);
-  partes.push(`WhatsApp: ${data.clienteTelefono || "Sin teléfono"}`);
-  partes.push(`Servicio: ${data.servicio || "Sin servicio"}`);
+  partes.push("Hola, quiero solicitar un servicio.");
+  partes.push("");
+  partes.push(`*Nombre:* ${data.clienteNombre || "Sin nombre"}`);
+  partes.push(`*WhatsApp:* ${data.clienteTelefono || "Sin teléfono"}`);
+  partes.push(`*Servicio:* ${data.servicio || "Sin servicio"}`);
 
   if (data.emergencia) {
-    partes.push("Emergencia: Sí");
-    partes.push("Condición emergencia: resolución dentro de las próximas 4 horas a la confirmación y pago de $20000 ARS o 15 USD.");
+    partes.push("");
+    partes.push("*Emergencia:* Sí");
+    partes.push("Las emergencias se resuelven dentro de las próximas 4 horas a la confirmación de la solicitud y se confirman con un pago de $20000 argentinos o 15 dólares.");
   }
 
-  if (data.zona) partes.push(`Zona: ${data.zona}`);
-  if (data.direccion) partes.push(`Dirección: ${data.direccion}`);
-  if (data.fechaDeseada) partes.push(`Fecha deseada: ${data.fechaDeseada}`);
-  if (data.horarioDeseado) partes.push(`Horario deseado: ${data.horarioDeseado}`);
+  if (data.zona) {
+    partes.push(`*Zona:* ${data.zona}`);
+  }
+
+  if (data.direccion) {
+    partes.push(`*Dirección:* ${data.direccion}`);
+  }
+
+  if (data.fechaDeseada) {
+    partes.push(`*Fecha deseada:* ${data.fechaDeseada}`);
+  }
+
+  if (data.horarioDeseado) {
+    partes.push(`*Horario deseado:* ${data.horarioDeseado}`);
+  }
 
   if (data.descripcion) {
     partes.push("");
-    partes.push(`Detalle: ${data.descripcion}`);
+    partes.push(`*Detalle del trabajo:*`);
+    partes.push(data.descripcion);
   }
+
+  partes.push("");
+  partes.push("Gracias.");
 
   return partes.join("\n");
 }
