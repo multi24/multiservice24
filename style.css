@@ -403,28 +403,38 @@ main{
   color:var(--verde-wpp);
 }
 
-.ms-mini-grid{
+.ms-hero-card-actions{
   margin-top:18px;
   display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:12px;
+  grid-template-columns:1fr;
+  gap:10px;
 }
 
-.ms-mini-grid div{
-  min-height:92px;
-  border:1px solid rgba(225,31,42,.18);
-  border-radius:22px;
-  display:grid;
-  align-content:center;
-  justify-items:center;
+.ms-hero-card-actions .ms-btn{
+  width:100%;
+}
+
+.ms-hero-card-points{
+  margin-top:16px;
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
   gap:8px;
+}
+
+.ms-hero-card-points span{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
   color:var(--azul-noche);
   font-weight:900;
   background:#fff;
+  border:1px solid var(--borde);
+  border-radius:999px;
+  padding:8px 12px;
 }
 
-.ms-mini-grid i{
-  font-size:26px;
+.ms-hero-card-points i{
   color:var(--rojo);
 }
 
@@ -475,10 +485,44 @@ main{
    SERVICIOS
 ========================================================= */
 
+.ms-services-wrap{
+  position:relative;
+}
+
 .ms-services-grid{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
+  display:flex;
   gap:14px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x mandatory;
+  padding:4px 4px 12px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--rojo) var(--gris-suave);
+}
+
+.ms-services-grid::-webkit-scrollbar{
+  height:8px;
+}
+
+.ms-services-grid::-webkit-scrollbar-track{
+  background:var(--gris-suave);
+  border-radius:999px;
+}
+
+.ms-services-grid::-webkit-scrollbar-thumb{
+  background:var(--rojo);
+  border-radius:999px;
+}
+
+.ms-scroll-hint{
+  margin-top:6px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  color:var(--rojo-oscuro);
+  font-weight:900;
+  font-size:13px;
 }
 
 .ms-service-card{
@@ -491,6 +535,8 @@ main{
   justify-items:center;
   text-align:center;
   min-height:150px;
+   flex:0 0 220px;
+scroll-snap-align:start;
   transition:.2s ease;
   position:relative;
   overflow:hidden;
@@ -1050,16 +1096,17 @@ main{
     font-size:28px;
   }
 
-  .ms-services-grid{
-    grid-template-columns:repeat(2,1fr);
-    gap:10px;
-  }
+.ms-services-grid{
+  gap:10px;
+  padding-bottom:12px;
+}
 
-  .ms-service-card{
-    min-height:140px;
-    padding:16px 10px;
-    border-radius:22px;
-  }
+.ms-service-card{
+  min-height:138px;
+  flex:0 0 76%;
+  padding:16px 10px;
+  border-radius:22px;
+}
 
   .ms-service-icon{
     width:54px;
@@ -1111,19 +1158,14 @@ main{
 }
 
 @media (max-width:420px){
-  .ms-services-grid{
-    grid-template-columns:1fr;
-  }
-
   .ms-hero h1{
     font-size:33px;
   }
 
-  .ms-mini-grid{
-    grid-template-columns:1fr;
+  .ms-service-card{
+    flex-basis:82%;
   }
 }
-
 /* =========================================================
    AJUSTES V2 - EMERGENCIA / ROLES / ADMIN
 ========================================================= */
