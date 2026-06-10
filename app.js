@@ -1,32 +1,32 @@
 /* =========================================================
-   MULTISERVICE24 - APP JS
-   Firebase + Solicitudes + Login + WhatsApp
+   MULTI24 - APP V1 SERIA
+   GitHub Pages + Firebase Auth Google + Firestore
 ========================================================= */
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 
 import {
   getAuth,
-  onAuthStateChanged,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 import {
   getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
   collection,
   addDoc,
   getDocs,
-  query,
-  where,
-  orderBy,
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 /* =========================================================
-   1) CONFIG FIREBASE
-   Este bloque es el de tu proyecto Multiservice24
+   FIREBASE CONFIG
 ========================================================= */
 
 const firebaseConfig = {
@@ -41,88 +41,173 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const providerGoogle = new GoogleAuthProvider();
 
 /* =========================================================
-   2) CONFIG GENERAL
+   CONFIG MULTI24
 ========================================================= */
 
-/*
-  IMPORTANTE:
-  Cambiá este número por el WhatsApp real de Multiservice24.
-
-  Formato Argentina:
-  54 + 9 + característica + número
-
-  Ejemplo:
-  5491112345678
-*/
-
 const WHATSAPP_NUMERO = "5491130042287";
-
-/*
-  Email admin:
-  El email que pongas acá va a ver el panel interno.
-  Si vas a usar otro email, cambialo.
-*/
 
 const ADMIN_EMAILS = [
   "vidaabundante.tristansuarez@gmail.com"
 ];
 
+/*
+  Roles posibles:
+  usuario
+  prestador
+  colaborador
+  admin
+*/
+
+const SERVICIOS = [
+  {
+    nombre: "Cerrajería",
+    icono: "fa-solid fa-key",
+    emergencia: true
+  },
+  {
+    nombre: "Electricidad",
+    icono: "fa-solid fa-bolt"
+  },
+  {
+    nombre: "Plomería",
+    icono: "fa-solid fa-faucet-drip"
+  },
+  {
+    nombre: "Destapaciones",
+    icono: "fa-solid fa-toilet"
+  },
+  {
+    nombre: "Gas",
+    icono: "fa-solid fa-fire-flame-curved"
+  },
+  {
+    nombre: "Seguridad",
+    icono: "fa-solid fa-shield-halved"
+  },
+  {
+    nombre: "Fumigación",
+    icono: "fa-solid fa-bug"
+  },
+  {
+    nombre: "Aire acondicionado",
+    icono: "fa-solid fa-snowflake"
+  },
+  {
+    nombre: "Albañilería",
+    icono: "fa-solid fa-trowel-bricks"
+  },
+  {
+    nombre: "Pintura",
+    icono: "fa-solid fa-paint-roller"
+  },
+  {
+    nombre: "Colocación de cerámicas",
+    icono: "fa-solid fa-border-all"
+  },
+  {
+    nombre: "Corte de pasto",
+    icono: "fa-solid fa-seedling"
+  },
+  {
+    nombre: "Maestranza",
+    icono: "fa-solid fa-broom"
+  },
+  {
+    nombre: "Envíos",
+    icono: "fa-solid fa-truck-fast"
+  }
+];
+
 /* =========================================================
-   3) SELECTORES
+   SELECTORES
 ========================================================= */
 
 const $ = (id) => document.getElementById(id);
 
-const btnLogin = $("btnLogin");
-const modalLogin = $("modalLogin");
-const cerrarLogin = $("cerrarLogin");
+const btnMenuMobile = $("btnMenuMobile");
+const msNav = $("msNav");
 
-const loginEmail = $("loginEmail");
-const loginPass = $("loginPass");
-const hacerLogin = $("hacerLogin");
-const crearCuenta = $("crearCuenta");
-const cerrarSesion = $("cerrarSesion");
-const loginMsg = $("loginMsg");
+const btnCuenta = $("btnCuenta");
+const btnLoginDesdePanel = $("btnLoginDesdePanel");
+const btnLoginGoogle = $("btnLoginGoogle");
+const btnCerrarSesion = $("btnCerrarSesion");
 
-const btnContactoRapido = $("btnContactoRapido");
-const btnVerFormulario = $("btnVerFormulario");
-const formularioBox = $("formularioBox");
-const formSolicitud = $("formSolicitud");
+const modalCuenta = $("modalCuenta");
+const modalContacto = $("modalContacto");
+const modalSolicitud = $("modalSolicitud");
+const modalPrestador = $("modalPrestador");
 
-const solNombre = $("solNombre");
-const solTelefono = $("solTelefono");
+const cuentaNombre = $("cuentaNombre");
+const cuentaEmail = $("cuentaEmail");
+const cuentaRol = $("cuentaRol");
+
+const btnAbrirContacto = $("btnAbrirContacto");
+const btnAbrirSolicitud = $("btnAbrirSolicitud");
+const btnPanelNuevaSolicitud = $("btnPanelNuevaSolicitud");
+const btnInscripcionPrestador = $("btnInscripcionPrestador");
+
+const serviciosGrid = $("serviciosGrid");
 const solServicio = $("solServicio");
-const solZona = $("solZona");
-const solMensaje = $("solMensaje");
+const prestadorHabilidades = $("prestadorHabilidades");
 
-const panelCliente = $("panelCliente");
-const panelAdmin = $("panelAdmin");
-const misSolicitudes = $("misSolicitudes");
-const adminSolicitudes = $("adminSolicitudes");
+const formContactoRapido = $("formContactoRapido");
+const formSolicitudServicio = $("formSolicitudServicio");
+const formPrestador = $("formPrestador");
 
-const whatsappFloat = $("whatsappFloat");
+const boxSinLogin = $("boxSinLogin");
+const panelUsuario = $("panelUsuario");
+const panelPrestador = $("panelPrestador");
+const panelEquipo = $("panelEquipo");
+
+const txtUsuarioActual = $("txtUsuarioActual");
+const listaMisSolicitudes = $("listaMisSolicitudes");
+const listaSolicitudesEquipo = $("listaSolicitudesEquipo");
+const listaAvisosEquipo = $("listaAvisosEquipo");
+const listaSolicitudesPrestador = $("listaSolicitudesPrestador");
+const estadoPrestador = $("estadoPrestador");
+const contadorAvisos = $("contadorAvisos");
+
+const btnWhatsappFlotante = $("btnWhatsappFlotante");
+const toast = $("toast");
 
 /* =========================================================
-   4) ESTADO
+   ESTADO
 ========================================================= */
 
 let usuarioActual = null;
-let esAdmin = false;
+let perfilActual = null;
+let prestadorActual = null;
 
 /* =========================================================
-   5) HELPERS
+   HELPERS
 ========================================================= */
 
-function limpiarTexto(valor) {
+function limpiar(valor) {
   return String(valor || "").trim();
 }
 
-function fechaSimpleDesdeTimestamp(ts) {
+function emailLower(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function esEmailAdmin(email) {
+  return ADMIN_EMAILS.map(emailLower).includes(emailLower(email));
+}
+
+function puedeVerPanelEquipo() {
+  const rol = perfilActual?.rol || "usuario";
+  return rol === "admin" || rol === "colaborador";
+}
+
+function fechaTexto(valor) {
   try {
-    if (!ts) return "Sin fecha";
-    const fecha = ts.toDate ? ts.toDate() : new Date(ts);
+    if (!valor) return "Sin fecha";
+
+    const fecha = valor.toDate ? valor.toDate() : new Date(valor);
+
     return fecha.toLocaleString("es-AR", {
       day: "2-digit",
       month: "2-digit",
@@ -135,411 +220,986 @@ function fechaSimpleDesdeTimestamp(ts) {
   }
 }
 
-function abrirWhatsApp(mensaje) {
-  if (!WHATSAPP_NUMERO || WHATSAPP_NUMERO === "5491112345678") {
-    alert("Falta configurar el número de WhatsApp real en app.js");
+function normalizarTelefono(telefono) {
+  return limpiar(telefono).replace(/[^\d]/g, "");
+}
+
+function toastMsg(texto) {
+  if (!toast) return;
+
+  toast.textContent = texto;
+  toast.classList.remove("hidden");
+
+  setTimeout(() => {
+    toast.classList.add("hidden");
+  }, 2800);
+}
+
+function abrirModal(modal) {
+  if (!modal) return;
+  modal.classList.remove("hidden");
+  document.body.classList.add("modal-open");
+}
+
+function cerrarModal(modal) {
+  if (!modal) return;
+  modal.classList.add("hidden");
+
+  const hayAbierto = document.querySelector(".ms-modal:not(.hidden)");
+  if (!hayAbierto) {
+    document.body.classList.remove("modal-open");
+  }
+}
+
+function cerrarTodosLosModales() {
+  document.querySelectorAll(".ms-modal").forEach(modal => {
+    modal.classList.add("hidden");
+  });
+  document.body.classList.remove("modal-open");
+}
+
+function abrirWhatsAppConMensaje(mensaje, ventanaPrevia = null) {
+  const texto = encodeURIComponent(mensaje);
+  const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${texto}`;
+
+  if (ventanaPrevia && !ventanaPrevia.closed) {
+    ventanaPrevia.location.href = url;
     return;
   }
 
-  const texto = encodeURIComponent(mensaje);
-  const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${texto}`;
   window.open(url, "_blank");
 }
 
-function mensajeSolicitudWhatsApp(datos, idSolicitud = "") {
+function mensajeWhatsAppSolicitud(data, id = "") {
   const partes = [];
 
-  partes.push("Hola, quiero solicitar un servicio.");
+  partes.push("Hola, quiero solicitar un servicio en Multi24.");
   partes.push("");
 
-  if (idSolicitud) {
-    partes.push(`Solicitud: ${idSolicitud}`);
-  }
+  if (id) partes.push(`Solicitud: ${id}`);
 
-  partes.push(`Nombre: ${datos.nombre || "Sin nombre"}`);
-  partes.push(`Teléfono: ${datos.telefono || "Sin teléfono"}`);
-  partes.push(`Servicio: ${datos.servicio || "Contacto rápido"}`);
+  partes.push(`Nombre: ${data.clienteNombre || "Sin nombre"}`);
+  partes.push(`WhatsApp: ${data.clienteTelefono || "Sin teléfono"}`);
+  partes.push(`Servicio: ${data.servicio || "Sin servicio"}`);
 
-  if (datos.zona) {
-    partes.push(`Zona: ${datos.zona}`);
-  }
+  if (data.emergencia) partes.push("Emergencia: Sí");
+  if (data.zona) partes.push(`Zona: ${data.zona}`);
+  if (data.direccion) partes.push(`Dirección: ${data.direccion}`);
+  if (data.fechaDeseada) partes.push(`Fecha deseada: ${data.fechaDeseada}`);
+  if (data.horarioDeseado) partes.push(`Horario deseado: ${data.horarioDeseado}`);
 
-  if (datos.mensaje) {
+  if (data.descripcion) {
     partes.push("");
-    partes.push(`Mensaje: ${datos.mensaje}`);
+    partes.push(`Detalle: ${data.descripcion}`);
   }
 
   return partes.join("\n");
 }
 
-function setLoginMsg(texto) {
-  if (loginMsg) loginMsg.textContent = texto || "";
+function mensajeWhatsAppContacto(data, id = "") {
+  const partes = [];
+
+  partes.push("Hola, quiero que me contacten por Multi24.");
+  partes.push("");
+
+  if (id) partes.push(`Consulta: ${id}`);
+
+  partes.push(`Nombre: ${data.clienteNombre || "Sin nombre"}`);
+  partes.push(`WhatsApp: ${data.clienteTelefono || "Sin teléfono"}`);
+
+  if (data.zona) partes.push(`Zona: ${data.zona}`);
+
+  if (data.descripcion) {
+    partes.push("");
+    partes.push(`Mensaje: ${data.descripcion}`);
+  }
+
+  return partes.join("\n");
 }
 
-function abrirModalLogin() {
-  modalLogin?.classList.remove("hidden");
-  setLoginMsg("");
+function estadoBonito(estado) {
+  const mapa = {
+    nuevo: "Nuevo",
+    contacto_rapido: "Contacto rápido",
+    pendiente_derivar: "Pendiente de derivar",
+    contactado: "Contactado",
+    derivado: "Derivado",
+    cotizando: "Cotizando",
+    programado: "Programado",
+    realizado: "Realizado",
+    cerrado: "Cerrado",
+    garantia: "Garantía",
+    pendiente_entrevista: "Pendiente entrevista",
+    habilitado: "Habilitado"
+  };
+
+  return mapa[estado] || estado || "Nuevo";
 }
 
-function cerrarModalLogin() {
-  modalLogin?.classList.add("hidden");
-  setLoginMsg("");
+function escaparHtml(texto) {
+  return String(texto || "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
-function mostrarFormulario() {
-  formularioBox?.classList.remove("hidden");
-  formularioBox?.scrollIntoView({ behavior: "smooth", block: "start" });
+/* =========================================================
+   RENDER BASE
+========================================================= */
+
+function renderServicios() {
+  if (!serviciosGrid) return;
+
+  serviciosGrid.innerHTML = SERVICIOS.map(servicio => {
+    return `
+      <article class="ms-service-card ${servicio.emergencia ? "emergencia" : ""}">
+        <div class="ms-service-icon">
+          <i class="${servicio.icono}"></i>
+        </div>
+        <h3>${servicio.nombre}</h3>
+        ${
+          servicio.emergencia
+            ? `<span class="ms-status red">Emergencias</span>`
+            : `<span class="ms-status">Programado</span>`
+        }
+      </article>
+    `;
+  }).join("");
 }
 
-function esUsuarioAdmin(user) {
-  const email = String(user?.email || "").toLowerCase();
-  return ADMIN_EMAILS.map(e => e.toLowerCase()).includes(email);
+function renderSelectServicios() {
+  if (solServicio) {
+    solServicio.innerHTML = `
+      <option value="">Elegir servicio</option>
+      ${SERVICIOS.map(s => `<option value="${s.nombre}">${s.nombre}</option>`).join("")}
+    `;
+  }
+
+  if (prestadorHabilidades) {
+    prestadorHabilidades.innerHTML = SERVICIOS.map(s => {
+      return `
+        <label class="ms-check-option">
+          <input type="checkbox" value="${s.nombre}" />
+          <span>${s.nombre}</span>
+        </label>
+      `;
+    }).join("");
+  }
 }
 
-function htmlSolicitud(data, id = "") {
-  const fecha = fechaSimpleDesdeTimestamp(data.createdAt);
+/* =========================================================
+   FIRESTORE: USUARIOS / ROLES
+========================================================= */
+
+async function obtenerOCrearPerfil(user) {
+  const ref = doc(db, "usuarios", user.uid);
+  const snap = await getDoc(ref);
+
+  const ahoraAdmin = esEmailAdmin(user.email);
+
+  if (!snap.exists()) {
+    const nuevoPerfil = {
+      uid: user.uid,
+      nombre: user.displayName || "",
+      email: user.email || "",
+      foto: user.photoURL || "",
+      rol: ahoraAdmin ? "admin" : "usuario",
+      creadoEn: serverTimestamp(),
+      actualizadoEn: serverTimestamp()
+    };
+
+    await setDoc(ref, nuevoPerfil, { merge: true });
+    return nuevoPerfil;
+  }
+
+  const perfil = snap.data();
+
+  if (ahoraAdmin && perfil.rol !== "admin") {
+    await setDoc(ref, {
+      rol: "admin",
+      actualizadoEn: serverTimestamp()
+    }, { merge: true });
+
+    perfil.rol = "admin";
+  }
+
+  return {
+    uid: user.uid,
+    nombre: perfil.nombre || user.displayName || "",
+    email: perfil.email || user.email || "",
+    foto: perfil.foto || user.photoURL || "",
+    rol: perfil.rol || "usuario",
+    creadoEn: perfil.creadoEn || null,
+    actualizadoEn: perfil.actualizadoEn || null
+  };
+}
+
+async function obtenerPrestador(uid) {
+  if (!uid) return null;
+
+  const ref = doc(db, "prestadores", uid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) return null;
+
+  return {
+    id: snap.id,
+    ...snap.data()
+  };
+}
+
+/* =========================================================
+   AUTH GOOGLE
+========================================================= */
+
+async function loginGoogle() {
+  try {
+    await signInWithPopup(auth, providerGoogle);
+    cerrarTodosLosModales();
+    toastMsg("Sesión iniciada");
+  } catch (error) {
+    console.error(error);
+    toastMsg("No se pudo iniciar sesión con Google");
+  }
+}
+
+async function cerrarSesion() {
+  try {
+    await signOut(auth);
+    cerrarTodosLosModales();
+    toastMsg("Sesión cerrada");
+  } catch (error) {
+    console.error(error);
+    toastMsg("No se pudo cerrar sesión");
+  }
+}
+
+/* =========================================================
+   SOLICITUDES / AVISOS
+========================================================= */
+
+async function crearAvisoInterno(data) {
+  await addDoc(collection(db, "notificaciones"), {
+    tipo: data.tipoAviso || "nueva_solicitud",
+    titulo: data.titulo || "Nueva solicitud",
+    mensaje: data.mensaje || "",
+    solicitudId: data.solicitudId || "",
+    rolesDestino: ["admin", "colaborador"],
+    visto: false,
+    creadoEn: serverTimestamp()
+  });
+}
+
+async function guardarContactoRapido(data) {
+  const ref = await addDoc(collection(db, "solicitudes"), {
+    tipo: "contacto_rapido",
+    clienteUid: usuarioActual?.uid || null,
+    clienteEmail: usuarioActual?.email || "",
+    clienteNombre: data.nombre,
+    clienteTelefono: data.telefono,
+    zona: data.zona,
+    direccion: "",
+    servicio: "Contacto rápido",
+    emergencia: false,
+    descripcion: data.mensaje || "Quiero que me contacten.",
+    estado: "nuevo",
+    creadoEn: serverTimestamp(),
+    actualizadoEn: serverTimestamp()
+  });
+
+  await crearAvisoInterno({
+    tipoAviso: "contacto_rapido",
+    titulo: "Nuevo contacto rápido",
+    mensaje: `${data.nombre} pidió que lo contacten.`,
+    solicitudId: ref.id
+  });
+
+  return ref.id;
+}
+
+async function guardarSolicitudServicio(data) {
+  const ref = await addDoc(collection(db, "solicitudes"), {
+    tipo: "solicitud_servicio",
+    clienteUid: usuarioActual?.uid || null,
+    clienteEmail: usuarioActual?.email || "",
+    clienteNombre: data.nombre,
+    clienteTelefono: data.telefono,
+    servicio: data.servicio,
+    emergencia: data.emergencia,
+    zona: data.zona,
+    direccion: data.direccion,
+    fechaDeseada: data.fechaDeseada,
+    horarioDeseado: data.horarioDeseado,
+    descripcion: data.descripcion,
+    estado: "pendiente_derivar",
+    prestadorAsignadoUid: "",
+    colaboradorAsignadoUid: "",
+    creadoEn: serverTimestamp(),
+    actualizadoEn: serverTimestamp()
+  });
+
+  await crearAvisoInterno({
+    tipoAviso: "nueva_solicitud",
+    titulo: "Nueva solicitud de servicio",
+    mensaje: `${data.nombre} solicitó ${data.servicio}.`,
+    solicitudId: ref.id
+  });
+
+  return ref.id;
+}
+
+/* =========================================================
+   PRESTADORES
+========================================================= */
+
+async function guardarInscripcionPrestador(data) {
+  if (!usuarioActual) {
+    toastMsg("Primero tenés que ingresar con Google");
+    abrirModal(modalCuenta);
+    return;
+  }
+
+  const refPrestador = doc(db, "prestadores", usuarioActual.uid);
+
+  await setDoc(refPrestador, {
+    uid: usuarioActual.uid,
+    email: usuarioActual.email || "",
+    nombre: data.nombre,
+    telefono: data.telefono,
+    zona: data.zona,
+    habilidades: data.habilidades,
+    comentario: data.comentario,
+    habilitado: false,
+    entrevistaEstado: "pendiente_entrevista",
+    creadoEn: serverTimestamp(),
+    actualizadoEn: serverTimestamp()
+  }, { merge: true });
+
+  const refUsuario = doc(db, "usuarios", usuarioActual.uid);
+
+  await setDoc(refUsuario, {
+    rol: "prestador",
+    actualizadoEn: serverTimestamp()
+  }, { merge: true });
+
+  await crearAvisoInterno({
+    tipoAviso: "nuevo_prestador",
+    titulo: "Nuevo prestador inscripto",
+    mensaje: `${data.nombre} se inscribió como prestador.`,
+    solicitudId: ""
+  });
+
+  perfilActual = await obtenerOCrearPerfil(usuarioActual);
+  prestadorActual = await obtenerPrestador(usuarioActual.uid);
+
+  cerrarModal(modalPrestador);
+  toastMsg("Inscripción enviada. Queda pendiente de entrevista.");
+  await renderPaneles();
+}
+
+async function postularmeASolicitud(solicitud) {
+  if (!usuarioActual || !prestadorActual) {
+    toastMsg("Tenés que estar inscripto como prestador");
+    return;
+  }
+
+  if (!prestadorActual.habilitado) {
+    toastMsg("Todavía no estás habilitado para postularte");
+    return;
+  }
+
+  await addDoc(collection(db, "postulaciones"), {
+    solicitudId: solicitud.id,
+    servicio: solicitud.servicio,
+    prestadorUid: usuarioActual.uid,
+    prestadorEmail: usuarioActual.email || "",
+    prestadorNombre: prestadorActual.nombre || usuarioActual.displayName || "",
+    estado: "postulado",
+    mensaje: "Prestador disponible para cotizar.",
+    cotizacion: null,
+    creadoEn: serverTimestamp()
+  });
+
+  await crearAvisoInterno({
+    tipoAviso: "nueva_postulacion",
+    titulo: "Nueva postulación de prestador",
+    mensaje: `${prestadorActual.nombre || "Un prestador"} se postuló para ${solicitud.servicio}.`,
+    solicitudId: solicitud.id
+  });
+
+  toastMsg("Postulación enviada");
+  await renderPaneles();
+}
+
+/* =========================================================
+   CARGAS DE DATOS
+========================================================= */
+
+async function obtenerTodasLasSolicitudes() {
+  const snap = await getDocs(collection(db, "solicitudes"));
+
+  const items = snap.docs.map(d => ({
+    id: d.id,
+    ...d.data()
+  }));
+
+  items.sort((a, b) => {
+    const fa = a.creadoEn?.toMillis ? a.creadoEn.toMillis() : 0;
+    const fb = b.creadoEn?.toMillis ? b.creadoEn.toMillis() : 0;
+    return fb - fa;
+  });
+
+  return items;
+}
+
+async function obtenerMisSolicitudes() {
+  if (!usuarioActual) return [];
+
+  const todas = await obtenerTodasLasSolicitudes();
+
+  return todas.filter(s => {
+    return s.clienteUid === usuarioActual.uid || emailLower(s.clienteEmail) === emailLower(usuarioActual.email);
+  });
+}
+
+async function obtenerAvisosEquipo() {
+  const snap = await getDocs(collection(db, "notificaciones"));
+
+  const items = snap.docs.map(d => ({
+    id: d.id,
+    ...d.data()
+  }));
+
+  items.sort((a, b) => {
+    const fa = a.creadoEn?.toMillis ? a.creadoEn.toMillis() : 0;
+    const fb = b.creadoEn?.toMillis ? b.creadoEn.toMillis() : 0;
+    return fb - fa;
+  });
+
+  return items;
+}
+
+function renderSolicitudItem(s, modo = "usuario") {
+  const fecha = fechaTexto(s.creadoEn);
+  const nombreSeguro = escaparHtml(s.clienteNombre || "Sin nombre");
+  const telSeguro = escaparHtml(s.clienteTelefono || "Sin teléfono");
+  const servicioSeguro = escaparHtml(s.servicio || "Solicitud");
+  const estado = estadoBonito(s.estado);
+  const emergencia = s.emergencia ? `<span class="ms-status red">Emergencia</span>` : "";
 
   return `
-    <article class="item-solicitud">
-      <h3>${data.servicio || "Solicitud"}</h3>
-      <p><strong>Nombre:</strong> ${data.nombre || "Sin nombre"}</p>
-      <p><strong>Teléfono:</strong> ${data.telefono || "Sin teléfono"}</p>
-      <p><strong>Zona:</strong> ${data.zona || "Sin zona"}</p>
-      <p><strong>Mensaje:</strong> ${data.mensaje || "Sin mensaje"}</p>
+    <article class="ms-item" data-solicitud-id="${s.id}">
+      <h4>${servicioSeguro}</h4>
+
+      <p><strong>Cliente:</strong> ${nombreSeguro}</p>
+      <p><strong>WhatsApp:</strong> ${telSeguro}</p>
+      <p><strong>Zona:</strong> ${escaparHtml(s.zona || "Sin zona")}</p>
+      <p><strong>Dirección:</strong> ${escaparHtml(s.direccion || "Sin dirección")}</p>
+      <p><strong>Detalle:</strong> ${escaparHtml(s.descripcion || "Sin detalle")}</p>
       <p><strong>Fecha:</strong> ${fecha}</p>
-      <p><span class="estado">${data.estado || "nuevo"}</span></p>
-      ${
-        id
-          ? `<button class="btn-light btn-whatsapp-item" data-id="${id}">
-              <i class="fa-brands fa-whatsapp"></i>
-              Abrir WhatsApp
-            </button>`
-          : ""
-      }
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <span class="ms-status">${estado}</span>
+        ${emergencia}
+      </div>
+
+      <div class="ms-item-actions">
+        <button class="ms-mini-btn red" data-wa-solicitud="${s.id}" type="button">
+          <i class="fa-brands fa-whatsapp"></i>
+          WhatsApp
+        </button>
+
+        ${
+          modo === "equipo"
+            ? `
+              <button class="ms-mini-btn" data-estado-solicitud="${s.id}" data-estado="contactado" type="button">
+                Contactado
+              </button>
+              <button class="ms-mini-btn" data-estado-solicitud="${s.id}" data-estado="programado" type="button">
+                Programado
+              </button>
+              <button class="ms-mini-btn" data-estado-solicitud="${s.id}" data-estado="cerrado" type="button">
+                Cerrado
+              </button>
+            `
+            : ""
+        }
+
+        ${
+          modo === "prestador"
+            ? `
+              <button class="ms-mini-btn red" data-postular="${s.id}" type="button">
+                <i class="fa-solid fa-hand"></i>
+                Postularme a cotizar
+              </button>
+            `
+            : ""
+        }
+      </div>
     </article>
   `;
 }
 
-/* =========================================================
-   6) LOGIN / CUENTAS
-========================================================= */
+function renderAvisoItem(a) {
+  return `
+    <article class="ms-item">
+      <h4>${escaparHtml(a.titulo || "Aviso")}</h4>
+      <p>${escaparHtml(a.mensaje || "")}</p>
+      <p><strong>Fecha:</strong> ${fechaTexto(a.creadoEn)}</p>
+      <span class="ms-status ${a.visto ? "" : "red"}">
+        ${a.visto ? "Visto" : "Nuevo"}
+      </span>
+    </article>
+  `;
+}
 
-btnLogin?.addEventListener("click", () => {
-  abrirModalLogin();
-});
+async function renderMisSolicitudes() {
+  if (!listaMisSolicitudes) return;
 
-cerrarLogin?.addEventListener("click", () => {
-  cerrarModalLogin();
-});
+  const items = await obtenerMisSolicitudes();
 
-modalLogin?.addEventListener("click", (e) => {
-  if (e.target === modalLogin) cerrarModalLogin();
-});
-
-crearCuenta?.addEventListener("click", async () => {
-  const email = limpiarTexto(loginEmail?.value);
-  const pass = limpiarTexto(loginPass?.value);
-
-  if (!email || !pass) {
-    setLoginMsg("Completá email y contraseña.");
+  if (!items.length) {
+    listaMisSolicitudes.innerHTML = `
+      <article class="ms-item">
+        <p>Todavía no cargaste solicitudes.</p>
+      </article>
+    `;
     return;
   }
 
-  if (pass.length < 6) {
-    setLoginMsg("La contraseña debe tener al menos 6 caracteres.");
+  listaMisSolicitudes.innerHTML = items.map(s => renderSolicitudItem(s, "usuario")).join("");
+  activarBotonesDeSolicitudes(items);
+}
+
+async function renderEquipo() {
+  if (!puedeVerPanelEquipo()) return;
+
+  const solicitudes = await obtenerTodasLasSolicitudes();
+  const avisos = await obtenerAvisosEquipo();
+
+  if (listaSolicitudesEquipo) {
+    listaSolicitudesEquipo.innerHTML = solicitudes.length
+      ? solicitudes.map(s => renderSolicitudItem(s, "equipo")).join("")
+      : `<article class="ms-item"><p>No hay solicitudes todavía.</p></article>`;
+  }
+
+  if (listaAvisosEquipo) {
+    listaAvisosEquipo.innerHTML = avisos.length
+      ? avisos.slice(0, 20).map(renderAvisoItem).join("")
+      : `<article class="ms-item"><p>No hay avisos todavía.</p></article>`;
+  }
+
+  if (contadorAvisos) {
+    const nuevos = avisos.filter(a => !a.visto).length;
+    contadorAvisos.textContent = `${nuevos} avisos`;
+  }
+
+  activarBotonesDeSolicitudes(solicitudes);
+}
+
+async function renderPrestador() {
+  if (!panelPrestador || !listaSolicitudesPrestador) return;
+
+  if (!prestadorActual) {
+    panelPrestador.classList.add("hidden");
     return;
   }
 
-  try {
-    setLoginMsg("Creando cuenta...");
-    await createUserWithEmailAndPassword(auth, email, pass);
-    setLoginMsg("Cuenta creada correctamente.");
-    cerrarModalLogin();
-  } catch (error) {
-    console.error(error);
-    setLoginMsg("No se pudo crear la cuenta. Revisá el email o la contraseña.");
-  }
-});
+  panelPrestador.classList.remove("hidden");
 
-hacerLogin?.addEventListener("click", async () => {
-  const email = limpiarTexto(loginEmail?.value);
-  const pass = limpiarTexto(loginPass?.value);
-
-  if (!email || !pass) {
-    setLoginMsg("Completá email y contraseña.");
+  if (!prestadorActual.habilitado) {
+    listaSolicitudesPrestador.innerHTML = `
+      <article class="ms-item">
+        <h4>Inscripción pendiente</h4>
+        <p>Tu inscripción fue recibida. Falta entrevista y habilitación del admin.</p>
+        <span class="ms-status red">${estadoBonito(prestadorActual.entrevistaEstado)}</span>
+      </article>
+    `;
     return;
   }
 
-  try {
-    setLoginMsg("Ingresando...");
-    await signInWithEmailAndPassword(auth, email, pass);
-    setLoginMsg("Sesión iniciada.");
-    cerrarModalLogin();
-  } catch (error) {
-    console.error(error);
-    setLoginMsg("No se pudo ingresar. Revisá email y contraseña.");
-  }
-});
+  const todas = await obtenerTodasLasSolicitudes();
+  const habilidades = Array.isArray(prestadorActual.habilidades) ? prestadorActual.habilidades : [];
 
-cerrarSesion?.addEventListener("click", async () => {
-  try {
-    await signOut(auth);
-    cerrarModalLogin();
-  } catch (error) {
-    console.error(error);
-    setLoginMsg("No se pudo cerrar sesión.");
+  const disponibles = todas.filter(s => {
+    const estadoOk = s.estado === "pendiente_derivar" || s.estado === "nuevo";
+    const habilidadOk = habilidades.includes(s.servicio);
+    return estadoOk && habilidadOk;
+  });
+
+  if (!disponibles.length) {
+    listaSolicitudesPrestador.innerHTML = `
+      <article class="ms-item">
+        <p>No hay solicitudes disponibles para tus habilidades en este momento.</p>
+      </article>
+    `;
+    return;
   }
-});
+
+  listaSolicitudesPrestador.innerHTML = disponibles.map(s => renderSolicitudItem(s, "prestador")).join("");
+  activarBotonesDeSolicitudes(disponibles);
+}
+
+function renderEstadoPrestador() {
+  if (!estadoPrestador) return;
+
+  if (!prestadorActual) {
+    estadoPrestador.innerHTML = "";
+    return;
+  }
+
+  if (prestadorActual.habilitado) {
+    estadoPrestador.innerHTML = `
+      <div class="ms-item">
+        <h4>Prestador habilitado</h4>
+        <p>Ya podés ver solicitudes disponibles según tus habilidades.</p>
+        <span class="ms-status">Habilitado</span>
+      </div>
+    `;
+    return;
+  }
+
+  estadoPrestador.innerHTML = `
+    <div class="ms-item">
+      <h4>Inscripción recibida</h4>
+      <p>Estado: pendiente de entrevista y aprobación.</p>
+      <span class="ms-status red">Pendiente</span>
+    </div>
+  `;
+}
+
+async function renderPaneles() {
+  const logueado = !!usuarioActual;
+
+  if (boxSinLogin) boxSinLogin.classList.toggle("hidden", logueado);
+  if (panelUsuario) panelUsuario.classList.toggle("hidden", !logueado);
+
+  if (!logueado) {
+    if (panelPrestador) panelPrestador.classList.add("hidden");
+    if (panelEquipo) panelEquipo.classList.add("hidden");
+    return;
+  }
+
+  if (txtUsuarioActual) {
+    txtUsuarioActual.textContent = `${perfilActual?.nombre || usuarioActual.displayName || "Usuario"} · ${perfilActual?.rol || "usuario"}`;
+  }
+
+  if (panelEquipo) {
+    panelEquipo.classList.toggle("hidden", !puedeVerPanelEquipo());
+  }
+
+  renderEstadoPrestador();
+
+  await renderMisSolicitudes();
+  await renderPrestador();
+  await renderEquipo();
+}
+
+function activarBotonesDeSolicitudes(solicitudes) {
+  const mapa = new Map();
+  solicitudes.forEach(s => mapa.set(s.id, s));
+
+  document.querySelectorAll("[data-wa-solicitud]").forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.waSolicitud;
+      const solicitud = mapa.get(id);
+      if (!solicitud) return;
+
+      abrirWhatsAppConMensaje(mensajeWhatsAppSolicitud(solicitud, id));
+    };
+  });
+
+  document.querySelectorAll("[data-estado-solicitud]").forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.estadoSolicitud;
+      const estado = btn.dataset.estado;
+
+      try {
+        await updateDoc(doc(db, "solicitudes", id), {
+          estado,
+          actualizadoEn: serverTimestamp()
+        });
+
+        toastMsg(`Estado actualizado: ${estadoBonito(estado)}`);
+        await renderPaneles();
+      } catch (error) {
+        console.error(error);
+        toastMsg("No se pudo actualizar el estado");
+      }
+    };
+  });
+
+  document.querySelectorAll("[data-postular]").forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.postular;
+      const solicitud = mapa.get(id);
+      if (!solicitud) return;
+
+      await postularmeASolicitud(solicitud);
+    };
+  });
+}
 
 /* =========================================================
-   7) SOLICITUD RÁPIDA
+   EVENTOS UI
 ========================================================= */
 
-btnContactoRapido?.addEventListener("click", async () => {
-  const nombre = prompt("Tu nombre:");
-  if (!nombre) return;
+btnMenuMobile?.addEventListener("click", () => {
+  msNav?.classList.toggle("open");
+});
 
-  const telefono = prompt("Tu WhatsApp:");
-  if (!telefono) return;
+msNav?.querySelectorAll("a").forEach(link => {
+  link.addEventListener("click", () => {
+    msNav.classList.remove("open");
+  });
+});
 
-  const datos = {
-    tipo: "contacto_rapido",
-    nombre: limpiarTexto(nombre),
-    telefono: limpiarTexto(telefono),
-    servicio: "Contacto rápido",
-    zona: "",
-    mensaje: "Quiero que me contacten.",
-    estado: "nuevo",
-    clienteUid: usuarioActual?.uid || null,
-    clienteEmail: usuarioActual?.email || "",
-    createdAt: serverTimestamp()
-  };
+document.querySelectorAll("[data-close-modal]").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const id = btn.dataset.closeModal;
+    cerrarModal($(id));
+  });
+});
 
-  try {
-    const ref = await addDoc(collection(db, "solicitudes"), datos);
+document.querySelectorAll(".ms-modal").forEach(modal => {
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) cerrarModal(modal);
+  });
+});
 
-    abrirWhatsApp(
-      mensajeSolicitudWhatsApp(datos, ref.id)
-    );
+btnCuenta?.addEventListener("click", () => abrirModal(modalCuenta));
+btnLoginDesdePanel?.addEventListener("click", () => abrirModal(modalCuenta));
+btnLoginGoogle?.addEventListener("click", loginGoogle);
+btnCerrarSesion?.addEventListener("click", cerrarSesion);
 
-    alert("Solicitud guardada. Ahora se abrirá WhatsApp.");
-    await cargarPaneles();
-  } catch (error) {
-    console.error(error);
-    alert("No se pudo guardar la solicitud.");
+btnAbrirContacto?.addEventListener("click", () => abrirModal(modalContacto));
+btnAbrirSolicitud?.addEventListener("click", () => abrirModal(modalSolicitud));
+btnPanelNuevaSolicitud?.addEventListener("click", () => abrirModal(modalSolicitud));
+
+btnInscripcionPrestador?.addEventListener("click", () => {
+  if (!usuarioActual) {
+    toastMsg("Primero ingresá con Google");
+    abrirModal(modalCuenta);
+    return;
   }
+
+  abrirModal(modalPrestador);
 });
 
-/* =========================================================
-   8) FORMULARIO COMPLETO
-========================================================= */
-
-btnVerFormulario?.addEventListener("click", () => {
-  mostrarFormulario();
-});
-
-formSolicitud?.addEventListener("submit", async (e) => {
+btnWhatsappFlotante?.addEventListener("click", (e) => {
   e.preventDefault();
 
-  const datos = {
-    tipo: "solicitud_servicio",
-    nombre: limpiarTexto(solNombre?.value),
-    telefono: limpiarTexto(solTelefono?.value),
-    servicio: limpiarTexto(solServicio?.value),
-    zona: limpiarTexto(solZona?.value),
-    mensaje: limpiarTexto(solMensaje?.value),
-    estado: "nuevo",
-    clienteUid: usuarioActual?.uid || null,
-    clienteEmail: usuarioActual?.email || "",
-    createdAt: serverTimestamp()
+  abrirWhatsAppConMensaje(
+    "Hola, quiero hacer una consulta por un servicio de Multi24."
+  );
+});
+
+/* =========================================================
+   FORM CONTACTO RÁPIDO
+========================================================= */
+
+formContactoRapido?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const btn = formContactoRapido.querySelector("button[type='submit']");
+  const ventanaWhatsApp = window.open("about:blank", "_blank");
+
+  const data = {
+    nombre: limpiar($("contactoNombre")?.value),
+    telefono: normalizarTelefono($("contactoTelefono")?.value),
+    zona: limpiar($("contactoZona")?.value),
+    mensaje: limpiar($("contactoMensaje")?.value) || "Quiero que me contacten."
   };
 
-  if (!datos.nombre || !datos.telefono || !datos.servicio) {
-    alert("Completá nombre, teléfono y servicio.");
+  if (!data.nombre || !data.telefono) {
+    if (ventanaWhatsApp) ventanaWhatsApp.close();
+    toastMsg("Completá nombre y WhatsApp");
     return;
   }
 
   try {
-    const ref = await addDoc(collection(db, "solicitudes"), datos);
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`;
 
-    formSolicitud.reset();
+    const id = await guardarContactoRapido(data);
 
-    abrirWhatsApp(
-      mensajeSolicitudWhatsApp(datos, ref.id)
+    abrirWhatsAppConMensaje(
+      mensajeWhatsAppContacto({
+        clienteNombre: data.nombre,
+        clienteTelefono: data.telefono,
+        zona: data.zona,
+        descripcion: data.mensaje
+      }, id),
+      ventanaWhatsApp
     );
 
-    alert("Solicitud guardada correctamente.");
-    await cargarPaneles();
+    formContactoRapido.reset();
+    cerrarModal(modalContacto);
+    toastMsg("Contacto guardado y WhatsApp preparado");
+    await renderPaneles();
   } catch (error) {
     console.error(error);
-    alert("No se pudo guardar la solicitud.");
+    if (ventanaWhatsApp) ventanaWhatsApp.close();
+    toastMsg("No se pudo guardar el contacto");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-brands fa-whatsapp"></i> Enviar y abrir WhatsApp`;
   }
 });
 
 /* =========================================================
-   9) CARGAR PANELES
+   FORM SOLICITUD
 ========================================================= */
 
-async function cargarPanelCliente() {
-  if (!usuarioActual) {
-    if (misSolicitudes) misSolicitudes.innerHTML = "";
+formSolicitudServicio?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const btn = formSolicitudServicio.querySelector("button[type='submit']");
+  const ventanaWhatsApp = window.open("about:blank", "_blank");
+
+  const data = {
+    nombre: limpiar($("solNombre")?.value),
+    telefono: normalizarTelefono($("solTelefono")?.value),
+    servicio: limpiar($("solServicio")?.value),
+    zona: limpiar($("solZona")?.value),
+    direccion: limpiar($("solDireccion")?.value),
+    fechaDeseada: limpiar($("solFechaDeseada")?.value),
+    horarioDeseado: limpiar($("solHorarioDeseado")?.value),
+    emergencia: !!$("solEmergencia")?.checked,
+    descripcion: limpiar($("solDescripcion")?.value)
+  };
+
+  if (!data.nombre || !data.telefono || !data.servicio) {
+    if (ventanaWhatsApp) ventanaWhatsApp.close();
+    toastMsg("Completá nombre, WhatsApp y servicio");
     return;
   }
 
   try {
-    const q = query(
-      collection(db, "solicitudes"),
-      where("clienteUid", "==", usuarioActual.uid),
-      orderBy("createdAt", "desc")
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`;
+
+    const id = await guardarSolicitudServicio(data);
+
+    abrirWhatsAppConMensaje(
+      mensajeWhatsAppSolicitud({
+        clienteNombre: data.nombre,
+        clienteTelefono: data.telefono,
+        servicio: data.servicio,
+        emergencia: data.emergencia,
+        zona: data.zona,
+        direccion: data.direccion,
+        fechaDeseada: data.fechaDeseada,
+        horarioDeseado: data.horarioDeseado,
+        descripcion: data.descripcion
+      }, id),
+      ventanaWhatsApp
     );
 
-    const snap = await getDocs(q);
-
-    if (!misSolicitudes) return;
-
-    if (snap.empty) {
-      misSolicitudes.innerHTML = `
-        <div class="item-solicitud">
-          <p>Todavía no tenés solicitudes cargadas.</p>
-        </div>
-      `;
-      return;
-    }
-
-    misSolicitudes.innerHTML = snap.docs
-      .map(doc => htmlSolicitud(doc.data(), doc.id))
-      .join("");
-
-    activarBotonesWhatsAppCliente(snap.docs);
+    formSolicitudServicio.reset();
+    cerrarModal(modalSolicitud);
+    toastMsg("Solicitud guardada y WhatsApp preparado");
+    await renderPaneles();
   } catch (error) {
     console.error(error);
-    if (misSolicitudes) {
-      misSolicitudes.innerHTML = `
-        <div class="item-solicitud">
-          <p>No se pudieron cargar tus solicitudes.</p>
-        </div>
-      `;
-    }
+    if (ventanaWhatsApp) ventanaWhatsApp.close();
+    toastMsg("No se pudo guardar la solicitud");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Guardar solicitud y abrir WhatsApp`;
   }
-}
-
-async function cargarPanelAdmin() {
-  if (!esAdmin) {
-    if (adminSolicitudes) adminSolicitudes.innerHTML = "";
-    return;
-  }
-
-  try {
-    const q = query(
-      collection(db, "solicitudes"),
-      orderBy("createdAt", "desc")
-    );
-
-    const snap = await getDocs(q);
-
-    if (!adminSolicitudes) return;
-
-    if (snap.empty) {
-      adminSolicitudes.innerHTML = `
-        <div class="item-solicitud">
-          <p>No hay solicitudes todavía.</p>
-        </div>
-      `;
-      return;
-    }
-
-    adminSolicitudes.innerHTML = snap.docs
-      .map(doc => htmlSolicitud(doc.data(), doc.id))
-      .join("");
-
-    activarBotonesWhatsAppCliente(snap.docs);
-  } catch (error) {
-    console.error(error);
-    if (adminSolicitudes) {
-      adminSolicitudes.innerHTML = `
-        <div class="item-solicitud">
-          <p>No se pudieron cargar las solicitudes.</p>
-        </div>
-      `;
-    }
-  }
-}
-
-async function cargarPaneles() {
-  await cargarPanelCliente();
-  await cargarPanelAdmin();
-}
-
-function activarBotonesWhatsAppCliente(docs) {
-  const mapa = new Map();
-
-  docs.forEach(doc => {
-    mapa.set(doc.id, doc.data());
-  });
-
-  document.querySelectorAll(".btn-whatsapp-item").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.id;
-      const data = mapa.get(id);
-
-      if (!data) return;
-
-      abrirWhatsApp(
-        mensajeSolicitudWhatsApp(data, id)
-      );
-    });
-  });
-}
+});
 
 /* =========================================================
-   10) ESTADO DE SESIÓN
+   FORM PRESTADOR
+========================================================= */
+
+formPrestador?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const seleccionados = Array.from(
+    prestadorHabilidades?.querySelectorAll("input:checked") || []
+  ).map(input => input.value);
+
+  const data = {
+    nombre: limpiar($("prestadorNombre")?.value),
+    telefono: normalizarTelefono($("prestadorTelefono")?.value),
+    zona: limpiar($("prestadorZona")?.value),
+    habilidades: seleccionados,
+    comentario: limpiar($("prestadorComentario")?.value)
+  };
+
+  if (!data.nombre || !data.telefono) {
+    toastMsg("Completá nombre y WhatsApp");
+    return;
+  }
+
+  if (!data.habilidades.length) {
+    toastMsg("Elegí al menos una habilidad");
+    return;
+  }
+
+  try {
+    await guardarInscripcionPrestador(data);
+    formPrestador.reset();
+  } catch (error) {
+    console.error(error);
+    toastMsg("No se pudo enviar la inscripción");
+  }
+});
+
+/* =========================================================
+   AUTH STATE
 ========================================================= */
 
 onAuthStateChanged(auth, async (user) => {
   usuarioActual = user || null;
-  esAdmin = esUsuarioAdmin(user);
+  perfilActual = null;
+  prestadorActual = null;
 
-  if (user) {
-    btnLogin.innerHTML = `
-      <i class="fa-solid fa-user-check"></i>
-      Cuenta
-    `;
-
-    cerrarSesion?.classList.remove("hidden");
-    panelCliente?.classList.remove("hidden");
-
-    if (esAdmin) {
-      panelAdmin?.classList.remove("hidden");
-    } else {
-      panelAdmin?.classList.add("hidden");
+  if (!user) {
+    if (btnCuenta) {
+      btnCuenta.innerHTML = `<i class="fa-brands fa-google"></i> Ingresar`;
     }
 
-    await cargarPaneles();
-  } else {
-    btnLogin.innerHTML = `
-      <i class="fa-solid fa-user"></i>
-      Ingresar
-    `;
+    if (cuentaNombre) cuentaNombre.textContent = "Multi24";
+    if (cuentaEmail) cuentaEmail.textContent = "Sin sesión iniciada";
+    if (cuentaRol) cuentaRol.textContent = "Público";
 
-    cerrarSesion?.classList.add("hidden");
-    panelCliente?.classList.add("hidden");
-    panelAdmin?.classList.add("hidden");
+    btnLoginGoogle?.classList.remove("hidden");
+    btnCerrarSesion?.classList.add("hidden");
 
-    if (misSolicitudes) misSolicitudes.innerHTML = "";
-    if (adminSolicitudes) adminSolicitudes.innerHTML = "";
+    await renderPaneles();
+    return;
+  }
+
+  try {
+    perfilActual = await obtenerOCrearPerfil(user);
+    prestadorActual = await obtenerPrestador(user.uid);
+
+    if (btnCuenta) {
+      btnCuenta.innerHTML = `<i class="fa-solid fa-user-check"></i> Cuenta`;
+    }
+
+    if (cuentaNombre) cuentaNombre.textContent = perfilActual.nombre || user.displayName || "Usuario";
+    if (cuentaEmail) cuentaEmail.textContent = perfilActual.email || user.email || "";
+    if (cuentaRol) cuentaRol.textContent = `Rol: ${perfilActual.rol || "usuario"}`;
+
+    btnLoginGoogle?.classList.add("hidden");
+    btnCerrarSesion?.classList.remove("hidden");
+
+    await renderPaneles();
+  } catch (error) {
+    console.error(error);
+    toastMsg("Hubo un problema cargando tu perfil");
   }
 });
 
 /* =========================================================
-   11) WHATSAPP FLOTANTE
+   INIT
 ========================================================= */
 
-if (whatsappFloat) {
-  whatsappFloat.addEventListener("click", (e) => {
-    e.preventDefault();
-
-    abrirWhatsApp(
-      "Hola, quiero hacer una consulta por un servicio de Multiservice24."
-    );
-  });
-}
+renderServicios();
+renderSelectServicios();
