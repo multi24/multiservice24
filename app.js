@@ -89,6 +89,7 @@ const $ = (id) => document.getElementById(id);
 const btnMenuMobile = $("btnMenuMobile");
 const msNav = $("msNav");
 const linkPanelInterno = $("linkPanelInterno");
+const linkMiEspacio = $("linkMiEspacio");
 
 const btnCuenta = $("btnCuenta");
 const btnLoginDesdePanel = $("btnLoginDesdePanel");
@@ -592,9 +593,10 @@ async function guardarInscripcionPrestador(data) {
     email: usuarioActual.email || "",
     nombre: data.nombre,
     telefono: data.telefono,
-    zona: data.zona,
-    habilidades: data.habilidades,
-    comentario: data.comentario,
+zona: data.zona,
+movilidadHerramientas: !!data.movilidadHerramientas,
+habilidades: data.habilidades,
+comentario: data.comentario,
     habilitado: false,
     entrevistaEstado: "pendiente_entrevista",
     creadoEn: serverTimestamp(),
@@ -841,7 +843,8 @@ function renderPrestadorAdminItem(p) {
       <h4>${escaparHtml(p.nombre || "Prestador")}</h4>
       <p><strong>Email:</strong> ${escaparHtml(p.email || "Sin email")}</p>
       <p><strong>WhatsApp:</strong> ${escaparHtml(p.telefono || "Sin teléfono")}</p>
-      <p><strong>Zona:</strong> ${escaparHtml(p.zona || "Sin zona")}</p>
+<p><strong>Zona:</strong> ${escaparHtml(p.zona || "Sin zona")}</p>
+<p><strong>Movilidad y herramientas propias:</strong> ${p.movilidadHerramientas ? "Sí" : "No declarado"}</p>
       <p><strong>Habilidades:</strong> ${Array.isArray(p.habilidades) ? p.habilidades.map(escaparHtml).join(", ") : "Sin habilidades"}</p>
       <p><strong>Comentario:</strong> ${escaparHtml(p.comentario || "Sin comentario")}</p>
 
@@ -1116,6 +1119,19 @@ async function renderPaneles() {
   if (linkPanelInterno) {
     linkPanelInterno.classList.toggle("hidden", !puedeVerInterno);
   }
+
+   if (linkMiEspacio) {
+  linkMiEspacio.classList.toggle("hidden", puedeVerInterno);
+}
+
+if (logueado && puedeVerInterno && vistaActual === "paneles") {
+  vistaActual = "panelInterno";
+
+  if (window.location.hash !== "#panelInterno") {
+    window.location.hash = "panelInterno";
+    return;
+  }
+}
 
   if (boxSinLogin) {
     boxSinLogin.classList.toggle("hidden", logueado || esVistaPanelInterno);
@@ -1572,16 +1588,31 @@ formPrestador?.addEventListener("submit", async (e) => {
     prestadorHabilidades?.querySelectorAll("input:checked") || []
   ).map(input => input.value);
 
+  const zonasSeleccionadas = Array.from(
+    document.querySelectorAll("[data-prestador-zona]:checked")
+  ).map(input => input.value);
+
   const data = {
     nombre: limpiar($("prestadorNombre")?.value),
     telefono: normalizarTelefono($("prestadorTelefono")?.value),
-    zona: limpiar($("prestadorZona")?.value),
+    zona: zonasSeleccionadas.join(", "),
+    movilidadHerramientas: !!$("prestadorRecursos")?.checked,
     habilidades: seleccionados,
     comentario: limpiar($("prestadorComentario")?.value)
   };
 
   if (!data.nombre || !data.telefono) {
     toastMsg("Completá nombre y WhatsApp");
+    return;
+  }
+
+  if (!data.zona) {
+    toastMsg("Elegí al menos una zona de trabajo");
+    return;
+  }
+
+  if (!data.movilidadHerramientas) {
+    toastMsg("Confirmá que contás con movilidad y herramientas propias");
     return;
   }
 
