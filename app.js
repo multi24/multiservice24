@@ -42,6 +42,9 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const providerGoogle = new GoogleAuthProvider();
+providerGoogle.setCustomParameters({
+  prompt: "select_account"
+});
 
 /* =========================================================
    CONFIG
@@ -102,6 +105,7 @@ const cuentaRol = $("cuentaRol");
 
 const btnAbrirContacto = $("btnAbrirContacto");
 const btnAbrirSolicitud = $("btnAbrirSolicitud");
+const btnLlamadaRapida = $("btnLlamadaRapida");
 const btnPanelNuevaSolicitud = $("btnPanelNuevaSolicitud");
 const btnInscripcionPrestador = $("btnInscripcionPrestador");
 
@@ -1206,6 +1210,14 @@ btnAbrirContacto?.addEventListener("click", () => abrirModal(modalContacto));
 btnAbrirSolicitud?.addEventListener("click", () => abrirModal(modalSolicitud));
 btnPanelNuevaSolicitud?.addEventListener("click", () => abrirModal(modalSolicitud));
 
+btnLlamadaRapida?.addEventListener("click", () => {
+  const acepta = window.confirm("¿Desea realizar una consulta por llamada?");
+
+  if (!acepta) return;
+
+  window.location.href = "tel:+5491130042287";
+});
+
 btnInscripcionPrestador?.addEventListener("click", () => {
   if (!usuarioActual) {
     toastMsg("Primero ingresá con Google");
@@ -1230,6 +1242,31 @@ btnSubirArriba?.addEventListener("click", () => {
     behavior:"smooth"
   });
 });
+
+let timerMostrarSubir = null;
+
+function actualizarBotonSubirArriba() {
+  if (!btnSubirArriba) return;
+
+  const estoyArriba = window.scrollY <= 80;
+
+  btnSubirArriba.classList.remove("is-visible");
+
+  if (timerMostrarSubir) {
+    clearTimeout(timerMostrarSubir);
+  }
+
+  if (estoyArriba) return;
+
+  timerMostrarSubir = setTimeout(() => {
+    if (window.scrollY > 80) {
+      btnSubirArriba.classList.add("is-visible");
+    }
+  }, 450);
+}
+
+window.addEventListener("scroll", actualizarBotonSubirArriba, { passive:true });
+actualizarBotonSubirArriba();
 
 solEmergencia?.addEventListener("change", actualizarNotaEmergencia);
 
