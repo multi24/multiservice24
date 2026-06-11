@@ -144,6 +144,11 @@ a{
   background:var(--gris-suave);
 }
 
+.ms-nav a.active{
+  background:var(--azul-noche);
+  color:#fff;
+}
+
 .ms-menu-btn{
   display:none;
   border:none;
