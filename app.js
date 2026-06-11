@@ -133,6 +133,7 @@ const estadoPrestador = $("estadoPrestador");
 const contadorAvisos = $("contadorAvisos");
 
 const btnWhatsappFlotante = $("btnWhatsappFlotante");
+const btnSubirArriba = $("btnSubirArriba");
 const toast = $("toast");
 
 /* =========================================================
@@ -1221,6 +1222,13 @@ btnWhatsappFlotante?.addEventListener("click", (e) => {
   abrirWhatsAppConMensaje(
     "Hola, quiero hacer una consulta por un servicio de Multi24."
   );
+});
+
+btnSubirArriba?.addEventListener("click", () => {
+  window.scrollTo({
+    top:0,
+    behavior:"smooth"
+  });
 });
 
 solEmergencia?.addEventListener("change", actualizarNotaEmergencia);
