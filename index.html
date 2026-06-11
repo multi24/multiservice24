@@ -51,7 +51,7 @@
 <nav class="ms-nav" id="msNav">
   <a href="#inicio" data-vista-link="inicio">Inicio</a>
   <a href="#comoFunciona" data-vista-link="comoFunciona">Cómo funciona</a>
-  <a href="#paneles" data-vista-link="paneles">Mi espacio</a>
+<a id="linkMiEspacio" href="#paneles" data-vista-link="paneles">Mi espacio</a>
   <a id="linkPanelInterno" class="hidden" href="#panelInterno" data-vista-link="panelInterno">Panel interno</a>
 </nav>
 
@@ -432,10 +432,40 @@
           <input id="prestadorTelefono" type="tel" required />
         </label>
 
-        <label>
-          Zona donde trabaja
-          <input id="prestadorZona" type="text" />
-        </label>
+<div class="ms-full">
+  <strong class="ms-label-title">Zonas donde trabaja</strong>
+
+  <p class="ms-form-note">
+    Podés marcar una o todas las zonas donde podés prestar servicio.
+  </p>
+
+  <div class="ms-check-grid">
+    <label class="ms-check-option">
+      <input type="checkbox" data-prestador-zona value="CABA" />
+      <span>CABA</span>
+    </label>
+
+    <label class="ms-check-option">
+      <input type="checkbox" data-prestador-zona value="GBA Sur" />
+      <span>GBA Sur</span>
+    </label>
+
+    <label class="ms-check-option">
+      <input type="checkbox" data-prestador-zona value="GBA Norte" />
+      <span>GBA Norte</span>
+    </label>
+
+    <label class="ms-check-option">
+      <input type="checkbox" data-prestador-zona value="GBA Oeste" />
+      <span>GBA Oeste</span>
+    </label>
+  </div>
+</div>
+
+<label class="ms-check ms-full">
+  <input id="prestadorRecursos" type="checkbox" required />
+  <span>Cuento con movilidad y herramientas propias para realizar los trabajos.</span>
+</label>
 
         <div>
           <strong class="ms-label-title">Habilidades / servicios</strong>
