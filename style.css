@@ -433,16 +433,47 @@ main{
 }
 
 .ms-contact-between{
+  display:grid;
+  justify-items:center;
+  gap:14px;
+  margin:18px 0 0;
+}
+
+.ms-contact-actions{
+  width:100%;
   display:flex;
   justify-content:center;
   align-items:center;
   gap:10px;
   flex-wrap:wrap;
-  margin:18px 0 0;
 }
 
-.ms-contact-between .ms-btn{
+.ms-contact-actions .ms-btn{
   min-width:min(260px,100%);
+}
+
+.ms-home-prestador-card{
+  width:min(520px,100%);
+  background:#fff;
+  border:1px solid var(--borde);
+  border-radius:26px;
+  padding:18px;
+  box-shadow:var(--sombra-suave);
+  text-align:center;
+}
+
+.ms-home-prestador-card h3{
+  margin:0;
+  color:var(--azul-noche);
+  font-size:22px;
+}
+
+.ms-home-prestador-card p{
+  margin:8px 0 14px;
+}
+
+.ms-home-prestador-card .ms-btn{
+  min-width:min(320px,100%);
 }
 
 .ms-emphasis-red{
