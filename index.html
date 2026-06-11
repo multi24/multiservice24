@@ -64,93 +64,142 @@
   <main>
 
 <!-- HOME -->
-<section id="inicio" class="ms-hero">
-  <div class="ms-hero-bg-detail detail-red"></div>
-  <div class="ms-hero-bg-detail detail-blue"></div>
+<div id="inicio" class="ms-home-shell">
 
-  <div class="ms-hero-content">
-    <div class="ms-hero-topline">
+  <aside class="ms-zonas-card">
+    <div class="ms-zonas-head">
       <span class="ms-kicker">
-        <i class="fa-solid fa-clock"></i>
-        Atención personalizada
+        <i class="fa-solid fa-map-location-dot"></i>
+        Cobertura
       </span>
 
-      <span class="ms-badge-red">24/7</span>
+      <h3>Zonas donde trabajamos</h3>
+
+      <p class="ms-muted">
+        Cumplimos servicios en CABA, GBA Norte, GBA Oeste y GBA Sur.
+      </p>
     </div>
 
-    <h1>
-      Un Contacto
-      <span>Todas las soluciones</span>
-    </h1>
+    <div class="ms-zonas-mapa-pro">
+      <div class="ms-amba-base"></div>
 
-<p>
-  <strong>Servicios para hogares y oficinas.</strong>
-  También contamos con asistencia de <strong class="ms-emphasis-red">emergencia</strong>.
-</p>
+      <div class="ms-zona-area area-norte">
+        <span>GBA Norte</span>
+      </div>
 
-    <div class="ms-online-pill">
-      <i class="fa-solid fa-calendar-check"></i>
-      Presupuestos online sin cargo
+      <div class="ms-zona-area area-caba">
+        <span>CABA</span>
+      </div>
+
+      <div class="ms-zona-area area-oeste">
+        <span>GBA Oeste</span>
+      </div>
+
+      <div class="ms-zona-area area-sur">
+        <span>GBA Sur</span>
+      </div>
     </div>
+
+    <div class="ms-zonas-legend">
+      <span><i class="fa-solid fa-location-dot"></i> CABA</span>
+      <span><i class="fa-solid fa-location-dot"></i> GBA Norte</span>
+      <span><i class="fa-solid fa-location-dot"></i> GBA Oeste</span>
+      <span><i class="fa-solid fa-location-dot"></i> GBA Sur</span>
+    </div>
+  </aside>
+
+  <div class="ms-home-right">
+
+    <section class="ms-hero">
+      <div class="ms-hero-bg-detail detail-red"></div>
+      <div class="ms-hero-bg-detail detail-blue"></div>
+
+      <div class="ms-hero-content">
+        <div class="ms-hero-topline">
+          <span class="ms-kicker">
+            <i class="fa-solid fa-clock"></i>
+            Atención personalizada
+          </span>
+
+          <span class="ms-badge-red">24/7</span>
+        </div>
+
+        <h1>
+          Un Contacto
+          <span>Todas las soluciones</span>
+        </h1>
+
+        <p>
+          <strong>Servicios para hogares y oficinas.</strong>
+          También contamos con asistencia de <strong class="ms-emphasis-red">emergencia</strong>.
+        </p>
+
+        <div class="ms-online-pill">
+          <i class="fa-solid fa-calendar-check"></i>
+          Presupuestos online sin cargo
+        </div>
+      </div>
+
+      <div class="ms-hero-card">
+        <button id="btnLlamadaRapida" class="ms-phone-big" type="button">
+          <i class="fa-solid fa-phone"></i>
+          1130042287
+        </button>
+
+        <div class="ms-hero-card-actions">
+          <button id="btnAbrirSolicitud" class="ms-btn ms-btn-light" type="button">
+            <i class="fa-solid fa-calendar-check"></i>
+            Solicitar servicio
+          </button>
+        </div>
+
+        <div class="ms-hero-card-points">
+          <span><i class="fa-solid fa-circle-check"></i> Rápido</span>
+          <span><i class="fa-solid fa-circle-check"></i> Confiable</span>
+          <span><i class="fa-solid fa-circle-check"></i> Profesional</span>
+        </div>
+
+        <div class="ms-home-services">
+          <div id="serviciosGrid" class="ms-services-grid"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ms-contact-between">
+
+      <div class="ms-contact-actions">
+        <button id="btnAbrirContacto" class="ms-btn ms-btn-primary" type="button">
+          <i class="fa-brands fa-whatsapp"></i>
+          Quiero que me escriban
+        </button>
+
+        <button id="btnCompartirApp" class="ms-btn ms-btn-light" type="button">
+          <i class="fa-brands fa-whatsapp"></i>
+          Compartir app
+        </button>
+
+        <button id="btnInstalarApp" class="ms-btn ms-btn-light hidden" type="button">
+          <i class="fa-solid fa-download"></i>
+          Instalar app
+        </button>
+      </div>
+
+      <div class="ms-home-prestador-card">
+        <h3>Prestador</h3>
+
+        <p class="ms-muted">
+          Si ofrecés servicios, podés inscribirte para ser evaluado y habilitado.
+        </p>
+
+        <button id="btnInscripcionPrestador" class="ms-btn ms-btn-light" type="button">
+          <i class="fa-solid fa-helmet-safety"></i>
+          Inscribirme como prestador
+        </button>
+      </div>
+
+    </div>
+
   </div>
-
-  <div class="ms-hero-card">
-    <button id="btnLlamadaRapida" class="ms-phone-big" type="button">
-      <i class="fa-solid fa-phone"></i>
-      1130042287
-    </button>
-
-    <div class="ms-hero-card-actions">
-      <button id="btnAbrirSolicitud" class="ms-btn ms-btn-light" type="button">
-        <i class="fa-solid fa-calendar-check"></i>
-        Solicitar servicio
-      </button>
-    </div>
-
-    <div class="ms-hero-card-points">
-      <span><i class="fa-solid fa-circle-check"></i> Rápido</span>
-      <span><i class="fa-solid fa-circle-check"></i> Confiable</span>
-      <span><i class="fa-solid fa-circle-check"></i> Profesional</span>
-    </div>
-
-    <div class="ms-home-services">
-      <div id="serviciosGrid" class="ms-services-grid"></div>
-    </div>
-  </div>
-</section>
-
-<div class="ms-contact-between">
-
-  <div class="ms-contact-actions">
-    <button id="btnAbrirContacto" class="ms-btn ms-btn-primary" type="button">
-      <i class="fa-brands fa-whatsapp"></i>
-      Quiero que me escriban
-    </button>
-
-    <button id="btnCompartirApp" class="ms-btn ms-btn-light" type="button">
-      <i class="fa-brands fa-whatsapp"></i>
-      Compartir app
-    </button>
-
-    <button id="btnInstalarApp" class="ms-btn ms-btn-light hidden" type="button">
-      <i class="fa-solid fa-download"></i>
-      Instalar app
-    </button>
-  </div>
-
-  <div class="ms-home-prestador-card">
-    <h3>Prestador</h3>
-
-    <p class="ms-muted">
-      Si ofrecés servicios, podés inscribirte para ser evaluado y habilitado.
-    </p>
-
-    <button id="btnInscripcionPrestador" class="ms-btn ms-btn-light" type="button">
-      <i class="fa-solid fa-helmet-safety"></i>
-      Inscribirme como prestador
-    </button>
-  </div>
-
 </div>
   
     <!-- COMO FUNCIONA -->
