@@ -106,6 +106,7 @@ const cuentaRol = $("cuentaRol");
 const btnAbrirContacto = $("btnAbrirContacto");
 const btnAbrirSolicitud = $("btnAbrirSolicitud");
 const btnLlamadaRapida = $("btnLlamadaRapida");
+const btnCompartirApp = $("btnCompartirApp");
 const btnPanelNuevaSolicitud = $("btnPanelNuevaSolicitud");
 const btnInscripcionPrestador = $("btnInscripcionPrestador");
 
@@ -1218,6 +1219,27 @@ btnLlamadaRapida?.addEventListener("click", () => {
   window.location.href = "tel:+5491130042287";
 });
 
+btnCompartirApp?.addEventListener("click", async () => {
+  const url = "https://multi24.github.io/multiservice24/";
+  const texto = "Te comparto Multi24 para solicitar servicios programados y emergencias.";
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: "Multi24",
+        text: texto,
+        url
+      });
+      return;
+    } catch (error) {
+      console.warn("Compartir cancelado o no disponible", error);
+    }
+  }
+
+  const mensaje = encodeURIComponent(`${texto}\n${url}`);
+  window.open(`https://wa.me/?text=${mensaje}`, "_blank");
+});
+
 btnInscripcionPrestador?.addEventListener("click", () => {
   if (!usuarioActual) {
     toastMsg("Primero ingresá con Google");
@@ -1479,3 +1501,15 @@ onAuthStateChanged(auth, async (user) => {
 renderServicios();
 renderSelectServicios();
 actualizarNotaEmergencia();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js")
+      .then(() => {
+        console.log("Service Worker registrado");
+      })
+      .catch((error) => {
+        console.error("Error registrando Service Worker:", error);
+      });
+  });
+}
