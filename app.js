@@ -107,6 +107,7 @@ const btnAbrirContacto = $("btnAbrirContacto");
 const btnAbrirSolicitud = $("btnAbrirSolicitud");
 const btnLlamadaRapida = $("btnLlamadaRapida");
 const btnCompartirApp = $("btnCompartirApp");
+const btnInstalarApp = $("btnInstalarApp");
 const btnPanelNuevaSolicitud = $("btnPanelNuevaSolicitud");
 const btnInscripcionPrestador = $("btnInscripcionPrestador");
 
@@ -1238,6 +1239,49 @@ btnCompartirApp?.addEventListener("click", async () => {
 
   const mensaje = encodeURIComponent(`${texto}\n${url}`);
   window.open(`https://wa.me/?text=${mensaje}`, "_blank");
+});
+
+let eventoInstalacionPWA = null;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+
+  eventoInstalacionPWA = e;
+
+  if (btnInstalarApp) {
+    btnInstalarApp.classList.remove("hidden");
+  }
+});
+
+btnInstalarApp?.addEventListener("click", async () => {
+  if (!eventoInstalacionPWA) {
+    toastMsg("La instalación todavía no está lista. Actualizá la página y esperá unos segundos.");
+    return;
+  }
+
+  eventoInstalacionPWA.prompt();
+
+  try {
+    await eventoInstalacionPWA.userChoice;
+  } catch (error) {
+    console.warn("Instalación cancelada o no disponible", error);
+  }
+
+  eventoInstalacionPWA = null;
+
+  if (btnInstalarApp) {
+    btnInstalarApp.classList.add("hidden");
+  }
+});
+
+window.addEventListener("appinstalled", () => {
+  eventoInstalacionPWA = null;
+
+  if (btnInstalarApp) {
+    btnInstalarApp.classList.add("hidden");
+  }
+
+  toastMsg("App instalada");
 });
 
 btnInscripcionPrestador?.addEventListener("click", () => {
