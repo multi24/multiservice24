@@ -88,6 +88,7 @@ const $ = (id) => document.getElementById(id);
 
 const btnMenuMobile = $("btnMenuMobile");
 const msNav = $("msNav");
+const linkPanelInterno = $("linkPanelInterno");
 
 const btnCuenta = $("btnCuenta");
 const btnLoginDesdePanel = $("btnLoginDesdePanel");
@@ -142,6 +143,11 @@ const btnWhatsappFlotante = $("btnWhatsappFlotante");
 const btnSubirArriba = $("btnSubirArriba");
 const toast = $("toast");
 
+const vistaInicio = $("inicio");
+const vistaComoFunciona = $("comoFunciona");
+const vistaPaneles = $("paneles");
+const bloqueContactoBetween = document.querySelector(".ms-contact-between");
+
 /* =========================================================
    ESTADO
 ========================================================= */
@@ -149,6 +155,7 @@ const toast = $("toast");
 let usuarioActual = null;
 let perfilActual = null;
 let prestadorActual = null;
+let vistaActual = "inicio";
 
 /* =========================================================
    HELPERS
@@ -1103,13 +1110,34 @@ function renderEstadoPrestador() {
 
 async function renderPaneles() {
   const logueado = !!usuarioActual;
+  const esVistaPanelInterno = vistaActual === "panelInterno";
+  const puedeVerInterno = puedeVerPanelEquipo();
 
-  if (boxSinLogin) boxSinLogin.classList.toggle("hidden", logueado);
-  if (panelUsuario) panelUsuario.classList.toggle("hidden", !logueado);
+  if (linkPanelInterno) {
+    linkPanelInterno.classList.toggle("hidden", !puedeVerInterno);
+  }
+
+  if (boxSinLogin) {
+    boxSinLogin.classList.toggle("hidden", logueado || esVistaPanelInterno);
+  }
+
+  if (panelUsuario) {
+    panelUsuario.classList.toggle("hidden", !logueado || esVistaPanelInterno);
+  }
 
   if (!logueado) {
     if (panelPrestador) panelPrestador.classList.add("hidden");
     if (panelEquipo) panelEquipo.classList.add("hidden");
+
+    if (esVistaPanelInterno) {
+      toastMsg("Primero ingresá con Google");
+      vistaActual = "paneles";
+
+      if (window.location.hash !== "#paneles") {
+        window.location.hash = "paneles";
+      }
+    }
+
     return;
   }
 
@@ -1117,15 +1145,38 @@ async function renderPaneles() {
     txtUsuarioActual.textContent = `${perfilActual?.nombre || usuarioActual.displayName || "Usuario"} · ${perfilActual?.rol || "usuario"}`;
   }
 
-  if (panelEquipo) {
-    panelEquipo.classList.toggle("hidden", !puedeVerPanelEquipo());
+  renderEstadoPrestador();
+
+  if (esVistaPanelInterno) {
+    if (!puedeVerInterno) {
+      if (panelEquipo) panelEquipo.classList.add("hidden");
+      if (panelUsuario) panelUsuario.classList.remove("hidden");
+
+      toastMsg("No tenés permiso para ver el panel interno");
+
+      vistaActual = "paneles";
+
+      if (window.location.hash !== "#paneles") {
+        window.location.hash = "paneles";
+      }
+
+      return;
+    }
+
+    if (panelUsuario) panelUsuario.classList.add("hidden");
+    if (panelPrestador) panelPrestador.classList.add("hidden");
+    if (panelEquipo) panelEquipo.classList.remove("hidden");
+
+    await renderEquipo();
+    return;
   }
 
-  renderEstadoPrestador();
+  if (panelEquipo) {
+    panelEquipo.classList.add("hidden");
+  }
 
   await renderMisSolicitudes();
   await renderPrestador();
-  await renderEquipo();
 }
 
 /* =========================================================
@@ -1178,6 +1229,59 @@ function activarBotonesDeSolicitudes(solicitudes) {
 }
 
 /* =========================================================
+   VISTAS / NAVEGACIÓN
+========================================================= */
+
+function obtenerVistaDesdeHash() {
+  const hash = String(window.location.hash || "").replace("#", "");
+
+  if (hash === "comoFunciona") return "comoFunciona";
+  if (hash === "paneles") return "paneles";
+  if (hash === "panelInterno") return "panelInterno";
+
+  return "inicio";
+}
+
+async function mostrarVista(vista) {
+  const vistasValidas = ["inicio", "comoFunciona", "paneles", "panelInterno"];
+
+  if (!vistasValidas.includes(vista)) {
+    vista = "inicio";
+  }
+
+  vistaActual = vista;
+
+  vistaInicio?.classList.add("hidden");
+  vistaComoFunciona?.classList.add("hidden");
+  vistaPaneles?.classList.add("hidden");
+  bloqueContactoBetween?.classList.add("hidden");
+
+  if (vista === "inicio") {
+    vistaInicio?.classList.remove("hidden");
+    bloqueContactoBetween?.classList.remove("hidden");
+  }
+
+  if (vista === "comoFunciona") {
+    vistaComoFunciona?.classList.remove("hidden");
+  }
+
+  if (vista === "paneles" || vista === "panelInterno") {
+    vistaPaneles?.classList.remove("hidden");
+  }
+
+  document.querySelectorAll("[data-vista-link]").forEach(link => {
+    link.classList.toggle("active", link.dataset.vistaLink === vista);
+  });
+
+  await renderPaneles();
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+/* =========================================================
    EVENTOS UI
 ========================================================= */
 
@@ -1189,6 +1293,10 @@ msNav?.querySelectorAll("a").forEach(link => {
   link.addEventListener("click", () => {
     msNav.classList.remove("open");
   });
+});
+
+window.addEventListener("hashchange", () => {
+  mostrarVista(obtenerVistaDesdeHash());
 });
 
 document.querySelectorAll("[data-close-modal]").forEach(btn => {
@@ -1545,6 +1653,7 @@ onAuthStateChanged(auth, async (user) => {
 renderServicios();
 renderSelectServicios();
 actualizarNotaEmergencia();
+mostrarVista(obtenerVistaDesdeHash());
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
