@@ -66,47 +66,44 @@
 <!-- HOME -->
 <div id="inicio" class="ms-home-shell">
 
-  <aside class="ms-zonas-card">
-    <div class="ms-zonas-head">
-      <span class="ms-kicker">
-        <i class="fa-solid fa-map-location-dot"></i>
-        Cobertura
-      </span>
+<aside class="ms-zonas-card">
+  <div class="ms-zonas-head">
+    <span class="ms-kicker">
+      <i class="fa-solid fa-map-location-dot"></i>
+      Cobertura
+    </span>
 
-      <h3>Zonas donde trabajamos</h3>
+    <h3>Zonas donde trabajamos</h3>
+  </div>
 
-      <p class="ms-muted">
-        Cumplimos servicios en CABA, GBA Norte, GBA Oeste y GBA Sur.
-      </p>
+  <div class="ms-zonas-mapa-pro">
+    <div class="ms-mapa-fondo"></div>
+
+    <div class="ms-zona-area area-caba">
+      <i class="fa-solid fa-location-dot"></i>
+      <span>CABA</span>
     </div>
 
-    <div class="ms-zonas-mapa-pro">
-      <div class="ms-amba-base"></div>
-
-      <div class="ms-zona-area area-norte">
-        <span>GBA Norte</span>
-      </div>
-
-      <div class="ms-zona-area area-caba">
-        <span>CABA</span>
-      </div>
-
-      <div class="ms-zona-area area-oeste">
-        <span>GBA Oeste</span>
-      </div>
-
-      <div class="ms-zona-area area-sur">
-        <span>GBA Sur</span>
-      </div>
+    <div class="ms-zona-area area-norte">
+      <i class="fa-solid fa-location-dot"></i>
+      <span>GBA Norte</span>
     </div>
 
-    <div class="ms-zonas-legend">
-      <span><i class="fa-solid fa-location-dot"></i> CABA</span>
-      <span><i class="fa-solid fa-location-dot"></i> GBA Norte</span>
-      <span><i class="fa-solid fa-location-dot"></i> GBA Oeste</span>
-      <span><i class="fa-solid fa-location-dot"></i> GBA Sur</span>
+    <div class="ms-zona-area area-oeste">
+      <i class="fa-solid fa-location-dot"></i>
+      <span>GBA Oeste</span>
     </div>
-  </aside>
+
+    <div class="ms-zona-area area-sur">
+      <i class="fa-solid fa-location-dot"></i>
+      <span>GBA Sur</span>
+    </div>
+  </div>
+
+  <p class="ms-zonas-frase">
+    Estamos en todas las zonas trabajando para acercarnos a vos lo antes posible.
+  </p>
+</aside>
 
   <div class="ms-home-right">
 
@@ -134,10 +131,27 @@
           También contamos con asistencia de <strong class="ms-emphasis-red">emergencia</strong>.
         </p>
 
-        <div class="ms-online-pill">
-          <i class="fa-solid fa-calendar-check"></i>
-          Presupuestos online sin cargo
-        </div>
+<div class="ms-online-pill">
+  <i class="fa-solid fa-calendar-check"></i>
+  Presupuestos online sin cargo
+</div>
+
+<div class="ms-hero-actions">
+  <button id="btnAbrirContacto" class="ms-btn ms-btn-primary" type="button">
+    <i class="fa-brands fa-whatsapp"></i>
+    Quiero que me escriban
+  </button>
+
+  <button id="btnCompartirApp" class="ms-btn ms-btn-light" type="button">
+    <i class="fa-brands fa-whatsapp"></i>
+    Compartir app
+  </button>
+
+  <button id="btnInstalarApp" class="ms-btn ms-btn-light hidden" type="button">
+    <i class="fa-solid fa-download"></i>
+    Instalar app
+  </button>
+</div>
       </div>
 
       <div class="ms-hero-card">
@@ -165,39 +179,20 @@
       </div>
     </section>
 
-    <div class="ms-contact-between">
+<div class="ms-contact-between">
+  <div class="ms-home-prestador-card">
+    <h3>Prestador</h3>
 
-      <div class="ms-contact-actions">
-        <button id="btnAbrirContacto" class="ms-btn ms-btn-primary" type="button">
-          <i class="fa-brands fa-whatsapp"></i>
-          Quiero que me escriban
-        </button>
+    <p class="ms-muted">
+      Si ofrecés servicios, podés inscribirte para ser evaluado y habilitado.
+    </p>
 
-        <button id="btnCompartirApp" class="ms-btn ms-btn-light" type="button">
-          <i class="fa-brands fa-whatsapp"></i>
-          Compartir app
-        </button>
-
-        <button id="btnInstalarApp" class="ms-btn ms-btn-light hidden" type="button">
-          <i class="fa-solid fa-download"></i>
-          Instalar app
-        </button>
-      </div>
-
-      <div class="ms-home-prestador-card">
-        <h3>Prestador</h3>
-
-        <p class="ms-muted">
-          Si ofrecés servicios, podés inscribirte para ser evaluado y habilitado.
-        </p>
-
-        <button id="btnInscripcionPrestador" class="ms-btn ms-btn-light" type="button">
-          <i class="fa-solid fa-helmet-safety"></i>
-          Inscribirme como prestador
-        </button>
-      </div>
-
-    </div>
+    <button id="btnInscripcionPrestador" class="ms-btn ms-btn-light" type="button">
+      <i class="fa-solid fa-helmet-safety"></i>
+      Inscribirme como prestador
+    </button>
+  </div>
+</div>
 
   </div>
 </div>
