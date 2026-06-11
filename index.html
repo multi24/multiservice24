@@ -120,22 +120,39 @@
 </section>
 
 <div class="ms-contact-between">
-  <button id="btnAbrirContacto" class="ms-btn ms-btn-primary" type="button">
-    <i class="fa-brands fa-whatsapp"></i>
-    Quiero que me escriban
-  </button>
 
-  <button id="btnCompartirApp" class="ms-btn ms-btn-light" type="button">
-  <i class="fa-brands fa-whatsapp"></i>
-  Compartir app
-</button>
+  <div class="ms-contact-actions">
+    <button id="btnAbrirContacto" class="ms-btn ms-btn-primary" type="button">
+      <i class="fa-brands fa-whatsapp"></i>
+      Quiero que me escriban
+    </button>
 
-<button id="btnInstalarApp" class="ms-btn ms-btn-light hidden" type="button">
-  <i class="fa-solid fa-download"></i>
-  Instalar app
-</button>
+    <button id="btnCompartirApp" class="ms-btn ms-btn-light" type="button">
+      <i class="fa-brands fa-whatsapp"></i>
+      Compartir app
+    </button>
+
+    <button id="btnInstalarApp" class="ms-btn ms-btn-light hidden" type="button">
+      <i class="fa-solid fa-download"></i>
+      Instalar app
+    </button>
+  </div>
+
+  <div class="ms-home-prestador-card">
+    <h3>Prestador</h3>
+
+    <p class="ms-muted">
+      Si ofrecés servicios, podés inscribirte para ser evaluado y habilitado.
+    </p>
+
+    <button id="btnInscripcionPrestador" class="ms-btn ms-btn-light" type="button">
+      <i class="fa-solid fa-helmet-safety"></i>
+      Inscribirme como prestador
+    </button>
+  </div>
+
 </div>
-
+  
     <!-- COMO FUNCIONA -->
     <section id="comoFunciona" class="ms-section ms-section-soft">
       <div class="ms-section-head">
@@ -203,25 +220,12 @@
           </button>
         </div>
 
-        <div class="ms-panel-grid">
+       <div class="ms-panel-grid ms-panel-grid-one">
           <div class="ms-panel-card">
             <h3>Mis solicitudes</h3>
             <div id="listaMisSolicitudes" class="ms-list"></div>
           </div>
 
-          <div class="ms-panel-card">
-            <h3>Prestador</h3>
-            <p class="ms-muted">
-              Si ofrecés servicios, podés inscribirte para ser evaluado y habilitado.
-            </p>
-
-            <button id="btnInscripcionPrestador" class="ms-btn ms-btn-light" type="button">
-              <i class="fa-solid fa-helmet-safety"></i>
-              Inscribirme como prestador
-            </button>
-
-            <div id="estadoPrestador" class="ms-prestador-status"></div>
-          </div>
         </div>
       </div>
 
