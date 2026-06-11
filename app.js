@@ -28,14 +28,14 @@ import {
 /* =========================================================
    FIREBASE CONFIG
 ========================================================= */
-
 const firebaseConfig = {
-  apiKey: "AIzaSyAMgWRboQ7HBVMxji4sAl7UOjzrMCOyI",
+  apiKey: "AIzaSyAMgWRboQ7HBbYMxjIr4sAl7UOjzrMCOyI",
   authDomain: "multiservice24-77177.firebaseapp.com",
+  databaseURL: "https://multiservice24-77177-default-rtdb.firebaseio.com",
   projectId: "multiservice24-77177",
   storageBucket: "multiservice24-77177.firebasestorage.app",
-  messagingSenderId: "806441507371",
-  appId: "1:806441507371:web:4226d7cf6a71932cd081a1"
+  messagingSenderId: "806441507316",
+  appId: "1:806441507316:web:4226d76f6a71933cd081a1"
 };
 
 const app = initializeApp(firebaseConfig);
