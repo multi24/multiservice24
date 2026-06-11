@@ -31,12 +31,11 @@
       </span>
     </a>
 
-    <nav class="ms-nav" id="msNav">
-      <a href="#inicio">Inicio</a>
-      <a href="#servicios">Servicios</a>
-      <a href="#comoFunciona">Cómo funciona</a>
-      <a href="#paneles">Mi espacio</a>
-    </nav>
+<nav class="ms-nav" id="msNav">
+  <a href="#inicio">Inicio</a>
+  <a href="#comoFunciona">Cómo funciona</a>
+  <a href="#paneles">Mi espacio</a>
+</nav>
 
     <button id="btnCuenta" class="ms-btn ms-btn-outline" type="button">
       <i class="fa-brands fa-google"></i>
@@ -46,97 +45,65 @@
 
   <main>
 
-    <!-- HOME -->
-    <section id="inicio" class="ms-hero">
-      <div class="ms-hero-bg-detail detail-red"></div>
-      <div class="ms-hero-bg-detail detail-blue"></div>
+<!-- HOME -->
+<section id="inicio" class="ms-hero">
+  <div class="ms-hero-bg-detail detail-red"></div>
+  <div class="ms-hero-bg-detail detail-blue"></div>
 
-      <div class="ms-hero-content">
-        <span class="ms-kicker">
-          <i class="fa-solid fa-clock"></i>
-          Atención personalizada
-        </span>
+  <div class="ms-hero-content">
+    <div class="ms-hero-topline">
+      <span class="ms-kicker">
+        <i class="fa-solid fa-clock"></i>
+        Atención personalizada
+      </span>
 
-        <h1>
-          Tu contacto para resolver
-          <span>cualquier imprevisto</span>
-        </h1>
+      <span class="ms-badge-red">24/7</span>
+    </div>
 
-        <p>
-Servicios programados para hogares, comercios y oficinas.
-También contamos con asistencias de emergencia.
-        </p>
+    <h1>
+      Un Contacto
+      <span>Todas las soluciones</span>
+    </h1>
 
-        <div class="ms-hero-actions">
-          <button id="btnAbrirContacto" class="ms-btn ms-btn-primary" type="button">
-            <i class="fa-brands fa-whatsapp"></i>
-            Quiero que me escriban
-          </button>
+    <p>
+      Servicios para hogares y oficinas. También contamos con asistencia de emergencia.
+    </p>
 
-          <button id="btnAbrirSolicitud" class="ms-btn ms-btn-light" type="button">
-            <i class="fa-solid fa-calendar-check"></i>
-            Solicitar servicio
-          </button>
-        </div>
-
-        <div class="ms-hero-points">
-          <span><i class="fa-solid fa-circle-check"></i> Rápido</span>
-          <span><i class="fa-solid fa-circle-check"></i> Confiable</span>
-          <span><i class="fa-solid fa-circle-check"></i> Profesional</span>
-        </div>
-      </div>
-
-      <div class="ms-hero-card">
-        <div class="ms-hero-card-top">
-          <span class="ms-badge-red">24/7</span>
-          <span class="ms-badge-soft">Presupuestos online</span>
-        </div>
-
-        <div class="ms-phone-big">
-          <i class="fa-brands fa-whatsapp"></i>
-          11 3004-2287
-        </div>
-
-<div class="ms-hero-card-actions">
-  <button id="btnAbrirContacto" class="ms-btn ms-btn-primary" type="button">
-    <i class="fa-brands fa-whatsapp"></i>
-    Quiero que me escriban
-  </button>
-
-  <button id="btnAbrirSolicitud" class="ms-btn ms-btn-light" type="button">
-    <i class="fa-solid fa-calendar-check"></i>
-    Solicitar servicio
-  </button>
-</div>
-
-<div class="ms-hero-card-points">
-  <span><i class="fa-solid fa-circle-check"></i> Rápido</span>
-  <span><i class="fa-solid fa-circle-check"></i> Confiable</span>
-  <span><i class="fa-solid fa-circle-check"></i> Profesional</span>
-</div>
-      </div>
-    </section>
-
-    <!-- SERVICIOS -->
-    <section id="servicios" class="ms-section">
-      <div class="ms-section-head">
-        <span class="ms-kicker">Servicios</span>
-        <h2>Todo en un solo lugar</h2>
-        <p>
-          La idea es funcionar como una plataforma de servicios programados,
-          con atención, seguimiento e historial.
-        </p>
-      </div>
-
-    <div class="ms-services-wrap">
-  <div id="serviciosGrid" class="ms-services-grid"></div>
-
-  <div class="ms-scroll-hint">
-    <span>Deslizá para ver más servicios</span>
-    <i class="fa-solid fa-arrow-right"></i>
+    <div class="ms-online-pill">
+      <i class="fa-solid fa-calendar-check"></i>
+      Presupuestos online sin cargo
+    </div>
   </div>
-</div>
-    </section>
+
+  <div class="ms-hero-card">
+    <div class="ms-phone-big">
+      <i class="fa-brands fa-whatsapp"></i>
+      1130042287
+    </div>
+
+    <div class="ms-hero-card-actions">
+      <button id="btnAbrirSolicitud" class="ms-btn ms-btn-light" type="button">
+        <i class="fa-solid fa-calendar-check"></i>
+        Solicitar servicio
+      </button>
+
+      <button id="btnAbrirContacto" class="ms-btn ms-btn-primary" type="button">
+        <i class="fa-brands fa-whatsapp"></i>
+        Quiero que me escriban
+      </button>
+    </div>
+
+    <div class="ms-hero-card-points">
+      <span><i class="fa-solid fa-circle-check"></i> Rápido</span>
+      <span><i class="fa-solid fa-circle-check"></i> Confiable</span>
+      <span><i class="fa-solid fa-circle-check"></i> Profesional</span>
+    </div>
+
+    <div class="ms-home-services">
+      <div id="serviciosGrid" class="ms-services-grid"></div>
+    </div>
+  </div>
+</section>
 
     <!-- COMO FUNCIONA -->
     <section id="comoFunciona" class="ms-section ms-section-soft">
@@ -477,6 +444,10 @@ También contamos con asistencias de emergencia.
     </div>
   </div>
 
+<button id="btnSubirArriba" class="ms-up-btn" type="button" aria-label="Subir arriba">
+  <i class="fa-solid fa-arrow-up"></i>
+</button>
+  
   <a id="btnWhatsappFlotante" class="ms-whatsapp-float" href="#" aria-label="WhatsApp">
     <i class="fa-brands fa-whatsapp"></i>
   </a>
