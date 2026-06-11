@@ -430,11 +430,14 @@ main{
 .ms-contact-between{
   display:flex;
   justify-content:center;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
   margin:18px 0 0;
 }
 
 .ms-contact-between .ms-btn{
-  min-width:min(360px,100%);
+  min-width:min(260px,100%);
 }
 
 .ms-emphasis-red{
