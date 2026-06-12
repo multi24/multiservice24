@@ -1859,14 +1859,42 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
+const SW_VERSION = "2026-06-12-02";
+
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./service-worker.js")
-      .then(() => {
+  window.addEventListener("load", async () => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has("reset-sw")) {
+      const registros = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(registros.map((registro) => registro.unregister()));
+
+      const clavesCache = await caches.keys();
+      await Promise.all(clavesCache.map((clave) => caches.delete(clave)));
+
+      window.location.replace("./?v=" + Date.now());
+      return;
+    }
+
+    navigator.serviceWorker.register(`./service-worker.js?v=${SW_VERSION}`)
+      .then((registro) => {
         console.log("Service Worker registrado");
+
+        registro.update();
+
+        if (registro.waiting) {
+          registro.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
       })
       .catch((error) => {
         console.error("Error registrando Service Worker:", error);
       });
+  });
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (window.__multi24RecargadoPorSW) return;
+
+    window.__multi24RecargadoPorSW = true;
+    window.location.reload();
   });
 }
