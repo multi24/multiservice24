@@ -206,39 +206,63 @@
 
 </div>
   
-    <!-- COMO FUNCIONA -->
-    <section id="comoFunciona" class="ms-section ms-section-soft">
-      <div class="ms-section-head">
-        <span class="ms-kicker">Proceso</span>
-        <h2>Cómo funciona</h2>
-      </div>
+<!-- COMO FUNCIONA -->
+<section id="comoFunciona" class="ms-section ms-section-soft">
+  <div class="ms-section-head">
+    <span class="ms-kicker">Proceso</span>
+    <h2>Cómo funciona</h2>
+  </div>
 
-      <div class="ms-steps">
-        <article>
-          <span>1</span>
-          <h3>Pedís contacto</h3>
-          <p>Cargás una solicitud rápida o detallada desde la web.</p>
-        </article>
+  <div class="ms-steps">
+    <article>
+      <span>1</span>
+      <h3>Generás la solicitud</h3>
+      <p>
+        Generás la solicitud de servicio desde la app, también podés cargar archivos para mostrar la situación del inconveniente a resolver.
+      </p>
+    </article>
 
-        <article>
-          <span>2</span>
-          <h3>Te atendemos</h3>
-          <p>Admin o colaboradores reciben el aviso y coordinan por WhatsApp.</p>
-        </article>
+    <article>
+      <span>2</span>
+      <h3>Cotización online</h3>
+      <p>
+        Te respondemos con una cotización online
+        <em class="ms-aclaracion">(queda sujeta a modificaciones al momento de ver todo el panorama del inconveniente por el profesional)</em>.
+      </p>
+    </article>
 
-        <article>
-          <span>3</span>
-          <h3>Se deriva el trabajo</h3>
-          <p>Un prestador habilitado puede postularse para cotizar.</p>
-        </article>
+    <article>
+      <span>3</span>
+      <h3>Coordinamos agenda</h3>
+      <p>
+        Coordinamos un día y horario para que el profesional se presente.
+        <em class="ms-aclaracion">(confirmamos agenda con un pago mínimo de $30mil)</em>.
+      </p>
+    </article>
 
-        <article>
-          <span>4</span>
-          <h3>Queda historial</h3>
-          <p>El cliente podrá ver sus servicios, fechas, archivos y garantías.</p>
-        </article>
-      </div>
-    </section>
+    <article>
+      <span>4</span>
+      <h3>Resolvemos</h3>
+      <p>
+        ¡Resolvemos! Te damos una garantía para que te quedes tranquilo: cualquier falla del trabajo definitivo realizado será resuelta sin costo.
+        <em class="ms-aclaracion">(en soluciones económicas nos amoldamos para resolver fallas con descuentos especiales)</em>.
+      </p>
+    </article>
+  </div>
+
+  <div class="ms-discount-box">
+    <div class="ms-discount-icon">
+      <i class="fa-solid fa-tags"></i>
+    </div>
+
+    <div>
+      <h3>Sumá servicios y ganá descuentos</h3>
+      <p>
+        Si en la misma visita podemos realizar más de un servicio, entrarás a un sistema de descuentos especiales.
+      </p>
+    </div>
+  </div>
+</section>
 
     <!-- PANELES -->
     <section id="paneles" class="ms-section">
@@ -448,15 +472,35 @@
   y se confirman con un pago de $20000 argentinos o 15 dólares.
 </p>
 
-        <label class="ms-full">
-          Descripción del trabajo
-          <textarea id="solDescripcion" rows="4" placeholder="Contanos qué necesitás"></textarea>
-        </label>
+<label class="ms-full">
+  Descripción del trabajo
+  <textarea id="solDescripcion" rows="4" placeholder="Contanos qué necesitás, qué pasó, desde cuándo ocurre y cualquier detalle importante"></textarea>
+</label>
 
-        <button class="ms-btn ms-btn-primary ms-full" type="submit">
-          <i class="fa-solid fa-paper-plane"></i>
-          Guardar solicitud y abrir WhatsApp
-        </button>
+<div class="ms-full ms-file-box">
+  <strong class="ms-label-title">Fotos, videos o audios del inconveniente</strong>
+
+  <p class="ms-form-note">
+    Podés cargar archivos para mostrar mejor la situación: fotos, videos o audios.
+  </p>
+
+  <label class="ms-file-input-row">
+    <i class="fa-solid fa-cloud-arrow-up"></i>
+    <span>Seleccionar archivos</span>
+    <input id="solArchivos" type="file" accept="image/*,video/*,audio/*" multiple />
+  </label>
+
+  <p class="ms-file-note">
+    Los archivos se conservarán por 6 meses y luego se eliminarán en la limpieza automática.
+  </p>
+
+  <p id="solArchivosResumen" class="ms-file-summary hidden"></p>
+</div>
+
+<button class="ms-btn ms-btn-primary ms-full" type="submit">
+  <i class="fa-solid fa-paper-plane"></i>
+  Guardar solicitud y abrir WhatsApp
+</button>
       </form>
     </div>
   </div>
