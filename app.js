@@ -339,14 +339,24 @@ function mensajeWhatsAppSolicitud(data, id = "") {
     partes.push(`*Horario deseado:* ${data.horarioDeseado}`);
   }
 
-  if (data.descripcion) {
-    partes.push("");
-    partes.push(`*Detalle del trabajo:*`);
-    partes.push(data.descripcion);
-  }
-
+if (data.descripcion) {
   partes.push("");
-  partes.push("Gracias.");
+  partes.push(`*Detalle del trabajo:*`);
+  partes.push(data.descripcion);
+}
+
+if (Array.isArray(data.archivos) && data.archivos.length) {
+  partes.push("");
+  partes.push(`*Archivos cargados:*`);
+  data.archivos.forEach((archivo, index) => {
+    partes.push(`${index + 1}. ${archivo.nombre} (${archivo.tipoGeneral})`);
+  });
+  partes.push("");
+  partes.push("Los archivos quedan disponibles por 6 meses.");
+}
+
+partes.push("");
+partes.push("Gracias.");
 
   return partes.join("\n");
 }
@@ -559,8 +569,12 @@ async function guardarSolicitudServicio(data) {
     direccion: data.direccion,
     fechaDeseada: data.fechaDeseada,
     horarioDeseado: data.horarioDeseado,
-    descripcion: data.descripcion,
-    estado: "pendiente_derivar",
+descripcion: data.descripcion,
+archivos: data.archivos || [],
+archivosCantidad: Array.isArray(data.archivos) ? data.archivos.length : 0,
+archivosRetencionMeses: 6,
+archivosVencenEn: data.archivosVencenEn || "",
+estado: "pendiente_derivar",
     prestadorAsignadoUid: "",
     colaboradorAsignadoUid: "",
     creadoEn: serverTimestamp(),
@@ -1460,6 +1474,30 @@ actualizarBotonSubirArriba();
 
 solEmergencia?.addEventListener("change", actualizarNotaEmergencia);
 
+$("solArchivos")?.addEventListener("change", () => {
+  const resumen = $("solArchivosResumen");
+  const archivos = Array.from($("solArchivos")?.files || []);
+
+  if (!resumen) return;
+
+  if (!archivos.length) {
+    resumen.classList.add("hidden");
+    resumen.textContent = "";
+    return;
+  }
+
+  const fotos = archivos.filter(a => a.type.startsWith("image/")).length;
+  const videos = archivos.filter(a => a.type.startsWith("video/")).length;
+  const audios = archivos.filter(a => a.type.startsWith("audio/")).length;
+  const otros = archivos.length - fotos - videos - audios;
+
+  resumen.classList.remove("hidden");
+  resumen.textContent =
+    `Seleccionaste ${archivos.length} archivo(s): ` +
+    `${fotos} foto(s), ${videos} video(s), ${audios} audio(s)` +
+    `${otros ? `, ${otros} otro(s)` : ""}.`;
+});
+
 /* =========================================================
    FORM CONTACTO RÁPIDO
 ========================================================= */
@@ -1523,6 +1561,28 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
   const btn = formSolicitudServicio.querySelector("button[type='submit']");
   const ventanaWhatsApp = window.open("about:blank", "_blank");
 
+  const archivosSeleccionados = Array.from($("solArchivos")?.files || []);
+  const archivosLimitados = archivosSeleccionados.slice(0, 6);
+
+  const vencimiento = new Date();
+  vencimiento.setMonth(vencimiento.getMonth() + 6);
+
+  const archivosInfo = archivosLimitados.map((archivo) => {
+    let tipoGeneral = "Archivo";
+
+    if (archivo.type.startsWith("image/")) tipoGeneral = "Foto";
+    if (archivo.type.startsWith("video/")) tipoGeneral = "Video";
+    if (archivo.type.startsWith("audio/")) tipoGeneral = "Audio";
+
+    return {
+      nombre: archivo.name,
+      tipo: archivo.type || "",
+      tipoGeneral,
+      tamanioBytes: archivo.size || 0,
+      guardadoRealEnCloudflare: false
+    };
+  });
+
   const data = {
     nombre: limpiar($("solNombre")?.value),
     telefono: normalizarTelefono($("solTelefono")?.value),
@@ -1532,12 +1592,20 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
     fechaDeseada: limpiar($("solFechaDeseada")?.value),
     horarioDeseado: limpiar($("solHorarioDeseado")?.value),
     emergencia: !!$("solEmergencia")?.checked,
-    descripcion: limpiar($("solDescripcion")?.value)
+    descripcion: limpiar($("solDescripcion")?.value),
+    archivos: archivosInfo,
+    archivosVencenEn: vencimiento.toISOString()
   };
 
   if (!data.nombre || !data.telefono || !data.servicio) {
     if (ventanaWhatsApp) ventanaWhatsApp.close();
     toastMsg("Completá nombre, WhatsApp y servicio");
+    return;
+  }
+
+  if (archivosSeleccionados.length > 6) {
+    if (ventanaWhatsApp) ventanaWhatsApp.close();
+    toastMsg("Por ahora cargá hasta 6 archivos por solicitud");
     return;
   }
 
@@ -1557,13 +1625,20 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
         direccion: data.direccion,
         fechaDeseada: data.fechaDeseada,
         horarioDeseado: data.horarioDeseado,
-        descripcion: data.descripcion
+        descripcion: data.descripcion,
+        archivos: data.archivos
       }, id),
       ventanaWhatsApp
     );
 
     formSolicitudServicio.reset();
     actualizarNotaEmergencia();
+
+    if ($("solArchivosResumen")) {
+      $("solArchivosResumen").classList.add("hidden");
+      $("solArchivosResumen").textContent = "";
+    }
+
     cerrarModal(modalSolicitud);
     toastMsg("Solicitud guardada y WhatsApp preparado");
     await renderPaneles();
