@@ -225,7 +225,7 @@ main{
 
 .ms-home-shell{
   display:grid;
-  grid-template-columns:330px minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr) 330px;
   gap:18px;
   align-items:stretch;
 }
@@ -465,41 +465,61 @@ main{
   margin:0;
 }
 
-.ms-contact-actions{
-  width:100%;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:10px;
-  flex-wrap:wrap;
-}
-
-.ms-contact-actions .ms-btn{
-  min-width:210px;
-}
-
 .ms-home-prestador-card{
   width:100%;
+  min-height:96px;
   background:#fff;
   border:1px solid var(--borde);
   border-radius:26px;
-  padding:16px 18px;
+  padding:16px 20px;
   box-shadow:var(--sombra-suave);
-  text-align:center;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:14px;
+  align-items:center;
 }
 
-.ms-home-prestador-card h3{
-  margin:0;
+.ms-prestador-top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+
+.ms-worker-icon{
+  width:38px;
+  height:38px;
+  border-radius:15px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(7,27,58,.08);
   color:var(--azul-noche);
-  font-size:22px;
+  font-size:18px;
+  flex:0 0 auto;
 }
 
-.ms-home-prestador-card p{
-  margin:7px 0 12px;
+.ms-prestador-top strong{
+  color:var(--azul-noche);
+  font-size:24px;
+  font-weight:1000;
+  white-space:nowrap;
+}
+
+.ms-prestador-top span:last-child{
+  color:var(--muted);
+  font-size:15px;
+  line-height:1.35;
 }
 
 .ms-home-prestador-card .ms-btn{
-  min-width:min(320px,100%);
+  min-width:280px;
+  color:var(--azul-noche);
+  font-weight:1000;
+}
+
+.ms-home-prestador-card .ms-btn i{
+  color:var(--azul-noche);
 }
 
 .ms-zonas-card{
@@ -548,7 +568,7 @@ main{
   background:
     linear-gradient(120deg, transparent 0 46%, rgba(7,27,58,.10) 46% 48%, transparent 48% 100%),
     linear-gradient(35deg, transparent 0 43%, rgba(7,27,58,.08) 43% 45%, transparent 45% 100%),
-    radial-gradient(circle at 48% 42%, rgba(225,31,42,.12) 0 8%, transparent 9%),
+    radial-gradient(circle at 50% 44%, rgba(225,31,42,.12) 0 8%, transparent 9%),
     linear-gradient(135deg,#f8fbff,#dce9f7);
   border:1px solid rgba(7,27,58,.10);
   box-shadow:inset 0 0 0 8px rgba(255,255,255,.30);
@@ -570,9 +590,9 @@ main{
   position:absolute;
   inset:0;
   background:
-    radial-gradient(circle at 50% 43%, rgba(225,31,42,.14), transparent 9%),
-    radial-gradient(circle at 72% 23%, rgba(11,45,92,.12), transparent 16%),
-    radial-gradient(circle at 25% 56%, rgba(11,45,92,.10), transparent 18%),
+    radial-gradient(circle at 50% 44%, rgba(225,31,42,.13), transparent 9%),
+    radial-gradient(circle at 72% 22%, rgba(11,45,92,.12), transparent 16%),
+    radial-gradient(circle at 24% 55%, rgba(11,45,92,.10), transparent 18%),
     radial-gradient(circle at 64% 78%, rgba(11,45,92,.11), transparent 18%);
   pointer-events:none;
 }
@@ -580,37 +600,41 @@ main{
 .ms-zona-area{
   position:absolute;
   z-index:2;
-  width:132px;
-  height:58px;
+  width:118px;
+  height:54px;
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:7px;
+  gap:6px;
   text-align:center;
   border-radius:999px;
   background:#fff;
   color:var(--azul-noche);
   border:1px solid var(--borde);
   font-weight:900;
-  font-size:14px;
+  font-size:13px;
   box-shadow:0 14px 28px rgba(7,27,58,.14);
 }
 
 .ms-zona-area i{
   color:var(--rojo);
-  font-size:15px;
+  font-size:14px;
 }
 
 .area-norte{
-  top:72px;
+  top:68px;
   left:50%;
   transform:translateX(-50%);
+}
+
+.area-oeste{
+  top:178px;
+  left:20px;
 }
 
 .area-caba{
   top:178px;
-  left:50%;
-  transform:translateX(-50%);
+  right:20px;
   background:linear-gradient(135deg,var(--rojo),var(--rojo-oscuro));
   color:#fff;
   border:none;
@@ -618,11 +642,6 @@ main{
 
 .area-caba i{
   color:#fff;
-}
-
-.area-oeste{
-  top:178px;
-  left:22px;
 }
 
 .area-sur{
@@ -648,29 +667,6 @@ main{
 
 #btnCompartirApp i{
   color:#fff;
-}
-
-@media (min-width:901px){
-  .ms-hero h1{
-    font-size:54px;
-  }
-
-  .ms-hero p{
-    font-size:18px;
-  }
-
-  .ms-home-prestador-card{
-    padding:18px 20px;
-  }
-
-  .ms-home-prestador-card h3{
-    font-size:24px;
-  }
-
-  .ms-home-prestador-card p{
-    margin:7px 0 12px;
-    font-size:15px;
-  }
 }
 
 .ms-emphasis-red{
@@ -1259,8 +1255,8 @@ main{
   }
 
   .ms-zona-area{
-    width:128px;
-    height:54px;
+    width:118px;
+    height:52px;
     font-size:13px;
   }
 
@@ -1270,15 +1266,16 @@ main{
     transform:translateX(-50%);
   }
 
-  .area-caba{
-    top:136px;
-    left:50%;
-    transform:translateX(-50%);
-  }
-
   .area-oeste{
     top:136px;
     left:18px;
+    transform:none;
+  }
+
+  .area-caba{
+    top:136px;
+    right:18px;
+    left:auto;
     transform:none;
   }
 
@@ -1298,6 +1295,25 @@ main{
 
   .ms-hero-actions .ms-btn{
     min-width:min(260px,100%);
+  }
+
+  .ms-home-prestador-card{
+    grid-template-columns:1fr;
+    text-align:center;
+  }
+
+  .ms-prestador-top{
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  .ms-prestador-top span:last-child{
+    flex-basis:100%;
+  }
+
+  .ms-home-prestador-card .ms-btn{
+    justify-self:center;
+    min-width:min(320px,100%);
   }
 
   .ms-menu-btn{
