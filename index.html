@@ -23,7 +23,7 @@
 <meta name="twitter:description" content="Solicitá servicios, emergencias y seguimiento desde Multi24." />
 <meta name="twitter:image" content="https://multi24.github.io/multiservice24/preview-whatsapp.jpg" />
 
-<link rel="stylesheet" href="style.css?v=2026-06-12-02" />
+<link rel="stylesheet" href="style.css?v=2026-06-12-04" />
 
 <link
   rel="stylesheet"
@@ -430,26 +430,16 @@
           <select id="solServicio" required></select>
         </label>
 
-        <label>
-          Zona
-          <input id="solZona" type="text" placeholder="Ej: Tristán Suárez" />
-        </label>
+<label class="ms-autocomplete-wrap">
+  Zona
+  <input id="solZona" type="text" autocomplete="off" placeholder="Ej: Tristán Suárez, CABA, GBA Sur" />
+  <div id="solZonaSugerencias" class="ms-suggest-box hidden"></div>
+</label>
 
-<label class="ms-full">
+<label class="ms-full ms-autocomplete-wrap">
   Dirección
-  <input id="solDireccion" type="text" list="direccionesSugeridas" placeholder="Calle, número, localidad" />
-
-  <datalist id="direccionesSugeridas">
-    <option value="Tristán Suárez">
-    <option value="Ezeiza">
-    <option value="La Unión">
-    <option value="Monte Grande">
-    <option value="Canning">
-    <option value="Spegazzini">
-    <option value="Carlos Spegazzini">
-    <option value="Luis Guillón">
-    <option value="El Jagüel">
-  </datalist>
+  <input id="solDireccion" type="text" autocomplete="off" placeholder="Calle, número, localidad" />
+  <div id="solDireccionSugerencias" class="ms-suggest-box hidden"></div>
 </label>
 
         <label>
@@ -477,6 +467,37 @@
   <textarea id="solDescripcion" rows="4" placeholder="Contanos qué necesitás, qué pasó, desde cuándo ocurre y cualquier detalle importante"></textarea>
 </label>
 
+<div class="ms-full ms-audio-box">
+  <strong class="ms-label-title">Audio explicando el problema</strong>
+
+  <p class="ms-form-note">
+    También podés grabar un audio para explicar mejor el inconveniente.
+  </p>
+
+  <div class="ms-audio-actions">
+    <button id="btnAudioGrabar" class="ms-btn ms-btn-light" type="button">
+      <i class="fa-solid fa-microphone"></i>
+      Grabar audio
+    </button>
+
+    <button id="btnAudioDetener" class="ms-btn ms-btn-primary hidden" type="button">
+      <i class="fa-solid fa-stop"></i>
+      Detener
+    </button>
+
+    <button id="btnAudioBorrar" class="ms-btn ms-btn-light hidden" type="button">
+      <i class="fa-solid fa-trash"></i>
+      Borrar audio
+    </button>
+  </div>
+
+  <audio id="solAudioPreview" class="ms-audio-preview hidden" controls></audio>
+
+  <p id="solAudioEstado" class="ms-file-note">
+    Sin audio grabado.
+  </p>
+</div>
+
 <div class="ms-full ms-file-box">
   <strong class="ms-label-title">Fotos, videos o audios del inconveniente</strong>
 
@@ -491,7 +512,7 @@
   </label>
 
   <p class="ms-file-note">
-    Los archivos se conservarán por 6 meses y luego se eliminarán en la limpieza automática.
+    Hay limites de carga de archivos.
   </p>
 
   <p id="solArchivosResumen" class="ms-file-summary hidden"></p>
@@ -616,6 +637,6 @@
 
   <div id="toast" class="ms-toast hidden"></div>
 
-<script type="module" src="app.js?v=2026-06-12-02"></script>
+<script type="module" src="app.js?v=2026-06-12-04"></script>
 </body>
 </html>
