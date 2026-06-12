@@ -827,6 +827,53 @@ main{
   line-height:1.45;
 }
 
+.ms-aclaracion{
+  display:inline;
+  color:var(--muted);
+  font-style:normal;
+  font-weight:700;
+}
+
+.ms-discount-box{
+  margin-top:18px;
+  border-radius:28px;
+  border:1px solid rgba(7,27,58,.12);
+  background:
+    radial-gradient(circle at top right, rgba(225,31,42,.10), transparent 28%),
+    linear-gradient(135deg,#fff,#f7faff);
+  box-shadow:var(--sombra-suave);
+  padding:20px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+.ms-discount-icon{
+  width:54px;
+  height:54px;
+  border-radius:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(135deg,var(--rojo),var(--rojo-oscuro));
+  color:#fff;
+  font-size:22px;
+  flex:0 0 auto;
+}
+
+.ms-discount-box h3{
+  margin:0;
+  color:var(--azul-noche);
+  font-size:22px;
+}
+
+.ms-discount-box p{
+  margin:6px 0 0;
+  color:var(--muted);
+  font-weight:700;
+  line-height:1.45;
+}
+
 /* =========================================================
    PANELES
 ========================================================= */
@@ -1072,6 +1119,58 @@ main{
   color:var(--muted);
   font-size:14px;
   line-height:1.35;
+}
+
+.ms-file-box{
+  border:1px dashed rgba(7,27,58,.22);
+  border-radius:22px;
+  padding:14px;
+  background:#f8fbff;
+}
+
+.ms-file-input-row{
+  margin-top:10px;
+  min-height:54px;
+  border:1px solid var(--borde);
+  border-radius:18px;
+  background:#fff;
+  color:var(--azul-noche);
+  font-weight:1000;
+  display:flex !important;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  cursor:pointer;
+  text-align:center;
+}
+
+.ms-file-input-row i{
+  color:var(--rojo);
+  font-size:18px;
+}
+
+.ms-file-input-row input{
+  display:none;
+}
+
+.ms-file-note{
+  margin:10px 0 0;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.35;
+  font-weight:700;
+}
+
+.ms-file-summary{
+  margin:10px 0 0;
+  border-radius:14px;
+  background:#fff;
+  border:1px solid var(--borde);
+  color:var(--azul-noche);
+  padding:10px 12px;
+  font-size:13px;
+  line-height:1.4;
+  font-weight:800;
 }
 
 .ms-form input,
@@ -1516,6 +1615,18 @@ main{
     right:14px;
     bottom:84px;
   }
+
+   .ms-discount-box{
+  align-items:flex-start;
+  flex-direction:column;
+  text-align:left;
+}
+
+.ms-discount-icon{
+  width:48px;
+  height:48px;
+}
+
 }
 
 @media (max-width:420px){
