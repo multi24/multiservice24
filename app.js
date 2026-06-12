@@ -121,8 +121,22 @@ const btnInscripcionPrestador = $("btnInscripcionPrestador");
 
 const serviciosGrid = $("serviciosGrid");
 const solServicio = $("solServicio");
+const solZona = $("solZona");
+const solDireccion = $("solDireccion");
+const solZonaSugerencias = $("solZonaSugerencias");
+const solDireccionSugerencias = $("solDireccionSugerencias");
+
 const solEmergencia = $("solEmergencia");
 const emergenciaNota = $("emergenciaNota");
+
+const solArchivos = $("solArchivos");
+const solArchivosResumen = $("solArchivosResumen");
+
+const btnAudioGrabar = $("btnAudioGrabar");
+const btnAudioDetener = $("btnAudioDetener");
+const btnAudioBorrar = $("btnAudioBorrar");
+const solAudioPreview = $("solAudioPreview");
+const solAudioEstado = $("solAudioEstado");
 
 const prestadorHabilidades = $("prestadorHabilidades");
 
@@ -163,6 +177,13 @@ let usuarioActual = null;
 let perfilActual = null;
 let prestadorActual = null;
 let vistaActual = "inicio";
+
+let mediaRecorderSolicitud = null;
+let streamAudioSolicitud = null;
+let audioChunksSolicitud = [];
+let audioSolicitudBlob = null;
+let audioSolicitudFile = null;
+let audioSolicitudUrl = "";
 
 /* =========================================================
    HELPERS
@@ -256,6 +277,43 @@ function abrirWhatsAppConMensaje(mensaje, ventanaPrevia = null) {
   }
 
   window.open(url, "_blank");
+}
+
+async function subirArchivosSolicitud(archivosSeleccionados) {
+  if (!archivosSeleccionados.length) {
+    return {
+      archivos: [],
+      vencenEn: ""
+    };
+  }
+
+  const formData = new FormData();
+
+  archivosSeleccionados.forEach((archivo) => {
+    formData.append("files", archivo);
+  });
+
+  const respuesta = await fetch(WORKER_UPLOAD_URL, {
+    method: "POST",
+    body: formData
+  });
+
+  let data = null;
+
+  try {
+    data = await respuesta.json();
+  } catch (error) {
+    throw new Error("El servidor de archivos no respondió correctamente.");
+  }
+
+  if (!respuesta.ok || !data?.ok) {
+    throw new Error(data?.error || "No se pudieron subir los archivos.");
+  }
+
+  return {
+    archivos: Array.isArray(data.archivos) ? data.archivos : [],
+    vencenEn: data.vencenEn || ""
+  };
 }
 
 async function subirArchivosSolicitud(archivosSeleccionados) {
@@ -399,9 +457,6 @@ if (Array.isArray(data.archivos) && data.archivos.length) {
 
     partes.push(`${index + 1}. ${nombre} (${tipo})${url}`);
   });
-
-  partes.push("");
-  partes.push("Los archivos quedan disponibles por 6 meses.");
 }
 
 partes.push("");
@@ -465,6 +520,282 @@ function actualizarNotaEmergencia() {
   if (!solEmergencia || !emergenciaNota) return;
 
   emergenciaNota.classList.toggle("hidden", !solEmergencia.checked);
+}
+
+const ZONAS_SUGERIDAS = [
+  "CABA",
+  "GBA Sur",
+  "GBA Norte",
+  "GBA Oeste",
+  "Tristán Suárez",
+  "Ezeiza",
+  "La Unión",
+  "Monte Grande",
+  "Canning",
+  "Carlos Spegazzini",
+  "Spegazzini",
+  "Luis Guillón",
+  "El Jagüel",
+  "Lomas de Zamora",
+  "Lanús",
+  "Avellaneda",
+  "Temperley",
+  "Adrogué",
+  "Banfield",
+  "Burzaco",
+  "Quilmes",
+  "Berazategui",
+  "Florencio Varela",
+  "San Vicente",
+  "Presidente Perón",
+  "Esteban Echeverría"
+];
+
+const DIRECCIONES_SUGERIDAS = [
+  "Tristán Suárez, Buenos Aires",
+  "Ezeiza, Buenos Aires",
+  "La Unión, Buenos Aires",
+  "Monte Grande, Buenos Aires",
+  "Canning, Buenos Aires",
+  "Carlos Spegazzini, Buenos Aires",
+  "Luis Guillón, Buenos Aires",
+  "El Jagüel, Buenos Aires",
+  "Lomas de Zamora, Buenos Aires",
+  "Lanús, Buenos Aires",
+  "Avellaneda, Buenos Aires",
+  "Temperley, Buenos Aires",
+  "Adrogué, Buenos Aires",
+  "Banfield, Buenos Aires",
+  "Burzaco, Buenos Aires",
+  "Quilmes, Buenos Aires",
+  "Berazategui, Buenos Aires",
+  "Florencio Varela, Buenos Aires",
+  "CABA"
+];
+
+function configurarSugerencias(input, contenedor, lista) {
+  if (!input || !contenedor) return;
+
+  function cerrarSugerencias() {
+    contenedor.classList.add("hidden");
+    contenedor.innerHTML = "";
+  }
+
+  function mostrarSugerencias() {
+    const texto = limpiar(input.value).toLowerCase();
+
+    const resultados = lista
+      .filter(item => {
+        if (!texto) return true;
+        return item.toLowerCase().includes(texto);
+      })
+      .slice(0, 8);
+
+    if (!resultados.length) {
+      cerrarSugerencias();
+      return;
+    }
+
+    contenedor.innerHTML = resultados.map(item => {
+      return `
+        <button class="ms-suggest-item" type="button" data-sugerencia="${escaparHtml(item)}">
+          <i class="fa-solid fa-location-dot"></i>
+          ${escaparHtml(item)}
+        </button>
+      `;
+    }).join("");
+
+    contenedor.classList.remove("hidden");
+  }
+
+  input.addEventListener("focus", mostrarSugerencias);
+  input.addEventListener("input", mostrarSugerencias);
+
+  contenedor.addEventListener("mousedown", (e) => {
+    const btn = e.target.closest("[data-sugerencia]");
+    if (!btn) return;
+
+    e.preventDefault();
+
+    input.value = btn.dataset.sugerencia || "";
+    cerrarSugerencias();
+  });
+
+  document.addEventListener("click", (e) => {
+    if (e.target === input || contenedor.contains(e.target)) return;
+    cerrarSugerencias();
+  });
+}
+
+function obtenerExtensionAudio(tipo) {
+  if (tipo.includes("mp4")) return "m4a";
+  if (tipo.includes("mpeg")) return "mp3";
+  if (tipo.includes("ogg")) return "ogg";
+  if (tipo.includes("wav")) return "wav";
+  return "webm";
+}
+
+function actualizarResumenArchivosSolicitud() {
+  if (!solArchivosResumen) return;
+
+  const archivos = Array.from(solArchivos?.files || []);
+  const total = archivos.length + (audioSolicitudFile ? 1 : 0);
+
+  if (!total) {
+    solArchivosResumen.classList.add("hidden");
+    solArchivosResumen.textContent = "";
+    return;
+  }
+
+  const fotos = archivos.filter(a => a.type.startsWith("image/")).length;
+  const videos = archivos.filter(a => a.type.startsWith("video/")).length;
+  const audiosSubidos = archivos.filter(a => a.type.startsWith("audio/")).length;
+  const audioGrabado = audioSolicitudFile ? 1 : 0;
+  const otros = archivos.length - fotos - videos - audiosSubidos;
+
+  solArchivosResumen.classList.remove("hidden");
+  solArchivosResumen.textContent =
+    `Seleccionaste ${total} archivo(s): ` +
+    `${fotos} foto(s), ${videos} video(s), ${audiosSubidos + audioGrabado} audio(s)` +
+    `${otros ? `, ${otros} otro(s)` : ""}.`;
+}
+
+function borrarAudioSolicitud(mostrarMensaje = true) {
+  if (streamAudioSolicitud) {
+    streamAudioSolicitud.getTracks().forEach(track => track.stop());
+  }
+
+  streamAudioSolicitud = null;
+  mediaRecorderSolicitud = null;
+  audioChunksSolicitud = [];
+  audioSolicitudBlob = null;
+  audioSolicitudFile = null;
+
+  if (audioSolicitudUrl) {
+    URL.revokeObjectURL(audioSolicitudUrl);
+  }
+
+  audioSolicitudUrl = "";
+
+  if (solAudioPreview) {
+    solAudioPreview.pause();
+    solAudioPreview.removeAttribute("src");
+    solAudioPreview.classList.add("hidden");
+  }
+
+  btnAudioGrabar?.classList.remove("hidden");
+  btnAudioDetener?.classList.add("hidden");
+  btnAudioBorrar?.classList.add("hidden");
+
+  if (solAudioEstado) {
+    solAudioEstado.textContent = "Sin audio grabado.";
+  }
+
+  actualizarResumenArchivosSolicitud();
+
+  if (mostrarMensaje) {
+    toastMsg("Audio borrado");
+  }
+}
+
+async function iniciarGrabacionSolicitud() {
+  try {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      toastMsg("Tu navegador no permite grabar audio desde la web");
+      return;
+    }
+
+    borrarAudioSolicitud(false);
+
+    streamAudioSolicitud = await navigator.mediaDevices.getUserMedia({
+      audio: true
+    });
+
+    const opciones = {};
+
+    if (MediaRecorder.isTypeSupported("audio/webm")) {
+      opciones.mimeType = "audio/webm";
+    }
+
+    mediaRecorderSolicitud = new MediaRecorder(streamAudioSolicitud, opciones);
+    audioChunksSolicitud = [];
+
+    mediaRecorderSolicitud.addEventListener("dataavailable", (event) => {
+      if (event.data && event.data.size > 0) {
+        audioChunksSolicitud.push(event.data);
+      }
+    });
+
+    mediaRecorderSolicitud.addEventListener("stop", () => {
+      const tipo = mediaRecorderSolicitud?.mimeType || "audio/webm";
+      const extension = obtenerExtensionAudio(tipo);
+
+      audioSolicitudBlob = new Blob(audioChunksSolicitud, {
+        type: tipo
+      });
+
+      audioSolicitudFile = new File(
+        [audioSolicitudBlob],
+        `audio-solicitud-${Date.now()}.${extension}`,
+        { type: tipo }
+      );
+
+      audioSolicitudUrl = URL.createObjectURL(audioSolicitudBlob);
+
+      if (solAudioPreview) {
+        solAudioPreview.src = audioSolicitudUrl;
+        solAudioPreview.classList.remove("hidden");
+      }
+
+      if (solAudioEstado) {
+        solAudioEstado.textContent = "Audio grabado listo para enviar.";
+      }
+
+      btnAudioGrabar?.classList.remove("hidden");
+      btnAudioDetener?.classList.add("hidden");
+      btnAudioBorrar?.classList.remove("hidden");
+
+      if (streamAudioSolicitud) {
+        streamAudioSolicitud.getTracks().forEach(track => track.stop());
+      }
+
+      streamAudioSolicitud = null;
+
+      actualizarResumenArchivosSolicitud();
+    });
+
+    mediaRecorderSolicitud.start();
+
+    btnAudioGrabar?.classList.add("hidden");
+    btnAudioDetener?.classList.remove("hidden");
+    btnAudioBorrar?.classList.add("hidden");
+
+    if (solAudioEstado) {
+      solAudioEstado.textContent = "Grabando audio...";
+    }
+  } catch (error) {
+    console.error(error);
+    toastMsg("No se pudo iniciar la grabación");
+    borrarAudioSolicitud(false);
+  }
+}
+
+function detenerGrabacionSolicitud() {
+  if (!mediaRecorderSolicitud) return;
+
+  if (mediaRecorderSolicitud.state === "recording") {
+    mediaRecorderSolicitud.stop();
+  }
+}
+
+function obtenerArchivosSolicitudParaSubir() {
+  const archivos = Array.from(solArchivos?.files || []);
+
+  if (audioSolicitudFile) {
+    archivos.push(audioSolicitudFile);
+  }
+
+  return archivos;
 }
 
 /* =========================================================
@@ -1559,29 +1890,14 @@ actualizarBotonSubirArriba();
 
 solEmergencia?.addEventListener("change", actualizarNotaEmergencia);
 
-$("solArchivos")?.addEventListener("change", () => {
-  const resumen = $("solArchivosResumen");
-  const archivos = Array.from($("solArchivos")?.files || []);
+configurarSugerencias(solZona, solZonaSugerencias, ZONAS_SUGERIDAS);
+configurarSugerencias(solDireccion, solDireccionSugerencias, DIRECCIONES_SUGERIDAS);
 
-  if (!resumen) return;
+solArchivos?.addEventListener("change", actualizarResumenArchivosSolicitud);
 
-  if (!archivos.length) {
-    resumen.classList.add("hidden");
-    resumen.textContent = "";
-    return;
-  }
-
-  const fotos = archivos.filter(a => a.type.startsWith("image/")).length;
-  const videos = archivos.filter(a => a.type.startsWith("video/")).length;
-  const audios = archivos.filter(a => a.type.startsWith("audio/")).length;
-  const otros = archivos.length - fotos - videos - audios;
-
-  resumen.classList.remove("hidden");
-  resumen.textContent =
-    `Seleccionaste ${archivos.length} archivo(s): ` +
-    `${fotos} foto(s), ${videos} video(s), ${audios} audio(s)` +
-    `${otros ? `, ${otros} otro(s)` : ""}.`;
-});
+btnAudioGrabar?.addEventListener("click", iniciarGrabacionSolicitud);
+btnAudioDetener?.addEventListener("click", detenerGrabacionSolicitud);
+btnAudioBorrar?.addEventListener("click", () => borrarAudioSolicitud(true));
 
 /* =========================================================
    FORM CONTACTO RÁPIDO
@@ -1646,7 +1962,7 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
   const btn = formSolicitudServicio.querySelector("button[type='submit']");
   const ventanaWhatsApp = window.open("about:blank", "_blank");
 
-  const archivosSeleccionados = Array.from($("solArchivos")?.files || []);
+  const archivosSeleccionados = obtenerArchivosSolicitudParaSubir();
 
   const data = {
     nombre: limpiar($("solNombre")?.value),
@@ -1670,7 +1986,7 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
 
   if (archivosSeleccionados.length > MAX_ARCHIVOS_SOLICITUD) {
     if (ventanaWhatsApp) ventanaWhatsApp.close();
-    toastMsg(`Por ahora cargá hasta ${MAX_ARCHIVOS_SOLICITUD} archivos por solicitud`);
+    toastMsg(`Por ahora cargá hasta ${MAX_ARCHIVOS_SOLICITUD} archivos en total`);
     return;
   }
 
@@ -1729,10 +2045,11 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
 
     formSolicitudServicio.reset();
     actualizarNotaEmergencia();
+    borrarAudioSolicitud(false);
 
-    if ($("solArchivosResumen")) {
-      $("solArchivosResumen").classList.add("hidden");
-      $("solArchivosResumen").textContent = "";
+    if (solArchivosResumen) {
+      solArchivosResumen.classList.add("hidden");
+      solArchivosResumen.textContent = "";
     }
 
     cerrarModal(modalSolicitud);
