@@ -52,6 +52,12 @@ providerGoogle.setCustomParameters({
 
 const WHATSAPP_NUMERO = "5491130042287";
 
+const WORKER_UPLOAD_URL = "https://multi24-upload.multi24pro.workers.dev/upload";
+
+const MAX_ARCHIVOS_SOLICITUD = 6;
+const MAX_MB_ARCHIVO_SOLICITUD = 30;
+const MAX_BYTES_ARCHIVO_SOLICITUD = MAX_MB_ARCHIVO_SOLICITUD * 1024 * 1024;
+
 const ADMIN_EMAILS = [
   "multi24pro@gmail.com"
 ];
@@ -252,6 +258,43 @@ function abrirWhatsAppConMensaje(mensaje, ventanaPrevia = null) {
   window.open(url, "_blank");
 }
 
+async function subirArchivosSolicitud(archivosSeleccionados) {
+  if (!archivosSeleccionados.length) {
+    return {
+      archivos: [],
+      vencenEn: ""
+    };
+  }
+
+  const formData = new FormData();
+
+  archivosSeleccionados.forEach((archivo) => {
+    formData.append("files", archivo);
+  });
+
+  const respuesta = await fetch(WORKER_UPLOAD_URL, {
+    method: "POST",
+    body: formData
+  });
+
+  let data = null;
+
+  try {
+    data = await respuesta.json();
+  } catch (error) {
+    throw new Error("El servidor de archivos no respondió correctamente.");
+  }
+
+  if (!respuesta.ok || !data?.ok) {
+    throw new Error(data?.error || "No se pudieron subir los archivos.");
+  }
+
+  return {
+    archivos: Array.isArray(data.archivos) ? data.archivos : [],
+    vencenEn: data.vencenEn || ""
+  };
+}
+
 function escaparHtml(texto) {
   return String(texto || "")
     .replaceAll("&", "&amp;")
@@ -348,9 +391,15 @@ if (data.descripcion) {
 if (Array.isArray(data.archivos) && data.archivos.length) {
   partes.push("");
   partes.push(`*Archivos cargados:*`);
+
   data.archivos.forEach((archivo, index) => {
-    partes.push(`${index + 1}. ${archivo.nombre} (${archivo.tipoGeneral})`);
+    const nombre = archivo.nombre || "Archivo";
+    const tipo = archivo.tipoGeneral || "Archivo";
+    const url = archivo.url ? ` - ${archivo.url}` : "";
+
+    partes.push(`${index + 1}. ${nombre} (${tipo})${url}`);
   });
+
   partes.push("");
   partes.push("Los archivos quedan disponibles por 6 meses.");
 }
@@ -754,6 +803,41 @@ async function obtenerPrestadoresTodos() {
    RENDER ITEMS
 ========================================================= */
 
+function renderArchivosSolicitud(s) {
+  if (!Array.isArray(s.archivos) || !s.archivos.length) {
+    return "";
+  }
+
+  return `
+    <div class="ms-solicitud-archivos">
+      <p><strong>Archivos:</strong></p>
+
+      <div class="ms-file-links">
+        ${s.archivos.map((archivo, index) => {
+          const nombre = escaparHtml(archivo.nombre || `Archivo ${index + 1}`);
+          const tipo = escaparHtml(archivo.tipoGeneral || "Archivo");
+          const url = archivo.url || "";
+
+          if (!url) {
+            return `
+              <span class="ms-file-link">
+                ${index + 1}. ${nombre} (${tipo})
+              </span>
+            `;
+          }
+
+          return `
+            <a class="ms-file-link" href="${escaparHtml(url)}" target="_blank" rel="noopener">
+              <i class="fa-solid fa-paperclip"></i>
+              ${index + 1}. ${nombre} (${tipo})
+            </a>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
 function renderSolicitudItem(s, modo = "usuario") {
   const fecha = fechaTexto(s.creadoEn);
   const emergencia = s.emergencia ? `<span class="ms-status red">Emergencia</span>` : "";
@@ -766,8 +850,9 @@ function renderSolicitudItem(s, modo = "usuario") {
       <p><strong>WhatsApp:</strong> ${escaparHtml(s.clienteTelefono || "Sin teléfono")}</p>
       <p><strong>Zona:</strong> ${escaparHtml(s.zona || "Sin zona")}</p>
       <p><strong>Dirección:</strong> ${escaparHtml(s.direccion || "Sin dirección")}</p>
-      <p><strong>Detalle:</strong> ${escaparHtml(s.descripcion || "Sin detalle")}</p>
-      <p><strong>Fecha:</strong> ${fecha}</p>
+<p><strong>Detalle:</strong> ${escaparHtml(s.descripcion || "Sin detalle")}</p>
+${renderArchivosSolicitud(s)}
+<p><strong>Fecha:</strong> ${fecha}</p>
 
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
         <span class="ms-status">${estadoBonito(s.estado)}</span>
@@ -1562,26 +1647,6 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
   const ventanaWhatsApp = window.open("about:blank", "_blank");
 
   const archivosSeleccionados = Array.from($("solArchivos")?.files || []);
-  const archivosLimitados = archivosSeleccionados.slice(0, 6);
-
-  const vencimiento = new Date();
-  vencimiento.setMonth(vencimiento.getMonth() + 6);
-
-  const archivosInfo = archivosLimitados.map((archivo) => {
-    let tipoGeneral = "Archivo";
-
-    if (archivo.type.startsWith("image/")) tipoGeneral = "Foto";
-    if (archivo.type.startsWith("video/")) tipoGeneral = "Video";
-    if (archivo.type.startsWith("audio/")) tipoGeneral = "Audio";
-
-    return {
-      nombre: archivo.name,
-      tipo: archivo.type || "",
-      tipoGeneral,
-      tamanioBytes: archivo.size || 0,
-      guardadoRealEnCloudflare: false
-    };
-  });
 
   const data = {
     nombre: limpiar($("solNombre")?.value),
@@ -1593,8 +1658,8 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
     horarioDeseado: limpiar($("solHorarioDeseado")?.value),
     emergencia: !!$("solEmergencia")?.checked,
     descripcion: limpiar($("solDescripcion")?.value),
-    archivos: archivosInfo,
-    archivosVencenEn: vencimiento.toISOString()
+    archivos: [],
+    archivosVencenEn: ""
   };
 
   if (!data.nombre || !data.telefono || !data.servicio) {
@@ -1603,15 +1668,46 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
     return;
   }
 
-  if (archivosSeleccionados.length > 6) {
+  if (archivosSeleccionados.length > MAX_ARCHIVOS_SOLICITUD) {
     if (ventanaWhatsApp) ventanaWhatsApp.close();
-    toastMsg("Por ahora cargá hasta 6 archivos por solicitud");
+    toastMsg(`Por ahora cargá hasta ${MAX_ARCHIVOS_SOLICITUD} archivos por solicitud`);
+    return;
+  }
+
+  const archivoMuyGrande = archivosSeleccionados.find(archivo => {
+    return archivo.size > MAX_BYTES_ARCHIVO_SOLICITUD;
+  });
+
+  if (archivoMuyGrande) {
+    if (ventanaWhatsApp) ventanaWhatsApp.close();
+    toastMsg(`El archivo ${archivoMuyGrande.name} supera ${MAX_MB_ARCHIVO_SOLICITUD}MB`);
+    return;
+  }
+
+  const archivoNoPermitido = archivosSeleccionados.find(archivo => {
+    const tipo = archivo.type || "";
+    return !tipo.startsWith("image/") && !tipo.startsWith("video/") && !tipo.startsWith("audio/");
+  });
+
+  if (archivoNoPermitido) {
+    if (ventanaWhatsApp) ventanaWhatsApp.close();
+    toastMsg(`Archivo no permitido: ${archivoNoPermitido.name}`);
     return;
   }
 
   try {
     btn.disabled = true;
-    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando...`;
+
+    if (archivosSeleccionados.length) {
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Subiendo archivos...`;
+
+      const subida = await subirArchivosSolicitud(archivosSeleccionados);
+
+      data.archivos = subida.archivos;
+      data.archivosVencenEn = subida.vencenEn;
+    }
+
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando solicitud...`;
 
     const id = await guardarSolicitudServicio(data);
 
@@ -1640,12 +1736,14 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
     }
 
     cerrarModal(modalSolicitud);
-    toastMsg("Solicitud guardada y WhatsApp preparado");
+    toastMsg("Solicitud guardada con archivos");
     await renderPaneles();
   } catch (error) {
     console.error(error);
+
     if (ventanaWhatsApp) ventanaWhatsApp.close();
-    toastMsg("No se pudo guardar la solicitud. Revisá reglas de Firestore.");
+
+    toastMsg(error.message || "No se pudo guardar la solicitud");
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Guardar solicitud y abrir WhatsApp`;
