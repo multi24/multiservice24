@@ -315,44 +315,6 @@ async function subirArchivosSolicitud(archivosSeleccionados) {
     vencenEn: data.vencenEn || ""
   };
 }
-
-async function subirArchivosSolicitud(archivosSeleccionados) {
-  if (!archivosSeleccionados.length) {
-    return {
-      archivos: [],
-      vencenEn: ""
-    };
-  }
-
-  const formData = new FormData();
-
-  archivosSeleccionados.forEach((archivo) => {
-    formData.append("files", archivo);
-  });
-
-  const respuesta = await fetch(WORKER_UPLOAD_URL, {
-    method: "POST",
-    body: formData
-  });
-
-  let data = null;
-
-  try {
-    data = await respuesta.json();
-  } catch (error) {
-    throw new Error("El servidor de archivos no respondió correctamente.");
-  }
-
-  if (!respuesta.ok || !data?.ok) {
-    throw new Error(data?.error || "No se pudieron subir los archivos.");
-  }
-
-  return {
-    archivos: Array.isArray(data.archivos) ? data.archivos : [],
-    vencenEn: data.vencenEn || ""
-  };
-}
-
 function escaparHtml(texto) {
   return String(texto || "")
     .replaceAll("&", "&amp;")
