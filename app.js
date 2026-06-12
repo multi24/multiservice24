@@ -1737,7 +1737,7 @@ btnLlamadaRapida?.addEventListener("click", () => {
 });
 
 btnCompartirApp?.addEventListener("click", async () => {
-  const url = "https://multi24.github.io/multiservice24/";
+  const url = "https://www.multiservice24.com.ar/";
   const texto = "Te comparto Multi24 para solicitar servicios programados y emergencias.";
 
   if (navigator.share) {
@@ -2138,7 +2138,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-12-02";
+const SW_VERSION = "2026-06-12-05";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
