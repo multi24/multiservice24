@@ -1684,3 +1684,35 @@ main{
   background:rgba(225,31,42,.10);
   color:var(--rojo);
 }
+
+.ms-solicitud-archivos{
+  margin:8px 0;
+}
+
+.ms-solicitud-archivos p{
+  margin:4px 0 6px;
+}
+
+.ms-file-links{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.ms-file-link{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border-radius:999px;
+  padding:8px 10px;
+  background:var(--gris-suave);
+  color:var(--azul-noche);
+  text-decoration:none;
+  font-size:13px;
+  font-weight:900;
+  border:1px solid var(--borde);
+}
+
+.ms-file-link i{
+  color:var(--rojo);
+}
