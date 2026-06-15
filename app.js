@@ -1331,11 +1331,16 @@ ${renderArchivosSolicitud(s)}
         ${emergencia}
       </div>
 
-      <div class="ms-item-actions">
-        <button class="ms-mini-btn red" data-wa-solicitud="${s.id}" type="button">
-          <i class="fa-brands fa-whatsapp"></i>
-          WhatsApp
-        </button>
+<div class="ms-item-actions">
+  <button class="ms-mini-btn red" data-wa-solicitud="${s.id}" type="button">
+    <i class="fa-brands fa-whatsapp"></i>
+    WhatsApp
+  </button>
+
+  <button class="ms-mini-btn" data-ruta-solicitud="${s.id}" type="button">
+    <i class="fa-solid fa-route"></i>
+    Ver ruta
+  </button>
 
         ${
           modo === "equipo"
@@ -1770,6 +1775,33 @@ if (logueado && puedeVerInterno && vistaActual === "paneles") {
    BOTONES DE SOLICITUDES
 ========================================================= */
 
+function abrirRutaSolicitud(solicitud) {
+  if (!solicitud) return;
+
+  let destino = "";
+
+  if (solicitud.lat && solicitud.lon) {
+    destino = `${solicitud.lat},${solicitud.lon}`;
+  } else {
+    destino = [
+      solicitud.direccion,
+      solicitud.localidad,
+      solicitud.partido,
+      solicitud.provincia || "Buenos Aires",
+      "Argentina"
+    ].filter(Boolean).join(", ");
+  }
+
+  if (!destino) {
+    toastMsg("Esta solicitud no tiene dirección para abrir la ruta");
+    return;
+  }
+
+  const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destino)}&travelmode=driving`;
+
+  window.open(url, "_blank");
+}
+
 function activarBotonesDeSolicitudes(solicitudes) {
   const mapa = new Map();
   solicitudes.forEach(s => mapa.set(s.id, s));
@@ -1783,6 +1815,16 @@ function activarBotonesDeSolicitudes(solicitudes) {
       abrirWhatsAppConMensaje(mensajeWhatsAppSolicitud(solicitud, id));
     };
   });
+
+   document.querySelectorAll("[data-ruta-solicitud]").forEach(btn => {
+  btn.onclick = () => {
+    const id = btn.dataset.rutaSolicitud;
+    const solicitud = mapa.get(id);
+    if (!solicitud) return;
+
+    abrirRutaSolicitud(solicitud);
+  };
+});
 
   document.querySelectorAll("[data-estado-solicitud]").forEach(btn => {
     btn.onclick = async () => {
@@ -2334,7 +2376,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-15-geo-04";
+const SW_VERSION = "2026-06-15-geo-05";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
