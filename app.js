@@ -496,6 +496,17 @@ function actualizarNotaEmergencia() {
 let geoZonaSeleccionada = null;
 let geoDireccionSeleccionada = null;
 
+function crearSessionTokenGoogle() {
+  if (window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+
+  return `multi24-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+let sessionTokenDireccion = crearSessionTokenGoogle();
+let sessionTokenZona = crearSessionTokenGoogle();
+
 function cerrarCajaSugerencias(contenedor) {
   if (!contenedor) return;
   contenedor.classList.add("hidden");
@@ -527,11 +538,17 @@ async function buscarGeoapify(texto, modo) {
   params.set("text", texto);
 
   if (modo === "direccion") {
+    params.set("sessionToken", sessionTokenDireccion);
+
     const contexto = obtenerContextoGeoParaDireccion();
 
     if (contexto) {
       params.set("contexto", contexto);
     }
+  }
+
+  if (modo === "zona") {
+    params.set("sessionToken", sessionTokenZona);
   }
 
   const url = `${WORKER_GEO_URL}/autocomplete?${params.toString()}`;
@@ -544,6 +561,31 @@ async function buscarGeoapify(texto, modo) {
   }
 
   return Array.isArray(data.resultados) ? data.resultados : [];
+}
+
+async function obtenerDetalleGoogleLugar(placeId, modo) {
+  const params = new URLSearchParams();
+
+  params.set("placeId", placeId);
+
+  if (modo === "direccion") {
+    params.set("sessionToken", sessionTokenDireccion);
+  }
+
+  if (modo === "zona") {
+    params.set("sessionToken", sessionTokenZona);
+  }
+
+  const url = `${WORKER_GEO_URL}/place-details?${params.toString()}`;
+
+  const respuesta = await fetch(url);
+  const data = await respuesta.json();
+
+  if (!respuesta.ok || !data.ok) {
+    throw new Error(data.error || "No se pudo obtener el detalle de la dirección");
+  }
+
+  return data.detalle || null;
 }
 
 function configurarSugerenciasGeo(input, contenedor, modo) {
@@ -589,29 +631,45 @@ function configurarSugerenciasGeo(input, contenedor, modo) {
     contenedor.classList.remove("hidden");
   }
 
-  function seleccionarResultado(item) {
+  async function seleccionarResultado(item) {
     if (!item) return;
 
-    if (modo === "zona") {
-      geoZonaSeleccionada = item;
-      input.value = item.zonaLocalidad || item.label || "";
-    }
+    try {
+      let detalle = item;
 
-    if (modo === "direccion") {
-      geoDireccionSeleccionada = item;
-      input.value = item.direccion || item.label || "";
-
-      if (solZona && (item.zonaLocalidad || item.localidad || item.zona)) {
-        solZona.value = item.zonaLocalidad || `${item.zona || "GBA"} · ${item.localidad || ""}`.trim();
-        geoZonaSeleccionada = item;
+      if (item.placeId) {
+        detalle = await obtenerDetalleGoogleLugar(item.placeId, modo);
       }
-    }
 
-    cerrarCajaSugerencias(contenedor);
+      if (!detalle) return;
+
+      if (modo === "zona") {
+        geoZonaSeleccionada = detalle;
+        input.value = detalle.zonaLocalidad || detalle.label || "";
+        sessionTokenZona = crearSessionTokenGoogle();
+      }
+
+      if (modo === "direccion") {
+        geoDireccionSeleccionada = detalle;
+        input.value = detalle.direccion || detalle.label || "";
+
+        if (solZona && (detalle.zonaLocalidad || detalle.localidad || detalle.zona)) {
+          solZona.value = detalle.zonaLocalidad || `${detalle.zona || "GBA"} · ${detalle.localidad || ""}`.trim();
+          geoZonaSeleccionada = detalle;
+        }
+
+        sessionTokenDireccion = crearSessionTokenGoogle();
+      }
+
+      cerrarCajaSugerencias(contenedor);
+    } catch (error) {
+      console.error(error);
+      toastMsg(error.message || "No se pudo seleccionar la dirección");
+    }
   }
 
   async function ejecutarBusqueda() {
-    const texto = limpiar(input.value);
+    const texto = input.value || "";
 
     if (modo === "zona") {
       geoZonaSeleccionada = null;
@@ -621,7 +679,7 @@ function configurarSugerenciasGeo(input, contenedor, modo) {
       geoDireccionSeleccionada = null;
     }
 
-    if (texto.length < 1) {
+    if (limpiar(texto).length < 1) {
       cerrarCajaSugerencias(contenedor);
       return;
     }
@@ -640,7 +698,7 @@ function configurarSugerenciasGeo(input, contenedor, modo) {
 
   input.addEventListener("input", () => {
     clearTimeout(timer);
-    timer = setTimeout(ejecutarBusqueda, 350);
+    timer = setTimeout(ejecutarBusqueda, 300);
   });
 
   input.addEventListener("focus", () => {
@@ -665,7 +723,6 @@ function configurarSugerenciasGeo(input, contenedor, modo) {
     cerrarCajaSugerencias(contenedor);
   });
 }
-
 function obtenerExtensionAudio(tipo) {
   if (tipo.includes("mp4")) return "m4a";
   if (tipo.includes("mpeg")) return "mp3";
@@ -2249,7 +2306,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-15-geo-02";
+const SW_VERSION = "2026-06-15-geo-03";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
