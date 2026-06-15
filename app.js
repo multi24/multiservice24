@@ -502,8 +502,39 @@ function cerrarCajaSugerencias(contenedor) {
   contenedor.innerHTML = "";
 }
 
+function obtenerContextoGeoParaDireccion() {
+  if (geoZonaSeleccionada?.zonaLocalidad) {
+    return geoZonaSeleccionada.zonaLocalidad;
+  }
+
+  if (geoZonaSeleccionada?.localidad) {
+    return geoZonaSeleccionada.localidad;
+  }
+
+  const zonaEscrita = limpiar(solZona?.value);
+
+  if (zonaEscrita) {
+    return zonaEscrita;
+  }
+
+  return "";
+}
+
 async function buscarGeoapify(texto, modo) {
-  const url = `${WORKER_GEO_URL}/autocomplete?modo=${encodeURIComponent(modo)}&text=${encodeURIComponent(texto)}`;
+  const params = new URLSearchParams();
+
+  params.set("modo", modo);
+  params.set("text", texto);
+
+  if (modo === "direccion") {
+    const contexto = obtenerContextoGeoParaDireccion();
+
+    if (contexto) {
+      params.set("contexto", contexto);
+    }
+  }
+
+  const url = `${WORKER_GEO_URL}/autocomplete?${params.toString()}`;
 
   const respuesta = await fetch(url);
   const data = await respuesta.json();
@@ -2218,7 +2249,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-15-geo-01";
+const SW_VERSION = "2026-06-15-geo-02";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
