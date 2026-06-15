@@ -1800,3 +1800,33 @@ main{
     width:100%;
   }
 }
+
+.ms-route-toolbar{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0 0 12px;
+  padding:12px;
+  border-radius:18px;
+  background:#f8fbff;
+  border:1px solid var(--borde);
+}
+
+.ms-route-check{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:999px;
+  background:#fff;
+  border:1px solid var(--borde);
+  color:var(--azul-noche);
+  font-weight:900;
+  font-size:13px;
+}
+
+.ms-route-check input{
+  width:17px;
+  height:17px;
+}
