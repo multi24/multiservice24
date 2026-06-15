@@ -723,6 +723,43 @@ function configurarSugerenciasGeo(input, contenedor, modo) {
     cerrarCajaSugerencias(contenedor);
   });
 }
+
+function limpiarFormularioSolicitud() {
+  formSolicitudServicio?.reset();
+
+  geoZonaSeleccionada = null;
+  geoDireccionSeleccionada = null;
+
+  cerrarCajaSugerencias(solZonaSugerencias);
+  cerrarCajaSugerencias(solDireccionSugerencias);
+
+  actualizarNotaEmergencia();
+  borrarAudioSolicitud(false);
+
+  if (solArchivosResumen) {
+    solArchivosResumen.classList.add("hidden");
+    solArchivosResumen.textContent = "";
+  }
+
+  if (typeof crearSessionTokenGoogle === "function") {
+    if (typeof sessionTokenDireccion !== "undefined") {
+      sessionTokenDireccion = crearSessionTokenGoogle();
+    }
+
+    if (typeof sessionTokenZona !== "undefined") {
+      sessionTokenZona = crearSessionTokenGoogle();
+    }
+  }
+}
+
+function cerrarModalControlado(modal) {
+  if (modal === modalSolicitud) {
+    limpiarFormularioSolicitud();
+  }
+
+  cerrarModal(modal);
+}
+
 function obtenerExtensionAudio(tipo) {
   if (tipo.includes("mp4")) return "m4a";
   if (tipo.includes("mpeg")) return "mp3";
@@ -1851,13 +1888,13 @@ window.addEventListener("hashchange", () => {
 
 document.querySelectorAll("[data-close-modal]").forEach(btn => {
   btn.addEventListener("click", () => {
-    cerrarModal($(btn.dataset.closeModal));
+    cerrarModalControlado($(btn.dataset.closeModal));
   });
 });
 
 document.querySelectorAll(".ms-modal").forEach(modal => {
   modal.addEventListener("click", (e) => {
-    if (e.target === modal) cerrarModal(modal);
+    if (e.target === modal) cerrarModalControlado(modal);
   });
 });
 
@@ -2171,18 +2208,9 @@ abrirWhatsAppConMensaje(
   ventanaWhatsApp
 );
 
-formSolicitudServicio.reset();
-geoZonaSeleccionada = null;
-geoDireccionSeleccionada = null;
-    actualizarNotaEmergencia();
-    borrarAudioSolicitud(false);
-
-    if (solArchivosResumen) {
-      solArchivosResumen.classList.add("hidden");
-      solArchivosResumen.textContent = "";
-    }
-
-    cerrarModal(modalSolicitud);
+limpiarFormularioSolicitud();
+cerrarModal(modalSolicitud);
+     
     toastMsg("Solicitud guardada con archivos");
     await renderPaneles();
   } catch (error) {
@@ -2306,7 +2334,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-15-geo-03";
+const SW_VERSION = "2026-06-15-geo-04";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
