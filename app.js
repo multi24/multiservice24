@@ -53,6 +53,7 @@ providerGoogle.setCustomParameters({
 const WHATSAPP_NUMERO = "5491130042287";
 
 const WORKER_UPLOAD_URL = "https://multi24-upload.multi24pro.workers.dev/upload";
+const WORKER_GEO_URL = "https://geo.multi24pro.workers.dev";
 
 const MAX_ARCHIVOS_SOLICITUD = 6;
 const MAX_MB_ARCHIVO_SOLICITUD = 30;
@@ -390,6 +391,14 @@ function mensajeWhatsAppSolicitud(data, id = "") {
     partes.push(`*Zona:* ${data.zona}`);
   }
 
+     if (data.localidad) {
+    partes.push(`*Localidad:* ${data.localidad}`);
+  }
+
+  if (data.partido) {
+    partes.push(`*Partido:* ${data.partido}`);
+  }
+
   if (data.direccion) {
     partes.push(`*Dirección:* ${data.direccion}`);
   }
@@ -484,85 +493,64 @@ function actualizarNotaEmergencia() {
   emergenciaNota.classList.toggle("hidden", !solEmergencia.checked);
 }
 
-const ZONAS_SUGERIDAS = [
-  "CABA",
-  "GBA Sur",
-  "GBA Norte",
-  "GBA Oeste",
-  "Tristán Suárez",
-  "Ezeiza",
-  "La Unión",
-  "Monte Grande",
-  "Canning",
-  "Carlos Spegazzini",
-  "Spegazzini",
-  "Luis Guillón",
-  "El Jagüel",
-  "Lomas de Zamora",
-  "Lanús",
-  "Avellaneda",
-  "Temperley",
-  "Adrogué",
-  "Banfield",
-  "Burzaco",
-  "Quilmes",
-  "Berazategui",
-  "Florencio Varela",
-  "San Vicente",
-  "Presidente Perón",
-  "Esteban Echeverría"
-];
+let geoZonaSeleccionada = null;
+let geoDireccionSeleccionada = null;
 
-const DIRECCIONES_SUGERIDAS = [
-  "Tristán Suárez, Buenos Aires",
-  "Ezeiza, Buenos Aires",
-  "La Unión, Buenos Aires",
-  "Monte Grande, Buenos Aires",
-  "Canning, Buenos Aires",
-  "Carlos Spegazzini, Buenos Aires",
-  "Luis Guillón, Buenos Aires",
-  "El Jagüel, Buenos Aires",
-  "Lomas de Zamora, Buenos Aires",
-  "Lanús, Buenos Aires",
-  "Avellaneda, Buenos Aires",
-  "Temperley, Buenos Aires",
-  "Adrogué, Buenos Aires",
-  "Banfield, Buenos Aires",
-  "Burzaco, Buenos Aires",
-  "Quilmes, Buenos Aires",
-  "Berazategui, Buenos Aires",
-  "Florencio Varela, Buenos Aires",
-  "CABA"
-];
+function cerrarCajaSugerencias(contenedor) {
+  if (!contenedor) return;
+  contenedor.classList.add("hidden");
+  contenedor.innerHTML = "";
+}
 
-function configurarSugerencias(input, contenedor, lista) {
-  if (!input || !contenedor) return;
+async function buscarGeoapify(texto, modo) {
+  const url = `${WORKER_GEO_URL}/autocomplete?modo=${encodeURIComponent(modo)}&text=${encodeURIComponent(texto)}`;
 
-  function cerrarSugerencias() {
-    contenedor.classList.add("hidden");
-    contenedor.innerHTML = "";
+  const respuesta = await fetch(url);
+  const data = await respuesta.json();
+
+  if (!respuesta.ok || !data.ok) {
+    throw new Error(data.error || "No se pudieron buscar direcciones");
   }
 
-  function mostrarSugerencias() {
-    const texto = limpiar(input.value).toLowerCase();
+  return Array.isArray(data.resultados) ? data.resultados : [];
+}
 
-    const resultados = lista
-      .filter(item => {
-        if (!texto) return true;
-        return item.toLowerCase().includes(texto);
-      })
-      .slice(0, 8);
+function configurarSugerenciasGeo(input, contenedor, modo) {
+  if (!input || !contenedor) return;
+
+  let timer = null;
+  let resultadosActuales = [];
+
+  function mostrarCargando() {
+    contenedor.innerHTML = `
+      <div class="ms-suggest-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        Buscando...
+      </div>
+    `;
+    contenedor.classList.remove("hidden");
+  }
+
+  function renderResultados(resultados) {
+    resultadosActuales = resultados;
 
     if (!resultados.length) {
-      cerrarSugerencias();
+      cerrarCajaSugerencias(contenedor);
       return;
     }
 
-    contenedor.innerHTML = resultados.map(item => {
+    contenedor.innerHTML = resultados.map((item, index) => {
+      const principal = item.label || item.direccion || item.localidad || "Ubicación";
+      const secundario = item.secondary || "";
+
       return `
-        <button class="ms-suggest-item" type="button" data-sugerencia="${escaparHtml(item)}">
+        <button class="ms-suggest-item" type="button" data-geo-index="${index}">
           <i class="fa-solid fa-location-dot"></i>
-          ${escaparHtml(item)}
+
+          <span class="ms-suggest-text">
+            <strong>${escaparHtml(principal)}</strong>
+            ${secundario ? `<small>${escaparHtml(secundario)}</small>` : ""}
+          </span>
         </button>
       `;
     }).join("");
@@ -570,22 +558,80 @@ function configurarSugerencias(input, contenedor, lista) {
     contenedor.classList.remove("hidden");
   }
 
-  input.addEventListener("focus", mostrarSugerencias);
-  input.addEventListener("input", mostrarSugerencias);
+  function seleccionarResultado(item) {
+    if (!item) return;
+
+    if (modo === "zona") {
+      geoZonaSeleccionada = item;
+      input.value = item.zonaLocalidad || item.label || "";
+    }
+
+    if (modo === "direccion") {
+      geoDireccionSeleccionada = item;
+      input.value = item.direccion || item.label || "";
+
+      if (solZona && (item.zonaLocalidad || item.localidad || item.zona)) {
+        solZona.value = item.zonaLocalidad || `${item.zona || "GBA"} · ${item.localidad || ""}`.trim();
+        geoZonaSeleccionada = item;
+      }
+    }
+
+    cerrarCajaSugerencias(contenedor);
+  }
+
+  async function ejecutarBusqueda() {
+    const texto = limpiar(input.value);
+
+    if (modo === "zona") {
+      geoZonaSeleccionada = null;
+    }
+
+    if (modo === "direccion") {
+      geoDireccionSeleccionada = null;
+    }
+
+    if (texto.length < 1) {
+      cerrarCajaSugerencias(contenedor);
+      return;
+    }
+
+    mostrarCargando();
+
+    try {
+      const resultados = await buscarGeoapify(texto, modo);
+      renderResultados(resultados);
+    } catch (error) {
+      console.error(error);
+      cerrarCajaSugerencias(contenedor);
+      toastMsg(error.message || "No se pudieron cargar sugerencias");
+    }
+  }
+
+  input.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(ejecutarBusqueda, 350);
+  });
+
+  input.addEventListener("focus", () => {
+    if (limpiar(input.value).length >= 1) {
+      clearTimeout(timer);
+      timer = setTimeout(ejecutarBusqueda, 150);
+    }
+  });
 
   contenedor.addEventListener("mousedown", (e) => {
-    const btn = e.target.closest("[data-sugerencia]");
+    const btn = e.target.closest("[data-geo-index]");
     if (!btn) return;
 
     e.preventDefault();
 
-    input.value = btn.dataset.sugerencia || "";
-    cerrarSugerencias();
+    const index = Number(btn.dataset.geoIndex);
+    seleccionarResultado(resultadosActuales[index]);
   });
 
   document.addEventListener("click", (e) => {
     if (e.target === input || contenedor.contains(e.target)) return;
-    cerrarSugerencias();
+    cerrarCajaSugerencias(contenedor);
   });
 }
 
@@ -907,8 +953,14 @@ async function guardarSolicitudServicio(data) {
     clienteTelefono: data.telefono,
     servicio: data.servicio,
     emergencia: data.emergencia,
-    zona: data.zona,
-    direccion: data.direccion,
+zona: data.zona,
+localidad: data.localidad || "",
+partido: data.partido || "",
+provincia: data.provincia || "",
+direccion: data.direccion,
+lat: data.lat || null,
+lon: data.lon || null,
+geo: data.geo || null,
     fechaDeseada: data.fechaDeseada,
     horarioDeseado: data.horarioDeseado,
 descripcion: data.descripcion,
@@ -1141,8 +1193,10 @@ function renderSolicitudItem(s, modo = "usuario") {
 
       <p><strong>Cliente:</strong> ${escaparHtml(s.clienteNombre || "Sin nombre")}</p>
       <p><strong>WhatsApp:</strong> ${escaparHtml(s.clienteTelefono || "Sin teléfono")}</p>
-      <p><strong>Zona:</strong> ${escaparHtml(s.zona || "Sin zona")}</p>
-      <p><strong>Dirección:</strong> ${escaparHtml(s.direccion || "Sin dirección")}</p>
+<p><strong>Zona:</strong> ${escaparHtml(s.zona || "Sin zona")}</p>
+<p><strong>Localidad:</strong> ${escaparHtml(s.localidad || "Sin localidad")}</p>
+<p><strong>Partido:</strong> ${escaparHtml(s.partido || "Sin partido")}</p>
+<p><strong>Dirección:</strong> ${escaparHtml(s.direccion || "Sin dirección")}</p>
 <p><strong>Detalle:</strong> ${escaparHtml(s.descripcion || "Sin detalle")}</p>
 ${renderArchivosSolicitud(s)}
 <p><strong>Fecha:</strong> ${fecha}</p>
@@ -1852,8 +1906,8 @@ actualizarBotonSubirArriba();
 
 solEmergencia?.addEventListener("change", actualizarNotaEmergencia);
 
-configurarSugerencias(solZona, solZonaSugerencias, ZONAS_SUGERIDAS);
-configurarSugerencias(solDireccion, solDireccionSugerencias, DIRECCIONES_SUGERIDAS);
+configurarSugerenciasGeo(solZona, solZonaSugerencias, "zona");
+configurarSugerenciasGeo(solDireccion, solDireccionSugerencias, "direccion");
 
 solArchivos?.addEventListener("change", actualizarResumenArchivosSolicitud);
 
@@ -1926,19 +1980,40 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
 
   const archivosSeleccionados = obtenerArchivosSolicitudParaSubir();
 
-  const data = {
-    nombre: limpiar($("solNombre")?.value),
-    telefono: normalizarTelefono($("solTelefono")?.value),
-    servicio: limpiar($("solServicio")?.value),
-    zona: limpiar($("solZona")?.value),
-    direccion: limpiar($("solDireccion")?.value),
-    fechaDeseada: limpiar($("solFechaDeseada")?.value),
-    horarioDeseado: limpiar($("solHorarioDeseado")?.value),
-    emergencia: !!$("solEmergencia")?.checked,
-    descripcion: limpiar($("solDescripcion")?.value),
-    archivos: [],
-    archivosVencenEn: ""
-  };
+const geoFinal = geoDireccionSeleccionada || geoZonaSeleccionada || null;
+
+const data = {
+  nombre: limpiar($("solNombre")?.value),
+  telefono: normalizarTelefono($("solTelefono")?.value),
+  servicio: limpiar($("solServicio")?.value),
+
+  zona: limpiar($("solZona")?.value),
+  localidad: geoFinal?.localidad || "",
+  partido: geoFinal?.partido || "",
+  provincia: geoFinal?.provincia || "",
+
+  direccion: limpiar($("solDireccion")?.value),
+  lat: geoFinal?.lat || null,
+  lon: geoFinal?.lon || null,
+
+  geo: geoFinal ? {
+    zona: geoFinal.zona || "",
+    zonaLocalidad: geoFinal.zonaLocalidad || "",
+    localidad: geoFinal.localidad || "",
+    partido: geoFinal.partido || "",
+    provincia: geoFinal.provincia || "",
+    direccion: geoFinal.direccion || "",
+    lat: geoFinal.lat || null,
+    lon: geoFinal.lon || null
+  } : null,
+
+  fechaDeseada: limpiar($("solFechaDeseada")?.value),
+  horarioDeseado: limpiar($("solHorarioDeseado")?.value),
+  emergencia: !!$("solEmergencia")?.checked,
+  descripcion: limpiar($("solDescripcion")?.value),
+  archivos: [],
+  archivosVencenEn: ""
+};
 
   if (!data.nombre || !data.telefono || !data.servicio) {
     if (ventanaWhatsApp) ventanaWhatsApp.close();
@@ -1989,23 +2064,28 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
 
     const id = await guardarSolicitudServicio(data);
 
-    abrirWhatsAppConMensaje(
-      mensajeWhatsAppSolicitud({
-        clienteNombre: data.nombre,
-        clienteTelefono: data.telefono,
-        servicio: data.servicio,
-        emergencia: data.emergencia,
-        zona: data.zona,
-        direccion: data.direccion,
-        fechaDeseada: data.fechaDeseada,
-        horarioDeseado: data.horarioDeseado,
-        descripcion: data.descripcion,
-        archivos: data.archivos
-      }, id),
-      ventanaWhatsApp
-    );
+abrirWhatsAppConMensaje(
+  mensajeWhatsAppSolicitud({
+    clienteNombre: data.nombre,
+    clienteTelefono: data.telefono,
+    servicio: data.servicio,
+    emergencia: data.emergencia,
+    zona: data.zona,
+    localidad: data.localidad,
+    partido: data.partido,
+    provincia: data.provincia,
+    direccion: data.direccion,
+    fechaDeseada: data.fechaDeseada,
+    horarioDeseado: data.horarioDeseado,
+    descripcion: data.descripcion,
+    archivos: data.archivos
+  }, id),
+  ventanaWhatsApp
+);
 
-    formSolicitudServicio.reset();
+formSolicitudServicio.reset();
+geoZonaSeleccionada = null;
+geoDireccionSeleccionada = null;
     actualizarNotaEmergencia();
     borrarAudioSolicitud(false);
 
@@ -2138,7 +2218,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-12-05";
+const SW_VERSION = "2026-06-15-geo-01";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
