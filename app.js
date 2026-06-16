@@ -269,96 +269,146 @@ function cerrarTodosLosModales() {
   document.body.classList.remove("modal-open");
 }
 
-function prepararVentanaWhatsApp() {
-  const ventana = window.open("", "_blank");
-
-  if (!ventana) return null;
-
-  ventana.document.open();
-  ventana.document.write(`
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-      <meta charset="UTF-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>Preparando WhatsApp...</title>
-      <style>
-        body{
-          margin:0;
-          min-height:100vh;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          background:#f3f6fb;
-          font-family:Arial, Helvetica, sans-serif;
-          color:#071b3a;
-        }
-
-        .box{
-          width:min(420px, calc(100% - 32px));
-          background:#fff;
-          border-radius:28px;
-          padding:28px;
-          text-align:center;
-          box-shadow:0 18px 45px rgba(7,27,58,.14);
-          border:1px solid rgba(7,27,58,.10);
-        }
-
-        .spinner{
-          width:42px;
-          height:42px;
-          border-radius:50%;
-          border:4px solid #dfe8f4;
-          border-top-color:#e11f2a;
-          margin:0 auto 16px;
-          animation:girar .8s linear infinite;
-        }
-
-        h1{
-          font-size:22px;
-          margin:0 0 8px;
-        }
-
-        p{
-          margin:0;
-          color:#6b768a;
-          line-height:1.45;
-          font-weight:700;
-        }
-
-        @keyframes girar{
-          to{ transform:rotate(360deg); }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="box">
-        <div class="spinner"></div>
-        <h1>Preparando WhatsApp...</h1>
-        <p>Estamos subiendo los archivos y armando el mensaje.</p>
-      </div>
-    </body>
-    </html>
-  `);
-  ventana.document.close();
-
-  return ventana;
+function esDispositivoMovil() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
 }
 
-function abrirWhatsAppConMensaje(mensaje, ventanaPrevia = null) {
+function encodeWhatsAppText(texto) {
+  return String(texto || "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .trim()
+    .split("\n")
+    .map(linea => encodeURIComponent(linea))
+    .join("%0A");
+}
+
+function cerrarPanelWhatsApp() {
+  const viejo = document.getElementById("multi24WhatsAppOverlay");
+  if (viejo) viejo.remove();
+}
+
+function prepararVentanaWhatsApp() {
+  cerrarPanelWhatsApp();
+
+  const overlay = document.createElement("div");
+  overlay.id = "multi24WhatsAppOverlay";
+
+  overlay.innerHTML = `
+    <div class="multi24-wa-card">
+      <div class="multi24-wa-spinner"></div>
+      <h2>Preparando WhatsApp...</h2>
+      <p>Estamos guardando la solicitud, subiendo archivos y armando el mensaje.</p>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  return {
+    __multi24Overlay: true,
+    closed: false,
+    close() {
+      cerrarPanelWhatsApp();
+      this.closed = true;
+    }
+  };
+}
+
+function mostrarOpcionesWhatsApp(mensaje, overlayControl = null) {
   const mensajeFinal = String(mensaje || "")
     .replace(/\r\n/g, "\n")
     .replace(/\r/g, "\n")
     .trim();
 
-  const texto = encodeURIComponent(mensajeFinal);
-  const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${texto}`;
+  const texto = encodeWhatsAppText(mensajeFinal);
 
-  if (ventanaPrevia && !ventanaPrevia.closed) {
-    ventanaPrevia.location.replace(url);
+  const urlWeb = `https://wa.me/${WHATSAPP_NUMERO}?text=${texto}`;
+  const urlApp = `whatsapp://send?phone=${WHATSAPP_NUMERO}&text=${texto}`;
+  const urlBusiness = `intent://send?phone=${WHATSAPP_NUMERO}&text=${texto}#Intent;scheme=whatsapp;package=com.whatsapp.w4b;end`;
+
+  const overlay = document.getElementById("multi24WhatsAppOverlay");
+
+  if (!overlay) {
+    window.open(urlWeb, "_blank");
     return;
   }
 
+  overlay.innerHTML = `
+    <div class="multi24-wa-card multi24-wa-card-ready">
+      <button class="multi24-wa-x" type="button" data-wa-cerrar>
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="multi24-wa-ok">
+        <i class="fa-brands fa-whatsapp"></i>
+      </div>
+
+      <h2>Solicitud guardada</h2>
+      <p>
+        Ahora elegí dónde abrir el mensaje. Si tu celular tiene WhatsApp común y Business,
+        probá primero con el que usás para Multi24.
+      </p>
+
+      <div class="multi24-wa-actions">
+        <button type="button" class="multi24-wa-btn primary" data-wa-app>
+          Abrir WhatsApp
+        </button>
+
+        <button type="button" class="multi24-wa-btn business" data-wa-business>
+          Abrir WhatsApp Business
+        </button>
+
+        <button type="button" class="multi24-wa-btn" data-wa-web>
+          Abrir en navegador
+        </button>
+
+        <button type="button" class="multi24-wa-btn light" data-wa-copiar>
+          Copiar mensaje
+        </button>
+      </div>
+
+      <textarea class="multi24-wa-textarea" readonly>${mensajeFinal.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</textarea>
+    </div>
+  `;
+
+  overlay.querySelector("[data-wa-app]")?.addEventListener("click", () => {
+    window.location.href = urlApp;
+  });
+
+  overlay.querySelector("[data-wa-business]")?.addEventListener("click", () => {
+    window.location.href = urlBusiness;
+  });
+
+  overlay.querySelector("[data-wa-web]")?.addEventListener("click", () => {
+    window.open(urlWeb, "_blank");
+  });
+
+  overlay.querySelector("[data-wa-copiar]")?.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(mensajeFinal);
+      toastMsg("Mensaje copiado");
+    } catch (error) {
+      const textarea = overlay.querySelector(".multi24-wa-textarea");
+      textarea?.select();
+      document.execCommand("copy");
+      toastMsg("Mensaje copiado");
+    }
+  });
+
+  overlay.querySelector("[data-wa-cerrar]")?.addEventListener("click", () => {
+    if (overlayControl) overlayControl.closed = true;
+    cerrarPanelWhatsApp();
+  });
+}
+
+function abrirWhatsAppConMensaje(mensaje, ventanaPrevia = null) {
+  if (ventanaPrevia?.__multi24Overlay) {
+    mostrarOpcionesWhatsApp(mensaje, ventanaPrevia);
+    return;
+  }
+
+  const texto = encodeWhatsAppText(mensaje);
+  const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${texto}`;
   window.open(url, "_blank");
 }
 
@@ -2284,11 +2334,13 @@ btnCompartirApp?.addEventListener("click", async () => {
   const url = "https://www.multiservice24.com.ar/";
   const texto = "Te comparto Multi24 para solicitar servicios programados y emergencias.";
 
+  const mensajeCompartir = `${texto}\n${url}`;
+
   if (navigator.share) {
     try {
       await navigator.share({
         title: "Multi24",
-        text: texto,
+        text: mensajeCompartir,
         url
       });
       return;
@@ -2297,7 +2349,7 @@ btnCompartirApp?.addEventListener("click", async () => {
     }
   }
 
-  const mensaje = encodeURIComponent(`${texto}\n${url}`);
+  const mensaje = encodeWhatsAppText(mensajeCompartir);
   window.open(`https://wa.me/?text=${mensaje}`, "_blank");
 });
 
@@ -2747,7 +2799,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-16-galeria-02";
+const SW_VERSION = "2026-06-16-wa-mobile-01";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
