@@ -347,14 +347,15 @@ function prepararVentanaWhatsApp() {
 
 function abrirWhatsAppConMensaje(mensaje, ventanaPrevia = null) {
   const mensajeFinal = String(mensaje || "")
-    .replace(/\r?\n/g, "\r\n")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
     .trim();
 
   const texto = encodeURIComponent(mensajeFinal);
-  const url = `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMERO}&text=${texto}`;
+  const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${texto}`;
 
   if (ventanaPrevia && !ventanaPrevia.closed) {
-    ventanaPrevia.location.href = url;
+    ventanaPrevia.location.replace(url);
     return;
   }
 
@@ -476,13 +477,32 @@ function fechaDeseadaBonita(valor) {
 
   const fecha = new Date(anio, mes, dia);
 
-  return capitalizarPrimera(
-    fecha.toLocaleDateString("es-AR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long"
-    })
-  );
+  const dias = [
+    "domingo",
+    "lunes",
+    "martes",
+    "miércoles",
+    "jueves",
+    "viernes",
+    "sábado"
+  ];
+
+  const meses = [
+    "enero",
+    "febrero",
+    "marzo",
+    "abril",
+    "mayo",
+    "junio",
+    "julio",
+    "agosto",
+    "septiembre",
+    "octubre",
+    "noviembre",
+    "diciembre"
+  ];
+
+  return `${capitalizarPrimera(dias[fecha.getDay()])} ${dia} de ${meses[mes]}`;
 }
 
 function linkUbicacionSolicitud(data) {
@@ -503,29 +523,14 @@ function linkUbicacionSolicitud(data) {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
 }
 
-function urlArchivoParaWhatsApp(archivo) {
-  return archivo.urlCorta || archivo.shortUrl || archivo.url || "";
-}
-
 function mensajeWhatsAppSolicitud(data, id = "") {
   const partes = [];
-
   const archivos = Array.isArray(data.archivos) ? data.archivos : [];
-
-  const audios = archivos.filter(archivo => {
-    const tipo = String(archivo.tipo || "").toLowerCase();
-    const tipoGeneral = String(archivo.tipoGeneral || "").toLowerCase();
-    return tipo.startsWith("audio/") || tipoGeneral === "audio";
-  });
-
-  const adjuntos = archivos.filter(archivo => {
-    const tipo = String(archivo.tipo || "").toLowerCase();
-    const tipoGeneral = String(archivo.tipoGeneral || "").toLowerCase();
-    return !tipo.startsWith("audio/") && tipoGeneral !== "audio";
-  });
+  const galeriaUrl = data.archivosGaleriaUrl || data.galeriaUrl || "";
 
   partes.push("*MULTI24 - Solicitud de servicio*");
   partes.push("");
+
   partes.push(`*Nombre:* ${data.clienteNombre || "Sin nombre"}`);
   partes.push(`*WhatsApp:* ${data.clienteTelefono || "Sin teléfono"}`);
   partes.push(`*Servicio:* ${data.servicio || "Sin servicio"}`);
@@ -573,26 +578,27 @@ function mensajeWhatsAppSolicitud(data, id = "") {
     partes.push(data.descripcion);
   }
 
-if (archivos.length) {
-  partes.push("");
-  partes.push("*Archivos cargados:*");
+  if (archivos.length) {
+    partes.push("");
+    partes.push("*Archivos cargados:*");
 
-  const galeriaUrl = data.archivosGaleriaUrl || data.galeriaUrl || "";
+    if (galeriaUrl) {
+      partes.push(galeriaUrl);
+    } else {
+      archivos.forEach((archivo, index) => {
+        const url = archivo.urlCorta || archivo.shortUrl || archivo.url || "";
+        if (!url) return;
 
-  if (galeriaUrl) {
-    partes.push(galeriaUrl);
-  } else {
-    archivos.forEach((archivo, index) => {
-      const url = urlArchivoParaWhatsApp(archivo);
-      if (!url) return;
-
-      const tipo = archivo.tipoGeneral || "Archivo";
-      partes.push(`${index + 1}. ${tipo}: ${url}`);
-    });
+        const tipo = archivo.tipoGeneral || "Archivo";
+        partes.push(`${index + 1}. ${tipo}: ${url}`);
+      });
+    }
   }
-}
 
- return partes.join("\r\n");
+  partes.push("");
+  partes.push("Gracias.");
+
+  return partes.join("\n");
 }
 
 /* =========================================================
@@ -2741,7 +2747,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-16-galeria-01";
+const SW_VERSION = "2026-06-16-galeria-02";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
