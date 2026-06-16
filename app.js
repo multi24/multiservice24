@@ -52,7 +52,7 @@ providerGoogle.setCustomParameters({
 
 const WHATSAPP_NUMERO = "5491130042287";
 
-const WORKER_UPLOAD_URL = "https://multi24-upload.multi24pro.workers.dev/upload";
+const WORKER_UPLOAD_URL = "https://archivos.multiservice24.com.ar/upload";
 const WORKER_GEO_URL = "https://geo.multi24pro.workers.dev";
 
 const MAX_ARCHIVOS_SOLICITUD = 6;
