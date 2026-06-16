@@ -269,9 +269,89 @@ function cerrarTodosLosModales() {
   document.body.classList.remove("modal-open");
 }
 
+function prepararVentanaWhatsApp() {
+  const ventana = window.open("", "_blank");
+
+  if (!ventana) return null;
+
+  ventana.document.open();
+  ventana.document.write(`
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>Preparando WhatsApp...</title>
+      <style>
+        body{
+          margin:0;
+          min-height:100vh;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background:#f3f6fb;
+          font-family:Arial, Helvetica, sans-serif;
+          color:#071b3a;
+        }
+
+        .box{
+          width:min(420px, calc(100% - 32px));
+          background:#fff;
+          border-radius:28px;
+          padding:28px;
+          text-align:center;
+          box-shadow:0 18px 45px rgba(7,27,58,.14);
+          border:1px solid rgba(7,27,58,.10);
+        }
+
+        .spinner{
+          width:42px;
+          height:42px;
+          border-radius:50%;
+          border:4px solid #dfe8f4;
+          border-top-color:#e11f2a;
+          margin:0 auto 16px;
+          animation:girar .8s linear infinite;
+        }
+
+        h1{
+          font-size:22px;
+          margin:0 0 8px;
+        }
+
+        p{
+          margin:0;
+          color:#6b768a;
+          line-height:1.45;
+          font-weight:700;
+        }
+
+        @keyframes girar{
+          to{ transform:rotate(360deg); }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="box">
+        <div class="spinner"></div>
+        <h1>Preparando WhatsApp...</h1>
+        <p>Estamos subiendo los archivos y armando el mensaje.</p>
+      </div>
+    </body>
+    </html>
+  `);
+  ventana.document.close();
+
+  return ventana;
+}
+
 function abrirWhatsAppConMensaje(mensaje, ventanaPrevia = null) {
-  const texto = encodeURIComponent(mensaje);
-  const url = `https://wa.me/${WHATSAPP_NUMERO}?text=${texto}`;
+  const mensajeFinal = String(mensaje || "")
+    .replace(/\r?\n/g, "\r\n")
+    .trim();
+
+  const texto = encodeURIComponent(mensajeFinal);
+  const url = `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMERO}&text=${texto}`;
 
   if (ventanaPrevia && !ventanaPrevia.closed) {
     ventanaPrevia.location.href = url;
@@ -314,10 +394,12 @@ archivosSeleccionados.forEach((archivo) => {
     throw new Error(data?.error || "No se pudieron subir los archivos.");
   }
 
-  return {
-    archivos: Array.isArray(data.archivos) ? data.archivos : [],
-    vencenEn: data.vencenEn || ""
-  };
+return {
+  archivos: Array.isArray(data.archivos) ? data.archivos : [],
+  galeriaId: data.galeriaId || "",
+  galeriaUrl: data.galeriaUrl || "",
+  vencenEn: data.vencenEn || ""
+};
 }
 function escaparHtml(texto) {
   return String(texto || "")
@@ -491,11 +573,16 @@ function mensajeWhatsAppSolicitud(data, id = "") {
     partes.push(data.descripcion);
   }
 
-  if (adjuntos.length) {
-    partes.push("");
-    partes.push("*Archivos cargados:*");
+if (archivos.length) {
+  partes.push("");
+  partes.push("*Archivos cargados:*");
 
-    adjuntos.forEach((archivo, index) => {
+  const galeriaUrl = data.archivosGaleriaUrl || data.galeriaUrl || "";
+
+  if (galeriaUrl) {
+    partes.push(galeriaUrl);
+  } else {
+    archivos.forEach((archivo, index) => {
       const url = urlArchivoParaWhatsApp(archivo);
       if (!url) return;
 
@@ -503,23 +590,9 @@ function mensajeWhatsAppSolicitud(data, id = "") {
       partes.push(`${index + 1}. ${tipo}: ${url}`);
     });
   }
+}
 
-  if (audios.length) {
-    partes.push("");
-    partes.push("*Audio-solicitud:*");
-
-    audios.forEach((archivo, index) => {
-      const url = urlArchivoParaWhatsApp(archivo);
-      if (!url) return;
-
-      partes.push(`${index + 1}. ${url}`);
-    });
-  }
-
-  partes.push("");
-  partes.push("Gracias.");
-
-  return partes.join("\n");
+ return partes.join("\r\n");
 }
 
 /* =========================================================
@@ -1200,6 +1273,8 @@ geo: data.geo || null,
 descripcion: data.descripcion,
 archivos: data.archivos || [],
 archivosCantidad: Array.isArray(data.archivos) ? data.archivos.length : 0,
+     archivosGaleriaId: data.archivosGaleriaId || "",
+archivosGaleriaUrl: data.archivosGaleriaUrl || "",
 archivosRetencionMeses: 6,
 archivosVencenEn: data.archivosVencenEn || "",
 estado: "pendiente_derivar",
@@ -2339,7 +2414,7 @@ formContactoRapido?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const btn = formContactoRapido.querySelector("button[type='submit']");
-  const ventanaWhatsApp = window.open("about:blank", "_blank");
+ const ventanaWhatsApp = prepararVentanaWhatsApp();
 
   const data = {
     nombre: limpiar($("contactoNombre")?.value),
@@ -2392,7 +2467,7 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const btn = formSolicitudServicio.querySelector("button[type='submit']");
-  const ventanaWhatsApp = window.open("about:blank", "_blank");
+ const ventanaWhatsApp = prepararVentanaWhatsApp();
 
   const archivosSeleccionados = obtenerArchivosSolicitudParaSubir();
 
@@ -2427,8 +2502,10 @@ const data = {
   horarioDeseado: limpiar($("solHorarioDeseado")?.value),
   emergencia: !!$("solEmergencia")?.checked,
   descripcion: limpiar($("solDescripcion")?.value),
-  archivos: [],
-  archivosVencenEn: ""
+archivos: [],
+archivosGaleriaId: "",
+archivosGaleriaUrl: "",
+archivosVencenEn: ""
 };
 
   if (!data.nombre || !data.telefono || !data.servicio) {
@@ -2510,8 +2587,10 @@ const data = {
 
  const subida = await subirArchivosSolicitud(archivosSeleccionados, data.telefono);
 
-      data.archivos = subida.archivos;
-      data.archivosVencenEn = subida.vencenEn;
+data.archivos = subida.archivos;
+data.archivosGaleriaId = subida.galeriaId || "";
+data.archivosGaleriaUrl = subida.galeriaUrl || "";
+data.archivosVencenEn = subida.vencenEn;
     }
 
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando solicitud...`;
@@ -2534,7 +2613,9 @@ abrirWhatsAppConMensaje(
     fechaDeseada: data.fechaDeseada,
     horarioDeseado: data.horarioDeseado,
     descripcion: data.descripcion,
-    archivos: data.archivos
+    archivos: data.archivos,
+    archivosGaleriaId: data.archivosGaleriaId,
+    archivosGaleriaUrl: data.archivosGaleriaUrl
   }, id),
   ventanaWhatsApp
 );
@@ -2660,7 +2741,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-15-geocode-01";
+const SW_VERSION = "2026-06-16-galeria-01";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
