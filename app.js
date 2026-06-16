@@ -178,6 +178,7 @@ let usuarioActual = null;
 let perfilActual = null;
 let prestadorActual = null;
 let vistaActual = "inicio";
+let hojaRutaSeleccion = new Set();
 
 let mediaRecorderSolicitud = null;
 let streamAudioSolicitud = null;
@@ -583,6 +584,29 @@ async function obtenerDetalleGoogleLugar(placeId, modo) {
 
   if (!respuesta.ok || !data.ok) {
     throw new Error(data.error || "No se pudo obtener el detalle de la dirección");
+  }
+
+  return data.detalle || null;
+}
+
+async function resolverDireccionEscritaGoogle(texto) {
+  const params = new URLSearchParams();
+
+  params.set("text", texto);
+
+  const contexto = obtenerContextoGeoParaDireccion();
+
+  if (contexto) {
+    params.set("contexto", contexto);
+  }
+
+  const url = `${WORKER_GEO_URL}/geocode?${params.toString()}`;
+
+  const respuesta = await fetch(url);
+  const data = await respuesta.json();
+
+  if (!respuesta.ok || !data.ok) {
+    throw new Error(data.error || "No se pudo validar la dirección escrita");
   }
 
   return data.detalle || null;
@@ -1308,6 +1332,73 @@ function renderArchivosSolicitud(s) {
   `;
 }
 
+function obtenerDestinoSolicitudMaps(solicitud) {
+  if (!solicitud) return "";
+
+  if (solicitud.lat && solicitud.lon) {
+    return `${solicitud.lat},${solicitud.lon}`;
+  }
+
+  return [
+    solicitud.direccion,
+    solicitud.localidad,
+    solicitud.partido,
+    solicitud.provincia || "Buenos Aires",
+    "Argentina"
+  ].filter(Boolean).join(", ");
+}
+
+function actualizarContadorHojaRuta() {
+  const contador = $("hojaRutaContador");
+  if (!contador) return;
+
+  const cantidad = hojaRutaSeleccion.size;
+  contador.textContent = `${cantidad} seleccionada${cantidad === 1 ? "" : "s"}`;
+}
+
+function abrirHojaRutaGoogleMaps(solicitudes) {
+  const mapa = new Map();
+  solicitudes.forEach(s => mapa.set(s.id, s));
+
+  const seleccionadas = Array.from(hojaRutaSeleccion)
+    .map(id => mapa.get(id))
+    .filter(Boolean)
+    .filter(s => obtenerDestinoSolicitudMaps(s));
+
+  if (!seleccionadas.length) {
+    toastMsg("Marcá al menos una dirección para armar la hoja de ruta");
+    return;
+  }
+
+  if (seleccionadas.length > 10) {
+    toastMsg("Google Maps permite hasta 10 paradas en este enlace. Marcá menos direcciones.");
+    return;
+  }
+
+  if (seleccionadas.length === 1) {
+    const destinoUnico = obtenerDestinoSolicitudMaps(seleccionadas[0]);
+    const urlUnico = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destinoUnico)}&travelmode=driving`;
+    window.open(urlUnico, "_blank");
+    return;
+  }
+
+  const destinos = seleccionadas.map(obtenerDestinoSolicitudMaps);
+
+  const destinoFinal = destinos[destinos.length - 1];
+  const paradasIntermedias = destinos.slice(0, -1);
+
+  const url = new URL("https://www.google.com/maps/dir/");
+  url.searchParams.set("api", "1");
+  url.searchParams.set("travelmode", "driving");
+  url.searchParams.set("destination", destinoFinal);
+
+  if (paradasIntermedias.length) {
+    url.searchParams.set("waypoints", paradasIntermedias.join("|"));
+  }
+
+  window.open(url.toString(), "_blank");
+}
+
 function renderSolicitudItem(s, modo = "usuario") {
   const fecha = fechaTexto(s.creadoEn);
   const emergencia = s.emergencia ? `<span class="ms-status red">Emergencia</span>` : "";
@@ -1332,10 +1423,26 @@ ${renderArchivosSolicitud(s)}
       </div>
 
 <div class="ms-item-actions">
-  <button class="ms-mini-btn red" data-wa-solicitud="${s.id}" type="button">
-    <i class="fa-brands fa-whatsapp"></i>
-    WhatsApp
-  </button>
+
+        ${
+          modo === "equipo"
+            ? `
+              <label class="ms-route-check">
+                <input
+                  type="checkbox"
+                  data-ruta-check="${s.id}"
+                  ${hojaRutaSeleccion.has(s.id) ? "checked" : ""}
+                />
+                <span>Agregar a hoja de ruta</span>
+              </label>
+            `
+            : ""
+        }
+
+        <button class="ms-mini-btn red" data-wa-solicitud="${s.id}" type="button">
+          <i class="fa-brands fa-whatsapp"></i>
+          WhatsApp
+        </button>
 
   <button class="ms-mini-btn" data-ruta-solicitud="${s.id}" type="button">
     <i class="fa-solid fa-route"></i>
@@ -1469,11 +1576,28 @@ async function renderEquipo() {
   const solicitudes = await obtenerTodasLasSolicitudes();
   const avisos = await obtenerAvisosEquipo();
 
-  if (listaSolicitudesEquipo) {
-    listaSolicitudesEquipo.innerHTML = solicitudes.length
-      ? solicitudes.map(s => renderSolicitudItem(s, "equipo")).join("")
-      : `<article class="ms-item"><p>No hay solicitudes todavía.</p></article>`;
-  }
+if (listaSolicitudesEquipo) {
+  listaSolicitudesEquipo.innerHTML = solicitudes.length
+    ? `
+      <div class="ms-route-toolbar">
+        <button class="ms-mini-btn red" data-abrir-hoja-ruta type="button">
+          <i class="fa-solid fa-route"></i>
+          Abrir hoja de ruta
+        </button>
+
+        <button class="ms-mini-btn" data-limpiar-hoja-ruta type="button">
+          Limpiar selección
+        </button>
+
+        <span id="hojaRutaContador" class="ms-status">
+          ${hojaRutaSeleccion.size} seleccionada${hojaRutaSeleccion.size === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      ${solicitudes.map(s => renderSolicitudItem(s, "equipo")).join("")}
+    `
+    : `<article class="ms-item"><p>No hay solicitudes todavía.</p></article>`;
+}
 
   if (listaAvisosEquipo) {
     listaAvisosEquipo.innerHTML = avisos.length
@@ -1816,6 +1940,39 @@ function activarBotonesDeSolicitudes(solicitudes) {
     };
   });
 
+   document.querySelectorAll("[data-ruta-check]").forEach(check => {
+  check.onchange = () => {
+    const id = check.dataset.rutaCheck;
+
+    if (check.checked) {
+      hojaRutaSeleccion.add(id);
+    } else {
+      hojaRutaSeleccion.delete(id);
+    }
+
+    actualizarContadorHojaRuta();
+  };
+});
+
+document.querySelectorAll("[data-abrir-hoja-ruta]").forEach(btn => {
+  btn.onclick = () => {
+    abrirHojaRutaGoogleMaps(solicitudes);
+  };
+});
+
+document.querySelectorAll("[data-limpiar-hoja-ruta]").forEach(btn => {
+  btn.onclick = async () => {
+    hojaRutaSeleccion.clear();
+
+    document.querySelectorAll("[data-ruta-check]").forEach(check => {
+      check.checked = false;
+    });
+
+    actualizarContadorHojaRuta();
+    toastMsg("Selección de hoja de ruta limpia");
+  };
+});
+
    document.querySelectorAll("[data-ruta-solicitud]").forEach(btn => {
   btn.onclick = () => {
     const id = btn.dataset.rutaSolicitud;
@@ -2073,6 +2230,13 @@ actualizarBotonSubirArriba();
 
 solEmergencia?.addEventListener("change", actualizarNotaEmergencia);
 
+const prestadorRecursosInput = $("prestadorRecursos");
+
+if (prestadorRecursosInput) {
+  prestadorRecursosInput.checked = true;
+  prestadorRecursosInput.disabled = true;
+}
+
 configurarSugerenciasGeo(solZona, solZonaSugerencias, "zona");
 configurarSugerenciasGeo(solDireccion, solDireccionSugerencias, "direccion");
 
@@ -2218,6 +2382,44 @@ const data = {
   try {
     btn.disabled = true;
 
+         if (!geoDireccionSeleccionada && data.direccion) {
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Validando dirección...`;
+
+      const direccionDetectada = await resolverDireccionEscritaGoogle(data.direccion);
+
+      if (direccionDetectada) {
+        geoDireccionSeleccionada = direccionDetectada;
+        geoZonaSeleccionada = direccionDetectada;
+
+        data.zona = direccionDetectada.zonaLocalidad || direccionDetectada.zona || data.zona;
+        data.localidad = direccionDetectada.localidad || "";
+        data.partido = direccionDetectada.partido || "";
+        data.provincia = direccionDetectada.provincia || "";
+        data.direccion = direccionDetectada.direccion || data.direccion;
+        data.lat = direccionDetectada.lat || null;
+        data.lon = direccionDetectada.lon || null;
+
+        data.geo = {
+          zona: direccionDetectada.zona || "",
+          zonaLocalidad: direccionDetectada.zonaLocalidad || "",
+          localidad: direccionDetectada.localidad || "",
+          partido: direccionDetectada.partido || "",
+          provincia: direccionDetectada.provincia || "",
+          direccion: direccionDetectada.direccion || "",
+          lat: direccionDetectada.lat || null,
+          lon: direccionDetectada.lon || null
+        };
+
+        if (solZona && data.zona) {
+          solZona.value = data.zona;
+        }
+
+        if (solDireccion && data.direccion) {
+          solDireccion.value = data.direccion;
+        }
+      }
+    }
+
     if (archivosSeleccionados.length) {
       btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Subiendo archivos...`;
 
@@ -2282,14 +2484,14 @@ formPrestador?.addEventListener("submit", async (e) => {
     document.querySelectorAll("[data-prestador-zona]:checked")
   ).map(input => input.value);
 
-  const data = {
-    nombre: limpiar($("prestadorNombre")?.value),
-    telefono: normalizarTelefono($("prestadorTelefono")?.value),
-    zona: zonasSeleccionadas.join(", "),
-    movilidadHerramientas: !!$("prestadorRecursos")?.checked,
-    habilidades: seleccionados,
-    comentario: limpiar($("prestadorComentario")?.value)
-  };
+const data = {
+  nombre: limpiar($("prestadorNombre")?.value),
+  telefono: normalizarTelefono($("prestadorTelefono")?.value),
+  zona: zonasSeleccionadas.join(", "),
+  movilidadHerramientas: true,
+  habilidades: seleccionados,
+  comentario: limpiar($("prestadorComentario")?.value)
+};
 
   if (!data.nombre || !data.telefono) {
     toastMsg("Completá nombre y WhatsApp");
@@ -2298,11 +2500,6 @@ formPrestador?.addEventListener("submit", async (e) => {
 
   if (!data.zona) {
     toastMsg("Elegí al menos una zona de trabajo");
-    return;
-  }
-
-  if (!data.movilidadHerramientas) {
-    toastMsg("Confirmá que contás con movilidad y herramientas propias");
     return;
   }
 
@@ -2376,7 +2573,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-15-geo-05";
+const SW_VERSION = "2026-06-15-geocode-01";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
