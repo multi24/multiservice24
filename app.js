@@ -281,7 +281,7 @@ function abrirWhatsAppConMensaje(mensaje, ventanaPrevia = null) {
   window.open(url, "_blank");
 }
 
-async function subirArchivosSolicitud(archivosSeleccionados) {
+async function subirArchivosSolicitud(archivosSeleccionados, telefono = "") {
   if (!archivosSeleccionados.length) {
     return {
       archivos: [],
@@ -289,11 +289,13 @@ async function subirArchivosSolicitud(archivosSeleccionados) {
     };
   }
 
-  const formData = new FormData();
+const formData = new FormData();
 
-  archivosSeleccionados.forEach((archivo) => {
-    formData.append("files", archivo);
-  });
+formData.append("telefono", normalizarTelefono(telefono));
+
+archivosSeleccionados.forEach((archivo) => {
+  formData.append("files", archivo);
+});
 
   const respuesta = await fetch(WORKER_UPLOAD_URL, {
     method: "POST",
@@ -371,12 +373,76 @@ function mensajeWhatsAppContacto(data, id = "") {
   return partes.join("\n");
 }
 
+function capitalizarPrimera(texto) {
+  const t = String(texto || "").trim();
+  if (!t) return "";
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
+
+function fechaDeseadaBonita(valor) {
+  if (!valor) return "";
+
+  const partes = String(valor).split("-");
+
+  if (partes.length !== 3) {
+    return valor;
+  }
+
+  const anio = Number(partes[0]);
+  const mes = Number(partes[1]) - 1;
+  const dia = Number(partes[2]);
+
+  const fecha = new Date(anio, mes, dia);
+
+  return capitalizarPrimera(
+    fecha.toLocaleDateString("es-AR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long"
+    })
+  );
+}
+
+function linkUbicacionSolicitud(data) {
+  if (data.lat && data.lon) {
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${data.lat},${data.lon}`)}`;
+  }
+
+  const direccion = [
+    data.direccion,
+    data.localidad,
+    data.partido,
+    data.provincia || "Buenos Aires",
+    "Argentina"
+  ].filter(Boolean).join(", ");
+
+  if (!direccion) return "";
+
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion)}`;
+}
+
+function urlArchivoParaWhatsApp(archivo) {
+  return archivo.urlCorta || archivo.shortUrl || archivo.url || "";
+}
+
 function mensajeWhatsAppSolicitud(data, id = "") {
   const partes = [];
 
+  const archivos = Array.isArray(data.archivos) ? data.archivos : [];
+
+  const audios = archivos.filter(archivo => {
+    const tipo = String(archivo.tipo || "").toLowerCase();
+    const tipoGeneral = String(archivo.tipoGeneral || "").toLowerCase();
+    return tipo.startsWith("audio/") || tipoGeneral === "audio";
+  });
+
+  const adjuntos = archivos.filter(archivo => {
+    const tipo = String(archivo.tipo || "").toLowerCase();
+    const tipoGeneral = String(archivo.tipoGeneral || "").toLowerCase();
+    return !tipo.startsWith("audio/") && tipoGeneral !== "audio";
+  });
+
   partes.push("*MULTI24 - Solicitud de servicio*");
-  partes.push("");
-  partes.push("Hola, quiero solicitar un servicio.");
   partes.push("");
   partes.push(`*Nombre:* ${data.clienteNombre || "Sin nombre"}`);
   partes.push(`*WhatsApp:* ${data.clienteTelefono || "Sin teléfono"}`);
@@ -385,14 +451,15 @@ function mensajeWhatsAppSolicitud(data, id = "") {
   if (data.emergencia) {
     partes.push("");
     partes.push("*Emergencia:* Sí");
-    partes.push("Las emergencias se resuelven dentro de las próximas 4 horas a la confirmación de la solicitud y se confirman con un pago de $20000 argentinos o 15 dólares.");
   }
+
+  partes.push("");
 
   if (data.zona) {
     partes.push(`*Zona:* ${data.zona}`);
   }
 
-     if (data.localidad) {
+  if (data.localidad) {
     partes.push(`*Localidad:* ${data.localidad}`);
   }
 
@@ -402,37 +469,55 @@ function mensajeWhatsAppSolicitud(data, id = "") {
 
   if (data.direccion) {
     partes.push(`*Dirección:* ${data.direccion}`);
+
+    const linkMapa = linkUbicacionSolicitud(data);
+
+    if (linkMapa) {
+      partes.push(`*Ubicación:* ${linkMapa}`);
+    }
   }
 
   if (data.fechaDeseada) {
-    partes.push(`*Fecha deseada:* ${data.fechaDeseada}`);
+    partes.push(`*Fecha deseada:* ${fechaDeseadaBonita(data.fechaDeseada)}`);
   }
 
   if (data.horarioDeseado) {
     partes.push(`*Horario deseado:* ${data.horarioDeseado}`);
   }
 
-if (data.descripcion) {
+  if (data.descripcion) {
+    partes.push("");
+    partes.push("*Detalle del trabajo:*");
+    partes.push(data.descripcion);
+  }
+
+  if (adjuntos.length) {
+    partes.push("");
+    partes.push("*Archivos cargados:*");
+
+    adjuntos.forEach((archivo, index) => {
+      const url = urlArchivoParaWhatsApp(archivo);
+      if (!url) return;
+
+      const tipo = archivo.tipoGeneral || "Archivo";
+      partes.push(`${index + 1}. ${tipo}: ${url}`);
+    });
+  }
+
+  if (audios.length) {
+    partes.push("");
+    partes.push("*Audio-solicitud:*");
+
+    audios.forEach((archivo, index) => {
+      const url = urlArchivoParaWhatsApp(archivo);
+      if (!url) return;
+
+      partes.push(`${index + 1}. ${url}`);
+    });
+  }
+
   partes.push("");
-  partes.push(`*Detalle del trabajo:*`);
-  partes.push(data.descripcion);
-}
-
-if (Array.isArray(data.archivos) && data.archivos.length) {
-  partes.push("");
-  partes.push(`*Archivos cargados:*`);
-
-  data.archivos.forEach((archivo, index) => {
-    const nombre = archivo.nombre || "Archivo";
-    const tipo = archivo.tipoGeneral || "Archivo";
-    const url = archivo.url ? ` - ${archivo.url}` : "";
-
-    partes.push(`${index + 1}. ${nombre} (${tipo})${url}`);
-  });
-}
-
-partes.push("");
-partes.push("Gracias.");
+  partes.push("Gracias.");
 
   return partes.join("\n");
 }
@@ -2423,7 +2508,7 @@ const data = {
     if (archivosSeleccionados.length) {
       btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Subiendo archivos...`;
 
-      const subida = await subirArchivosSolicitud(archivosSeleccionados);
+ const subida = await subirArchivosSolicitud(archivosSeleccionados, data.telefono);
 
       data.archivos = subida.archivos;
       data.archivosVencenEn = subida.vencenEn;
@@ -2444,6 +2529,8 @@ abrirWhatsAppConMensaje(
     partido: data.partido,
     provincia: data.provincia,
     direccion: data.direccion,
+    lat: data.lat,
+    lon: data.lon,
     fechaDeseada: data.fechaDeseada,
     horarioDeseado: data.horarioDeseado,
     descripcion: data.descripcion,
