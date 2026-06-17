@@ -158,6 +158,16 @@ const listaSolicitudesPrestador = $("listaSolicitudesPrestador");
 const listaUsuariosRoles = $("listaUsuariosRoles");
 const listaPrestadoresAdmin = $("listaPrestadoresAdmin");
 
+const panelEquipoSolicitudes = $("panelEquipoSolicitudes");
+const panelEquipoUsuarios = $("panelEquipoUsuarios");
+const panelEquipoPlanillasArchivo = $("panelEquipoPlanillasArchivo");
+
+const btnPanelSolicitudes = $("btnPanelSolicitudes");
+const btnPanelAdminUsuarios = $("btnPanelAdminUsuarios");
+const btnPanelArchivoPlanillas = $("btnPanelArchivoPlanillas");
+
+const listaPlanillasArchivadas = $("listaPlanillasArchivadas");
+
 const estadoPrestador = $("estadoPrestador");
 const contadorAvisos = $("contadorAvisos");
 
@@ -179,6 +189,22 @@ let perfilActual = null;
 let prestadorActual = null;
 let vistaActual = "inicio";
 let hojaRutaSeleccion = new Set();
+
+let subVistaPanelInterno = "solicitudes";
+let solicitudesVisiblesPanel = [];
+
+let planillaActivaId = "general";
+
+let planillasPanel = [
+  {
+    id: "general",
+    nombre: "General",
+    color: "#e11f2a",
+    ids: null,
+    archivada: false,
+    creadaEn: Date.now()
+  }
+];
 
 let mediaRecorderSolicitud = null;
 let streamAudioSolicitud = null;
@@ -1859,11 +1885,183 @@ function renderSolicitudFila(s) {
   `;
 }
 
-function renderTablaEquipo(solicitudes) {
-  const filtradas = filtrarSolicitudesEquipo(solicitudes);
+function millisSolicitudOrden(s) {
+  if (s.fechaDeseada) {
+    const t = new Date(`${s.fechaDeseada}T23:59:59`).getTime();
+    if (!Number.isNaN(t)) return t;
+  }
+
+  if (s.creadoEn?.toMillis) return s.creadoEn.toMillis();
+
+  const creado = new Date(s.creadoEn || 0).getTime();
+  return Number.isNaN(creado) ? 0 : creado;
+}
+
+function ordenarSolicitudesPanel(items) {
+  return [...items].sort((a, b) => millisSolicitudOrden(b) - millisSolicitudOrden(a));
+}
+
+function fechaGrupoSolicitud(s) {
+  return s.fechaDeseada || "sin-coordinar";
+}
+
+function tituloGrupoSolicitud(fechaKey) {
+  if (!fechaKey || fechaKey === "sin-coordinar") {
+    return "Sin coordinar";
+  }
+
+  return fechaDeseadaBonita(fechaKey);
+}
+
+function renderFilasSolicitudesAgrupadas(items) {
+  let grupoActual = "";
+
+  return items.map(s => {
+    const grupo = fechaGrupoSolicitud(s);
+    let separador = "";
+
+    if (grupo !== grupoActual) {
+      grupoActual = grupo;
+
+      separador = `
+        <tr class="ms-day-divider">
+          <td colspan="7">
+            <span>${escaparHtml(tituloGrupoSolicitud(grupo))}</span>
+          </td>
+        </tr>
+      `;
+    }
+
+    return separador + renderSolicitudFila(s);
+  }).join("");
+}
+
+function obtenerPlanillaActiva() {
+  return planillasPanel.find(p => p.id === planillaActivaId) || planillasPanel[0];
+}
+
+function solicitudesBasePlanilla(solicitudes) {
+  const planilla = obtenerPlanillaActiva();
+
+  if (!planilla || planilla.id === "general" || !Array.isArray(planilla.ids)) {
+    return solicitudes;
+  }
+
+  const ids = new Set(planilla.ids);
+  return solicitudes.filter(s => ids.has(s.id));
+}
+
+function colorSeguroPlanilla(color) {
+  const c = String(color || "").trim();
+
+  if (/^#[0-9a-fA-F]{6}$/.test(c)) return c;
+
+  return "#e11f2a";
+}
+
+function sugerirNombrePlanilla() {
+  const partes = [];
+
+  if (filtrosPanelEquipo.fecha) {
+    partes.push(fechaDeseadaBonita(filtrosPanelEquipo.fecha));
+  }
+
+  if (filtrosPanelEquipo.servicio) {
+    partes.push(filtrosPanelEquipo.servicio);
+  }
+
+  if (filtrosPanelEquipo.prestador) {
+    partes.push(filtrosPanelEquipo.prestador);
+  }
+
+  if (filtrosPanelEquipo.horario) {
+    partes.push(filtrosPanelEquipo.horario);
+  }
+
+  return partes.length ? partes.join(" · ") : "Nueva planilla";
+}
+
+function renderTabsPlanillas() {
+  const activas = planillasPanel.filter(p => !p.archivada);
 
   return `
-    ${renderResumenEquipo(solicitudes)}
+    <div class="ms-planillas-tabs">
+      ${activas.map(p => `
+        <button
+          class="ms-planilla-tab ${p.id === planillaActivaId ? "active" : ""}"
+          data-planilla-tab="${p.id}"
+          type="button"
+          style="--tab-color:${colorSeguroPlanilla(p.color)}"
+        >
+          <span>${escaparHtml(p.nombre)}</span>
+        </button>
+      `).join("")}
+
+      ${
+        planillaActivaId !== "general"
+          ? `
+            <button class="ms-mini-btn" data-archivar-planilla="${planillaActivaId}" type="button">
+              <i class="fa-solid fa-box-archive"></i>
+              Archivar planilla
+            </button>
+          `
+          : ""
+      }
+    </div>
+  `;
+}
+
+function renderPlanillasArchivadas() {
+  if (!listaPlanillasArchivadas) return;
+
+  const archivadas = planillasPanel.filter(p => p.archivada);
+
+  if (!archivadas.length) {
+    listaPlanillasArchivadas.innerHTML = `
+      <article class="ms-item">
+        <p>Todavía no hay planillas archivadas.</p>
+      </article>
+    `;
+    return;
+  }
+
+  listaPlanillasArchivadas.innerHTML = archivadas.map(p => `
+    <article class="ms-item">
+      <h4>${escaparHtml(p.nombre)}</h4>
+      <p><strong>Solicitudes:</strong> ${Array.isArray(p.ids) ? p.ids.length : "Todas"}</p>
+
+      <div class="ms-item-actions">
+        <button class="ms-mini-btn red" data-restaurar-planilla="${p.id}" type="button">
+          Restaurar
+        </button>
+      </div>
+    </article>
+  `).join("");
+
+  document.querySelectorAll("[data-restaurar-planilla]").forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.restaurarPlanilla;
+      const planilla = planillasPanel.find(p => p.id === id);
+
+      if (!planilla) return;
+
+      planilla.archivada = false;
+      planillaActivaId = id;
+      subVistaPanelInterno = "solicitudes";
+
+      await renderEquipo();
+    };
+  });
+}
+
+function renderTablaEquipo(solicitudes) {
+  const base = solicitudesBasePlanilla(solicitudes);
+  const filtradas = ordenarSolicitudesPanel(filtrarSolicitudesEquipo(base));
+
+  solicitudesVisiblesPanel = filtradas;
+
+  return `
+    ${renderResumenEquipo(base)}
 
     <div class="ms-route-toolbar">
       <button class="ms-mini-btn red" data-abrir-hoja-ruta type="button">
@@ -1871,8 +2069,18 @@ function renderTablaEquipo(solicitudes) {
         Abrir hoja de ruta
       </button>
 
+      <button class="ms-mini-btn" data-seleccionar-todo-ruta type="button">
+        <i class="fa-solid fa-check-double"></i>
+        Seleccionar todos
+      </button>
+
       <button class="ms-mini-btn" data-limpiar-hoja-ruta type="button">
         Limpiar selección
+      </button>
+
+      <button class="ms-mini-btn" data-crear-planilla type="button">
+        <i class="fa-solid fa-table"></i>
+        Crear planilla
       </button>
 
       <span id="hojaRutaContador" class="ms-status">
@@ -1880,7 +2088,9 @@ function renderTablaEquipo(solicitudes) {
       </span>
     </div>
 
-    ${renderFiltrosEquipo(solicitudes)}
+    ${renderFiltrosEquipo(base)}
+
+    ${renderTabsPlanillas()}
 
     <div class="ms-board-table-wrap">
       <table class="ms-board-table">
@@ -1899,7 +2109,7 @@ function renderTablaEquipo(solicitudes) {
         <tbody>
           ${
             filtradas.length
-              ? filtradas.map(renderSolicitudFila).join("")
+              ? renderFilasSolicitudesAgrupadas(filtradas)
               : `
                 <tr>
                   <td colspan="7" class="td-empty">
@@ -2192,19 +2402,42 @@ async function renderEquipo() {
 
   const solicitudes = await obtenerTodasLasSolicitudes();
 
-  if (listaSolicitudesEquipo) {
-    listaSolicitudesEquipo.innerHTML = solicitudes.length
-      ? renderTablaEquipo(solicitudes)
-      : `<article class="ms-item"><p>No hay solicitudes todavía.</p></article>`;
+  panelEquipoSolicitudes?.classList.toggle("hidden", subVistaPanelInterno !== "solicitudes");
+  panelEquipoUsuarios?.classList.toggle("hidden", subVistaPanelInterno !== "usuarios");
+  panelEquipoPlanillasArchivo?.classList.toggle("hidden", subVistaPanelInterno !== "archivo");
+
+  btnPanelSolicitudes?.classList.toggle("active", subVistaPanelInterno === "solicitudes");
+  btnPanelAdminUsuarios?.classList.toggle("active", subVistaPanelInterno === "usuarios");
+  btnPanelArchivoPlanillas?.classList.toggle("active", subVistaPanelInterno === "archivo");
+
+  if (subVistaPanelInterno === "solicitudes") {
+    if (listaSolicitudesEquipo) {
+      listaSolicitudesEquipo.innerHTML = solicitudes.length
+        ? renderTablaEquipo(solicitudes)
+        : `<article class="ms-item"><p>No hay solicitudes todavía.</p></article>`;
+    }
+
+    activarFiltrosEquipo(solicitudes);
+    activarBotonesDeSolicitudes(solicitudes);
   }
 
-  activarFiltrosEquipo(solicitudes);
-  activarBotonesDeSolicitudes(solicitudes);
+  if (subVistaPanelInterno === "usuarios") {
+    if (!esAdminActual()) {
+      toastMsg("Solo el admin puede ver usuarios y roles");
+      subVistaPanelInterno = "solicitudes";
+      await renderEquipo();
+      return;
+    }
 
-  if (esAdminActual()) {
     await renderUsuariosRoles();
     await renderPrestadoresAdmin();
   }
+
+  if (subVistaPanelInterno === "archivo") {
+    renderPlanillasArchivadas();
+  }
+
+  activarBotonesPanelInterno();
 }
 
 async function renderUsuariosRoles() {
@@ -2552,6 +2785,29 @@ filtrosPanelEquipo = {
   });
 }
 
+function activarBotonesPanelInterno() {
+  if (btnPanelSolicitudes) {
+    btnPanelSolicitudes.onclick = async () => {
+      subVistaPanelInterno = "solicitudes";
+      await renderEquipo();
+    };
+  }
+
+  if (btnPanelAdminUsuarios) {
+    btnPanelAdminUsuarios.onclick = async () => {
+      subVistaPanelInterno = "usuarios";
+      await renderEquipo();
+    };
+  }
+
+  if (btnPanelArchivoPlanillas) {
+    btnPanelArchivoPlanillas.onclick = async () => {
+      subVistaPanelInterno = "archivo";
+      await renderEquipo();
+    };
+  }
+}
+
 function activarBotonesDeSolicitudes(solicitudes) {
   const mapa = new Map();
   solicitudes.forEach(s => mapa.set(s.id, s));
@@ -2583,6 +2839,97 @@ function activarBotonesDeSolicitudes(solicitudes) {
 document.querySelectorAll("[data-abrir-hoja-ruta]").forEach(btn => {
   btn.onclick = () => {
     abrirHojaRutaGoogleMaps(solicitudes);
+  };
+});
+
+   document.querySelectorAll("[data-seleccionar-todo-ruta]").forEach(btn => {
+  btn.onclick = () => {
+    solicitudesVisiblesPanel.forEach(s => {
+      hojaRutaSeleccion.add(s.id);
+    });
+
+    document.querySelectorAll("[data-ruta-check]").forEach(check => {
+      check.checked = true;
+    });
+
+    actualizarContadorHojaRuta();
+    toastMsg("Solicitudes visibles seleccionadas");
+  };
+});
+
+document.querySelectorAll("[data-crear-planilla]").forEach(btn => {
+  btn.onclick = async () => {
+    let seleccionadas = Array.from(hojaRutaSeleccion);
+
+    if (!seleccionadas.length) {
+      const usarFiltro = window.confirm(
+        "No marcaste solicitudes. ¿Querés crear una planilla con el filtro actual?"
+      );
+
+      if (!usarFiltro) return;
+
+      seleccionadas = solicitudesVisiblesPanel.map(s => s.id);
+    }
+
+    if (!seleccionadas.length) {
+      toastMsg("No hay solicitudes para crear la planilla");
+      return;
+    }
+
+    const nombreSugerido = sugerirNombrePlanilla();
+
+    const nombre = window.prompt(
+      "Nombre de la planilla:",
+      nombreSugerido
+    );
+
+    if (!nombre) return;
+
+    const color = window.prompt(
+      "Color de la pestaña en formato HEX. Ejemplo: #e11f2a",
+      "#e11f2a"
+    );
+
+    const id = `planilla-${Date.now()}`;
+
+    planillasPanel.push({
+      id,
+      nombre: limpiar(nombre),
+      color: colorSeguroPlanilla(color),
+      ids: seleccionadas,
+      archivada: false,
+      creadaEn: Date.now()
+    });
+
+    planillaActivaId = id;
+    toastMsg("Planilla creada");
+    await renderEquipo();
+  };
+});
+
+document.querySelectorAll("[data-planilla-tab]").forEach(btn => {
+  btn.onclick = async () => {
+    planillaActivaId = btn.dataset.planillaTab || "general";
+    await renderEquipo();
+  };
+});
+
+document.querySelectorAll("[data-archivar-planilla]").forEach(btn => {
+  btn.onclick = async () => {
+    const id = btn.dataset.archivarPlanilla;
+    const planilla = planillasPanel.find(p => p.id === id);
+
+    if (!planilla || planilla.id === "general") return;
+
+    const confirma = window.confirm(`¿Archivar la planilla "${planilla.nombre}"?`);
+
+    if (!confirma) return;
+
+    planilla.archivada = true;
+    planillaActivaId = "general";
+
+    toastMsg("Planilla archivada");
+    await renderEquipo();
   };
 });
 
@@ -3206,7 +3553,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-17-panel-home-clean-01";
+const SW_VERSION = "2026-06-17-planillas-01";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
