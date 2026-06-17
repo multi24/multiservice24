@@ -395,10 +395,10 @@ main{
 }
 
 .ms-hero-card-points{
-  margin-top:14px;
+  margin-top:22px;
   display:flex;
-  flex-wrap:nowrap;
-  justify-content:center;
+  flex-wrap:wrap;
+  justify-content:flex-start;
   gap:7px;
 }
 
@@ -422,6 +422,11 @@ main{
 
 .ms-home-services{
   margin-top:14px;
+  max-width:620px;
+}
+
+.ms-hero-action-card{
+  align-self:center;
 }
 
 .ms-contact-between{
