@@ -3241,18 +3241,22 @@ async function mostrarVista(vista) {
 
   vistaActual = vista;
 
+  const mostrarHome = vista === "inicio" || vista === "comoFunciona";
+
   vistaInicio?.classList.add("hidden");
-  vistaComoFunciona?.classList.add("hidden");
   vistaPaneles?.classList.add("hidden");
   bloqueContactoBetween?.classList.add("hidden");
 
-  if (vista === "inicio") {
+  /*
+    IMPORTANTE:
+    "Cómo funciona" ahora vive dentro de #inicio.
+    Por eso NO lo ocultamos como pantalla independiente.
+  */
+  vistaComoFunciona?.classList.remove("hidden");
+
+  if (mostrarHome) {
     vistaInicio?.classList.remove("hidden");
     bloqueContactoBetween?.classList.remove("hidden");
-  }
-
-  if (vista === "comoFunciona") {
-    vistaComoFunciona?.classList.remove("hidden");
   }
 
   if (vista === "paneles" || vista === "panelInterno") {
@@ -3264,6 +3268,17 @@ async function mostrarVista(vista) {
   });
 
   await renderPaneles();
+
+  if (vista === "comoFunciona" && vistaComoFunciona) {
+    const top = vistaComoFunciona.getBoundingClientRect().top + window.scrollY - 90;
+
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: "smooth"
+    });
+
+    return;
+  }
 
   window.scrollTo({
     top: 0,
