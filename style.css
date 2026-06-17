@@ -341,42 +341,6 @@ main{
   line-height:1.55;
 }
 
-.ms-online-pill{
-  margin-top:18px;
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:10px 14px;
-  border-radius:999px;
-  background:#fff;
-  color:var(--azul-noche);
-  border:1px solid var(--borde);
-  font-weight:900;
-  box-shadow:var(--sombra-suave);
-}
-
-.ms-online-pill i{
-  color:var(--rojo);
-}
-
-.ms-hero-actions{
-  margin-top:18px;
-  display:grid;
-  grid-template-columns:repeat(2,max-content);
-  justify-content:start;
-  align-items:center;
-  gap:10px;
-}
-
-.ms-hero-actions .ms-btn{
-  min-width:210px;
-}
-
-.ms-hero-actions #btnInstalarApp{
-  grid-column:1 / -1;
-  justify-self:center;
-}
-
 .ms-badge-red{
   display:inline-flex;
   align-items:center;
@@ -399,6 +363,13 @@ main{
   padding:24px;
   box-shadow:0 20px 50px rgba(7,27,58,.14);
   animation:msFloat 4.8s ease-in-out infinite;
+
+  display:grid;
+  gap:12px;
+}
+
+.ms-hero-card .ms-btn{
+  width:100%;
 }
 
 .ms-phone-big{
@@ -421,17 +392,6 @@ main{
 
 .ms-phone-big i{
   color:#fff;
-}
-
-.ms-hero-card-actions{
-  margin-top:14px;
-  display:grid;
-  grid-template-columns:1fr;
-  gap:10px;
-}
-
-.ms-hero-card-actions .ms-btn{
-  width:100%;
 }
 
 .ms-hero-card-points{
@@ -666,15 +626,41 @@ main{
   font-weight:800;
 }
 
-#btnCompartirApp{
-  background:linear-gradient(135deg,var(--azul-noche),var(--azul-2));
-  color:#fff;
-  border:none;
-  box-shadow:0 12px 24px rgba(7,27,58,.22);
+.ms-btn-request-big{
+  min-height:58px;
+  font-size:18px;
+  border-radius:24px;
 }
 
-#btnCompartirApp i{
-  color:#fff;
+.ms-online-note{
+  width:100%;
+  min-height:48px;
+  border-radius:22px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:9px;
+  background:#fff;
+  color:var(--azul-noche);
+  border:1px solid var(--borde);
+  font-weight:1000;
+  box-shadow:var(--sombra-suave);
+  text-align:center;
+}
+
+.ms-online-note i{
+  color:var(--rojo);
+}
+
+#btnCompartirApp.ms-btn-share-app{
+  background:#fff;
+  color:var(--azul-noche);
+  border:1px solid var(--borde);
+  box-shadow:var(--sombra-suave);
+}
+
+#btnCompartirApp.ms-btn-share-app i{
+  color:var(--azul-noche);
 }
 
 .ms-emphasis-red{
@@ -1396,16 +1382,6 @@ main{
     text-align:center;
   }
 
-.ms-hero-actions{
-  display:flex;
-  justify-content:center;
-  flex-wrap:wrap;
-}
-
-.ms-hero-actions .ms-btn{
-  min-width:min(260px,100%);
-}
-
 .ms-home-prestador-card{
   grid-template-columns:1fr;
   text-align:center;
@@ -1525,10 +1501,6 @@ main{
     font-size:25px;
     padding:16px;
     border-radius:22px;
-  }
-
-  .ms-hero-card-actions{
-    gap:9px;
   }
 
   .ms-hero-card-points{
@@ -1801,36 +1773,6 @@ main{
   }
 }
 
-.ms-route-toolbar{
-  display:flex;
-  align-items:center;
-  flex-wrap:wrap;
-  gap:8px;
-  margin:0 0 12px;
-  padding:12px;
-  border-radius:18px;
-  background:#f8fbff;
-  border:1px solid var(--borde);
-}
-
-.ms-route-check{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 10px;
-  border-radius:999px;
-  background:#fff;
-  border:1px solid var(--borde);
-  color:var(--azul-noche);
-  font-weight:900;
-  font-size:13px;
-}
-
-.ms-route-check input{
-  width:17px;
-  height:17px;
-}
-
 #multi24WhatsAppOverlay{
   position:fixed;
   inset:0;
@@ -1971,28 +1913,36 @@ main{
 }
 
 /* =========================================================
-   PANEL INTERNO TIPO TABLERO
+   PANEL INTERNO COMPACTO / PLANILLA OPERATIVA
 ========================================================= */
+
+.ms-panel-grid-interno{
+  grid-template-columns:1fr;
+}
+
+.ms-board-panel{
+  overflow:hidden;
+}
 
 .ms-board-summary{
   display:grid;
-  grid-template-columns:repeat(7,minmax(110px,1fr));
-  gap:10px;
-  margin:0 0 14px;
+  grid-template-columns:repeat(7,minmax(95px,1fr));
+  gap:8px;
+  margin:0 0 12px;
 }
 
 .ms-board-summary article{
   background:#fff;
   border:1px solid var(--borde);
-  border-radius:18px;
-  padding:12px;
+  border-radius:16px;
+  padding:10px;
   box-shadow:var(--sombra-suave);
 }
 
 .ms-board-summary span{
   display:block;
   color:var(--muted);
-  font-size:12px;
+  font-size:11px;
   font-weight:900;
 }
 
@@ -2000,7 +1950,7 @@ main{
   display:block;
   margin-top:4px;
   color:var(--azul-noche);
-  font-size:26px;
+  font-size:24px;
   line-height:1;
 }
 
@@ -2020,16 +1970,28 @@ main{
   background:#ecfff4;
 }
 
-.ms-board-filters{
-  display:grid;
-  grid-template-columns:repeat(6,minmax(130px,1fr));
-  gap:10px;
-  align-items:end;
-  margin:0 0 14px;
-  padding:12px;
+.ms-route-toolbar{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:0 0 12px;
+  padding:10px;
+  border-radius:18px;
   background:#f8fbff;
   border:1px solid var(--borde);
-  border-radius:22px;
+}
+
+.ms-board-filters{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(115px,1fr));
+  gap:8px;
+  align-items:end;
+  margin:0 0 12px;
+  padding:10px;
+  background:#f8fbff;
+  border:1px solid var(--borde);
+  border-radius:20px;
 }
 
 .ms-board-filters label{
@@ -2043,10 +2005,10 @@ main{
 .ms-board-filters input,
 .ms-board-filters select{
   width:100%;
-  min-height:40px;
+  min-height:38px;
   border:1px solid var(--borde);
-  border-radius:13px;
-  padding:8px 10px;
+  border-radius:12px;
+  padding:7px 9px;
   background:#fff;
   color:var(--texto);
   font-weight:800;
@@ -2060,17 +2022,17 @@ main{
   width:100%;
   overflow:auto;
   border:1px solid var(--borde);
-  border-radius:22px;
+  border-radius:20px;
   background:#fff;
   box-shadow:var(--sombra-suave);
 }
 
 .ms-board-table{
   width:100%;
-  min-width:1180px;
+  min-width:880px;
   border-collapse:separate;
   border-spacing:0;
-  font-size:13px;
+  font-size:12.5px;
 }
 
 .ms-board-table thead th{
@@ -2079,14 +2041,14 @@ main{
   z-index:2;
   background:#071b3a;
   color:#fff;
-  padding:12px 10px;
+  padding:10px 9px;
   text-align:left;
-  font-size:12px;
+  font-size:11.5px;
   white-space:nowrap;
 }
 
 .ms-board-table tbody td{
-  padding:10px;
+  padding:9px;
   border-bottom:1px solid rgba(7,27,58,.08);
   vertical-align:top;
 }
@@ -2106,11 +2068,11 @@ main{
   margin-top:3px;
   color:var(--muted);
   font-weight:800;
-  max-width:340px;
+  max-width:310px;
 }
 
 .td-check{
-  width:42px;
+  width:36px;
   text-align:center;
 }
 
@@ -2123,9 +2085,18 @@ main{
   min-width:270px;
 }
 
-.td-actions{
-  min-width:270px;
-  white-space:nowrap;
+.td-service-line,
+.td-address-line,
+.td-state-line{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.td-service-line > span,
+.td-address-line > span{
+  min-width:0;
 }
 
 .ms-icon-btn{
@@ -2136,11 +2107,11 @@ main{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  margin:0 2px 4px 0;
   background:#edf3fb;
   color:var(--azul-noche);
   text-decoration:none;
   font-size:15px;
+  flex:0 0 auto;
 }
 
 .ms-icon-btn:hover{
@@ -2158,15 +2129,14 @@ button[title="WhatsApp"] i{
   color:#128c7e;
 }
 
-.ms-board-state{
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  padding:7px 9px;
+.ms-estado-select{
+  width:150px;
+  min-height:34px;
   border-radius:999px;
-  font-size:12px;
+  border:1px solid var(--borde);
+  padding:6px 9px;
   font-weight:1000;
-  white-space:nowrap;
+  color:var(--azul-noche);
 }
 
 .estado-pendiente{
@@ -2193,28 +2163,8 @@ button[title="WhatsApp"] i{
   background:#fff1df;
 }
 
-.ms-board-state.estado-pendiente{
-  color:#8a6500;
-}
-
-.ms-board-state.estado-coordinado{
-  color:#075899;
-}
-
-.ms-board-state.estado-derivado{
-  color:#08723b;
-}
-
-.ms-board-state.estado-en-lugar{
-  color:#0b2d5c;
-}
-
-.ms-board-state.estado-terminado{
-  color:#075f36;
-}
-
-.ms-board-state.estado-garantia{
-  color:#a95000;
+.estado-cancelado{
+  background:#ffecec;
 }
 
 .text-red{
@@ -2229,6 +2179,24 @@ button[title="WhatsApp"] i{
 }
 
 @media(max-width:900px){
+  main{
+    width:100%;
+    padding:12px 10px 90px;
+  }
+
+  .ms-section{
+    padding:14px;
+    border-radius:24px;
+  }
+
+  .ms-panel{
+    padding:12px;
+  }
+
+  .ms-panel-card{
+    padding:12px;
+  }
+
   .ms-board-summary{
     grid-template-columns:repeat(2,1fr);
   }
@@ -2239,5 +2207,22 @@ button[title="WhatsApp"] i{
 
   .ms-board-search{
     grid-column:auto;
+  }
+
+  .ms-board-table{
+    min-width:760px;
+    font-size:12px;
+  }
+
+  .ms-board-table thead th{
+    padding:9px 8px;
+  }
+
+  .ms-board-table tbody td{
+    padding:8px;
+  }
+
+  .td-direccion{
+    min-width:240px;
   }
 }
