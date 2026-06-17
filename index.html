@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="Multi24 | Servicios programados y emergencias" />
 <meta name="twitter:description" content="Solicitá servicios, emergencias y seguimiento desde Multi24." />
 <meta name="twitter:image" content="https://www.multiservice24.com.ar/preview-whatsapp.jpg" />
-<link rel="stylesheet" href="style.css?v=2026-06-17-panel-home-clean-01" />
+<link rel="stylesheet" href="style.css?v=2026-06-17-planillas-01" />
 
 <link
   rel="stylesheet"
@@ -313,34 +313,65 @@
       </div>
 
 <div id="panelEquipo" class="ms-panel hidden">
-  <div class="ms-panel-head">
+  <div class="ms-panel-head ms-panel-head-interno">
     <div>
       <h2>Panel interno</h2>
-      <p>Solicitudes, usuarios, roles y prestadores.</p>
+      <p>Solicitudes, planillas, usuarios, roles y prestadores.</p>
+    </div>
+
+    <div class="ms-panel-admin-actions">
+      <button id="btnPanelSolicitudes" class="ms-icon-panel-btn active" type="button" title="Solicitudes">
+        <i class="fa-solid fa-table-list"></i>
+        <span>Solicitudes</span>
+      </button>
+
+      <button id="btnPanelAdminUsuarios" class="ms-icon-panel-btn" type="button" title="Usuarios y roles">
+        <i class="fa-solid fa-user-lock"></i>
+        <span>Usuarios</span>
+      </button>
+
+      <button id="btnPanelArchivoPlanillas" class="ms-icon-panel-btn" type="button" title="Planillas archivadas">
+        <i class="fa-solid fa-clipboard-list"></i>
+        <span>Archivo</span>
+      </button>
     </div>
   </div>
 
   <div class="ms-panel-grid ms-panel-grid-interno">
-    <div class="ms-panel-card ms-full-panel ms-board-panel">
+
+    <div id="panelEquipoSolicitudes" class="ms-panel-card ms-full-panel ms-board-panel">
       <h3>Solicitudes recibidas</h3>
       <div id="listaSolicitudesEquipo" class="ms-list"></div>
     </div>
 
-    <div class="ms-panel-card ms-full-panel">
-      <h3>Usuarios y roles</h3>
+    <div id="panelEquipoUsuarios" class="ms-panel-card ms-full-panel hidden">
+      <h3>Usuarios, roles y prestadores</h3>
       <p class="ms-muted">
         Desde acá el admin puede asignar usuario, prestador, colaborador o admin.
       </p>
-      <div id="listaUsuariosRoles" class="ms-list"></div>
+
+      <div class="ms-admin-two-cols">
+        <div>
+          <h4>Usuarios y roles</h4>
+          <div id="listaUsuariosRoles" class="ms-list"></div>
+        </div>
+
+        <div>
+          <h4>Prestadores</h4>
+          <div id="listaPrestadoresAdmin" class="ms-list"></div>
+        </div>
+      </div>
     </div>
 
-    <div class="ms-panel-card ms-full-panel">
-      <h3>Prestadores</h3>
+    <div id="panelEquipoPlanillasArchivo" class="ms-panel-card ms-full-panel hidden">
+      <h3>Planillas archivadas</h3>
       <p class="ms-muted">
-        Inscripciones pendientes, entrevistas y habilitación de prestadores.
+        Acá vas a poder consultar las planillas creadas y archivadas.
       </p>
-      <div id="listaPrestadoresAdmin" class="ms-list"></div>
+
+      <div id="listaPlanillasArchivadas" class="ms-list"></div>
     </div>
+
   </div>
 </div>
     </section>
@@ -633,6 +664,6 @@
 
   <div id="toast" class="ms-toast hidden"></div>
 
-<script type="module" src="app.js?v=2026-06-17-panel-home-clean-01"></script>
+<script type="module" src="app.js?v=2026-06-17-planillas-01"></script>
 </body>
 </html>
