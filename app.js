@@ -1520,48 +1520,18 @@ async function obtenerPrestadoresTodos() {
 ========================================================= */
 
 const ESTADOS_OPERATIVOS = [
-  {
-    id: "pendiente_derivar",
-    label: "Pendiente",
-    icono: "fa-regular fa-clock",
-    clase: "estado-pendiente"
-  },
-  {
-    id: "programado",
-    label: "Coordinado",
-    icono: "fa-regular fa-calendar-check",
-    clase: "estado-coordinado"
-  },
-  {
-    id: "derivado",
-    label: "Derivado",
-    icono: "fa-solid fa-user-check",
-    clase: "estado-derivado"
-  },
-  {
-    id: "en_lugar",
-    label: "Técnico en lugar",
-    icono: "fa-solid fa-person-digging",
-    clase: "estado-en-lugar"
-  },
-  {
-    id: "cerrado",
-    label: "Terminado",
-    icono: "fa-solid fa-circle-check",
-    clase: "estado-terminado"
-  },
-  {
-    id: "garantia",
-    label: "Garantía",
-    icono: "fa-solid fa-triangle-exclamation",
-    clase: "estado-garantia"
-  }
+  { id: "pendiente_derivar", label: "Pendiente" },
+  { id: "programado", label: "Coordinado" },
+  { id: "derivado", label: "Derivado" },
+  { id: "en_lugar", label: "Técnico en el lugar" },
+  { id: "cerrado", label: "Terminado" },
+  { id: "garantia", label: "Garantía" },
+  { id: "cancelado", label: "Cancelado" }
 ];
 
 let filtrosPanelEquipo = {
   fecha: "",
   horario: "",
-  zona: "",
   servicio: "",
   estado: "",
   prestador: "",
@@ -1632,7 +1602,6 @@ function filtrarSolicitudesEquipo(solicitudes) {
 
     if (f.fecha && fechaSolicitudFiltro(s) !== f.fecha) return false;
     if (f.horario && horarioSolicitudPanel(s) !== f.horario) return false;
-    if (f.zona && zonaSolicitudPanel(s) !== f.zona) return false;
     if (f.servicio && s.servicio !== f.servicio) return false;
     if (f.estado && (s.estado || "pendiente_derivar") !== f.estado) return false;
     if (f.prestador && prestadorSolicitudPanel(s) !== f.prestador) return false;
@@ -1720,7 +1689,6 @@ function renderSelectFiltro(nombre, valorActual, opciones, placeholder) {
 }
 
 function renderFiltrosEquipo(solicitudes) {
-  const zonas = obtenerOpcionesUnicas(solicitudes, zonaSolicitudPanel);
   const horarios = obtenerOpcionesUnicas(solicitudes, horarioSolicitudPanel);
   const servicios = obtenerOpcionesUnicas(solicitudes, s => s.servicio || "");
   const prestadores = obtenerOpcionesUnicas(solicitudes, prestadorSolicitudPanel);
@@ -1735,11 +1703,6 @@ function renderFiltrosEquipo(solicitudes) {
       <label>
         Horario
         ${renderSelectFiltro("horario", filtrosPanelEquipo.horario, horarios, "Todos")}
-      </label>
-
-      <label>
-        Zona
-        ${renderSelectFiltro("zona", filtrosPanelEquipo.zona, zonas, "Todas")}
       </label>
 
       <label>
@@ -1785,24 +1748,40 @@ function urlGaleriaSolicitud(s) {
   return s.archivosGaleriaUrl || s.galeriaUrl || "";
 }
 
-function renderEstadoChip(s) {
-  const estado = obtenerEstadoOperativo(s.estado);
+function claseFilaEstado(estado) {
+  const e = estado || "pendiente_derivar";
+
+  if (e === "programado") return "estado-coordinado";
+  if (e === "derivado") return "estado-derivado";
+  if (e === "en_lugar") return "estado-en-lugar";
+  if (e === "cerrado") return "estado-terminado";
+  if (e === "garantia") return "estado-garantia";
+  if (e === "cancelado") return "estado-cancelado";
+
+  return "estado-pendiente";
+}
+
+function renderEstadoSelect(s) {
+  const actual = s.estado || "pendiente_derivar";
 
   return `
-    <span class="ms-board-state ${estado.clase}">
-      <i class="${estado.icono}"></i>
-      ${estado.label}
-    </span>
+    <select class="ms-estado-select ${claseFilaEstado(actual)}" data-estado-select="${s.id}">
+      ${ESTADOS_OPERATIVOS.map(e => `
+        <option value="${e.id}" ${actual === e.id ? "selected" : ""}>
+          ${e.label}
+        </option>
+      `).join("")}
+    </select>
   `;
 }
 
 function renderSolicitudFila(s) {
-  const estado = obtenerEstadoOperativo(s.estado);
+  const estadoClase = claseFilaEstado(s.estado);
   const galeria = urlGaleriaSolicitud(s);
   const destino = obtenerDestinoSolicitudMaps(s);
 
   return `
-    <tr class="${estado.clase}" data-solicitud-id="${s.id}">
+    <tr class="${estadoClase}" data-solicitud-id="${s.id}">
       <td class="td-check">
         <input
           type="checkbox"
@@ -1822,76 +1801,59 @@ function renderSolicitudFila(s) {
       </td>
 
       <td>
-        <strong>${escaparHtml(s.servicio || "Sin servicio")}</strong>
-        ${s.emergencia ? `<small class="text-red">Emergencia</small>` : `<small>Normal</small>`}
-      </td>
+        <div class="td-service-line">
+          <span>
+            <strong>${escaparHtml(s.servicio || "Sin servicio")}</strong>
+            ${s.emergencia ? `<small class="text-red">Emergencia</small>` : `<small>Normal</small>`}
+          </span>
 
-      <td>
-        <strong>${escaparHtml(zonaSolicitudPanel(s))}</strong>
-        <small>${escaparHtml(s.partido || s.localidad || "")}</small>
+          ${
+            galeria
+              ? `
+                <a class="ms-icon-btn" href="${escaparHtml(galeria)}" target="_blank" rel="noopener" title="Archivos">
+                  <i class="fa-solid fa-images"></i>
+                </a>
+              `
+              : `
+                <button class="ms-icon-btn disabled" type="button" title="Sin archivos">
+                  <i class="fa-regular fa-image"></i>
+                </button>
+              `
+          }
+        </div>
       </td>
 
       <td class="td-direccion">
-        <strong>${escaparHtml(s.direccion || "Sin dirección")}</strong>
-        <small>${escaparHtml(s.descripcion || "Sin detalle")}</small>
+        <div class="td-address-line">
+          <span>
+            <strong>${escaparHtml(s.direccion || "Sin dirección")}</strong>
+            <small>${escaparHtml(s.descripcion || "Sin detalle")}</small>
+          </span>
+
+          ${
+            destino
+              ? `
+                <button class="ms-icon-btn" data-ruta-solicitud="${s.id}" type="button" title="Ver ruta">
+                  <i class="fa-solid fa-location-dot"></i>
+                </button>
+              `
+              : ""
+          }
+        </div>
       </td>
 
       <td>
-        ${renderEstadoChip(s)}
+        <div class="td-state-line">
+          ${renderEstadoSelect(s)}
+
+          <button class="ms-icon-btn" data-wa-solicitud="${s.id}" type="button" title="WhatsApp">
+            <i class="fa-brands fa-whatsapp"></i>
+          </button>
+        </div>
       </td>
 
       <td>
         <strong>${escaparHtml(prestadorSolicitudPanel(s))}</strong>
-      </td>
-
-      <td class="td-actions">
-        ${
-          galeria
-            ? `
-              <a class="ms-icon-btn" href="${escaparHtml(galeria)}" target="_blank" rel="noopener" title="Archivos">
-                <i class="fa-solid fa-images"></i>
-              </a>
-            `
-            : `
-              <button class="ms-icon-btn disabled" type="button" title="Sin archivos">
-                <i class="fa-regular fa-image"></i>
-              </button>
-            `
-        }
-
-        ${
-          destino
-            ? `
-              <button class="ms-icon-btn" data-ruta-solicitud="${s.id}" type="button" title="Ruta">
-                <i class="fa-solid fa-location-dot"></i>
-              </button>
-            `
-            : ""
-        }
-
-        <button class="ms-icon-btn" data-wa-solicitud="${s.id}" type="button" title="WhatsApp">
-          <i class="fa-brands fa-whatsapp"></i>
-        </button>
-
-        <button class="ms-icon-btn" data-estado-solicitud="${s.id}" data-estado="pendiente_derivar" type="button" title="Pendiente">
-          <i class="fa-regular fa-clock"></i>
-        </button>
-
-        <button class="ms-icon-btn" data-estado-solicitud="${s.id}" data-estado="programado" type="button" title="Coordinado">
-          <i class="fa-regular fa-calendar-check"></i>
-        </button>
-
-        <button class="ms-icon-btn" data-estado-solicitud="${s.id}" data-estado="derivado" type="button" title="Derivado">
-          <i class="fa-solid fa-user-check"></i>
-        </button>
-
-        <button class="ms-icon-btn" data-estado-solicitud="${s.id}" data-estado="en_lugar" type="button" title="Técnico en lugar">
-          <i class="fa-solid fa-person-digging"></i>
-        </button>
-
-        <button class="ms-icon-btn" data-estado-solicitud="${s.id}" data-estado="cerrado" type="button" title="Terminado">
-          <i class="fa-solid fa-circle-check"></i>
-        </button>
       </td>
     </tr>
   `;
@@ -1927,12 +1889,10 @@ function renderTablaEquipo(solicitudes) {
             <th></th>
             <th>Fecha / horario</th>
             <th>Cliente</th>
-            <th>Servicio</th>
-            <th>Zona</th>
-            <th>Dirección / detalle</th>
-            <th>Estado</th>
+            <th>Servicio / archivos</th>
+            <th>Dirección / ruta</th>
+            <th>Estado / WhatsApp</th>
             <th>Prestador</th>
-            <th>Acciones</th>
           </tr>
         </thead>
 
@@ -1942,7 +1902,7 @@ function renderTablaEquipo(solicitudes) {
               ? filtradas.map(renderSolicitudFila).join("")
               : `
                 <tr>
-                  <td colspan="9" class="td-empty">
+                  <td colspan="7" class="td-empty">
                     No hay solicitudes con esos filtros.
                   </td>
                 </tr>
@@ -2231,23 +2191,11 @@ async function renderEquipo() {
   if (!puedeVerPanelEquipo()) return;
 
   const solicitudes = await obtenerTodasLasSolicitudes();
-  const avisos = await obtenerAvisosEquipo();
 
   if (listaSolicitudesEquipo) {
     listaSolicitudesEquipo.innerHTML = solicitudes.length
       ? renderTablaEquipo(solicitudes)
       : `<article class="ms-item"><p>No hay solicitudes todavía.</p></article>`;
-  }
-
-  if (listaAvisosEquipo) {
-    listaAvisosEquipo.innerHTML = avisos.length
-      ? avisos.slice(0, 20).map(renderAvisoItem).join("")
-      : `<article class="ms-item"><p>No hay avisos todavía.</p></article>`;
-  }
-
-  if (contadorAvisos) {
-    const nuevos = avisos.filter(a => !a.visto).length;
-    contadorAvisos.textContent = `${nuevos} avisos`;
   }
 
   activarFiltrosEquipo(solicitudes);
@@ -2590,15 +2538,14 @@ function activarFiltrosEquipo(solicitudes) {
 
   document.querySelectorAll("[data-limpiar-filtros-equipo]").forEach(btn => {
     btn.onclick = async () => {
-      filtrosPanelEquipo = {
-        fecha: "",
-        horario: "",
-        zona: "",
-        servicio: "",
-        estado: "",
-        prestador: "",
-        texto: ""
-      };
+filtrosPanelEquipo = {
+  fecha: "",
+  horario: "",
+  servicio: "",
+  estado: "",
+  prestador: "",
+  texto: ""
+};
 
       await renderEquipo();
     };
@@ -2662,25 +2609,25 @@ document.querySelectorAll("[data-limpiar-hoja-ruta]").forEach(btn => {
   };
 });
 
-  document.querySelectorAll("[data-estado-solicitud]").forEach(btn => {
-    btn.onclick = async () => {
-      const id = btn.dataset.estadoSolicitud;
-      const estado = btn.dataset.estado;
+document.querySelectorAll("[data-estado-select]").forEach(select => {
+  select.onchange = async () => {
+    const id = select.dataset.estadoSelect;
+    const nuevoEstado = select.value;
 
-      try {
-        await updateDoc(doc(db, "solicitudes", id), {
-          estado,
-          actualizadoEn: serverTimestamp()
-        });
+    try {
+      await updateDoc(doc(db, "solicitudes", id), {
+        estado: nuevoEstado,
+        actualizadoEn: serverTimestamp()
+      });
 
-        toastMsg(`Estado actualizado: ${estadoBonito(estado)}`);
-        await renderPaneles();
-      } catch (error) {
-        console.error(error);
-        toastMsg("No se pudo actualizar el estado");
-      }
-    };
-  });
+      toastMsg(`Estado actualizado: ${estadoBonito(nuevoEstado)}`);
+      await renderEquipo();
+    } catch (error) {
+      console.error(error);
+      toastMsg("No se pudo actualizar el estado");
+    }
+  };
+});
 
   document.querySelectorAll("[data-postular]").forEach(btn => {
     btn.onclick = async () => {
@@ -2920,7 +2867,6 @@ if (prestadorRecursosInput) {
   prestadorRecursosInput.disabled = true;
 }
 
-configurarSugerenciasGeo(solZona, solZonaSugerencias, "zona");
 configurarSugerenciasGeo(solDireccion, solDireccionSugerencias, "direccion");
 
 solArchivos?.addEventListener("change", actualizarResumenArchivosSolicitud);
@@ -3260,7 +3206,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-16-panel-tabla-01";
+const SW_VERSION = "2026-06-17-panel-home-clean-01";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
