@@ -395,7 +395,7 @@ main{
 }
 
 .ms-hero-card-points{
-  margin-top:22px;
+  margin-top:0;
   display:flex;
   flex-wrap:wrap;
   justify-content:flex-start;
@@ -422,7 +422,21 @@ main{
 
 .ms-home-services{
   margin-top:14px;
-  max-width:620px;
+  max-width:none;
+}
+
+.ms-hero-action-card{
+  margin-top:22px;
+  max-width:520px;
+  align-self:flex-start;
+}
+
+.ms-hero-services-card{
+  align-self:center;
+}
+
+.ms-hero-services-card .ms-home-services{
+  width:100%;
 }
 
 .ms-hero-action-card{
@@ -2433,4 +2447,10 @@ button[title="WhatsApp"] i{
   .ms-admin-two-cols{
     grid-template-columns:1fr;
   }
+
+   .ms-hero-action-card,
+.ms-hero-services-card{
+  max-width:none;
+  width:100%;
+}
 }
