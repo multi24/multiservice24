@@ -439,10 +439,6 @@ main{
   width:100%;
 }
 
-.ms-hero-action-card{
-  align-self:center;
-}
-
 .ms-contact-between{
   display:grid;
   gap:12px;
@@ -913,6 +909,10 @@ main{
 
 .ms-panel{
   margin-top:16px;
+}
+
+#paneles:has(#panelEquipo:not(.hidden)) > .ms-section-head{
+  display:none;
 }
 
 .ms-panel-head{
