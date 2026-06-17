@@ -375,7 +375,7 @@ main{
 .ms-phone-big{
   width:100%;
   border:none;
-  background:linear-gradient(135deg,var(--azul-noche),var(--azul-2));
+  background:linear-gradient(135deg,var(--rojo),var(--rojo-oscuro));
   color:#fff;
   border-radius:26px;
   padding:20px;
@@ -386,7 +386,7 @@ main{
   font-size:30px;
   font-weight:1000;
   letter-spacing:.5px;
-  box-shadow:0 14px 28px rgba(7,27,58,.24);
+  box-shadow:0 14px 28px rgba(225,31,42,.24);
   cursor:pointer;
 }
 
@@ -645,6 +645,12 @@ main{
   min-height:58px;
   font-size:18px;
   border-radius:24px;
+}
+
+#btnAbrirSolicitud.ms-btn-request-big{
+  background:linear-gradient(135deg,var(--azul-noche),var(--azul-2));
+  color:#fff;
+  box-shadow:0 12px 24px rgba(7,27,58,.24);
 }
 
 .ms-online-note{
