@@ -168,6 +168,19 @@ const btnPanelArchivoPlanillas = $("btnPanelArchivoPlanillas");
 
 const listaPlanillasArchivadas = $("listaPlanillasArchivadas");
 
+const modalInformeServicio = $("modalInformeServicio");
+const formInformeServicio = $("formInformeServicio");
+const informeSolicitudId = $("informeSolicitudId");
+const informeClienteTitulo = $("informeClienteTitulo");
+const informeSolicitudTexto = $("informeSolicitudTexto");
+const informeTrabajo = $("informeTrabajo");
+const informeObservaciones = $("informeObservaciones");
+const informeArchivos = $("informeArchivos");
+const informeArchivosResumen = $("informeArchivosResumen");
+const canvasFirmaCliente = $("canvasFirmaCliente");
+const btnLimpiarFirma = $("btnLimpiarFirma");
+const btnVistaInformePdf = $("btnVistaInformePdf");
+
 const estadoPrestador = $("estadoPrestador");
 const contadorAvisos = $("contadorAvisos");
 
@@ -208,6 +221,9 @@ let planillasPanel = [
 
 let solicitudEditandoId = "";
 let solicitudEditandoData = null;
+let informeSolicitudActual = null;
+let informeFirmaDataUrl = "";
+let informeArchivosSeleccionados = [];
 
 let mediaRecorderSolicitud = null;
 let streamAudioSolicitud = null;
@@ -1911,9 +1927,15 @@ function renderSolicitudFila(s) {
         </div>
       </td>
 
-      <td>
-        <strong>${escaparHtml(prestadorSolicitudPanel(s))}</strong>
-      </td>
+<td>
+  <strong>${escaparHtml(prestadorSolicitudPanel(s))}</strong>
+</td>
+
+<td>
+  <button class="ms-icon-btn" data-informe-solicitud="${s.id}" type="button" title="Cargar informe">
+    <i class="fa-solid fa-file-signature"></i>
+  </button>
+</td>
     </tr>
   `;
 }
@@ -1966,7 +1988,7 @@ function renderFilasSolicitudesAgrupadas(items) {
 
       separador = `
         <tr class="ms-day-divider">
-          <td colspan="7">
+          <td colspan="8">
             <span>${escaparHtml(tituloGrupoSolicitud(grupo))}</span>
           </td>
         </tr>
@@ -2144,6 +2166,7 @@ function renderTablaEquipo(solicitudes) {
             <th>Dirección / ruta</th>
             <th>Estado / WhatsApp</th>
             <th>Prestador</th>
+            <th>Informe</th>
           </tr>
         </thead>
 
@@ -2153,7 +2176,7 @@ function renderTablaEquipo(solicitudes) {
               ? renderFilasSolicitudesAgrupadas(filtradas)
               : `
                 <tr>
-                  <td colspan="7" class="td-empty">
+                  <td colspan="8" class="td-empty">
                     No hay solicitudes con esos filtros.
                   </td>
                 </tr>
@@ -2875,6 +2898,102 @@ function cargarSolicitudEnModalEdicion(solicitud) {
   abrirModal(modalSolicitud);
 }
 
+function prepararCanvasFirma() {
+  if (!canvasFirmaCliente) return;
+
+  const ctx = canvasFirmaCliente.getContext("2d");
+  let dibujando = false;
+
+  function limpiarCanvas() {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvasFirmaCliente.width, canvasFirmaCliente.height);
+    ctx.strokeStyle = "#071b3a";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    informeFirmaDataUrl = "";
+  }
+
+  function posicion(e) {
+    const rect = canvasFirmaCliente.getBoundingClientRect();
+    const touch = e.touches?.[0];
+
+    return {
+      x: ((touch?.clientX ?? e.clientX) - rect.left) * (canvasFirmaCliente.width / rect.width),
+      y: ((touch?.clientY ?? e.clientY) - rect.top) * (canvasFirmaCliente.height / rect.height)
+    };
+  }
+
+  function empezar(e) {
+    e.preventDefault();
+    dibujando = true;
+    const p = posicion(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  }
+
+  function mover(e) {
+    if (!dibujando) return;
+    e.preventDefault();
+    const p = posicion(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+    informeFirmaDataUrl = canvasFirmaCliente.toDataURL("image/png");
+  }
+
+  function terminar() {
+    dibujando = false;
+    informeFirmaDataUrl = canvasFirmaCliente.toDataURL("image/png");
+  }
+
+  limpiarCanvas();
+
+  canvasFirmaCliente.onmousedown = empezar;
+  canvasFirmaCliente.onmousemove = mover;
+  canvasFirmaCliente.onmouseup = terminar;
+  canvasFirmaCliente.onmouseleave = terminar;
+
+  canvasFirmaCliente.ontouchstart = empezar;
+  canvasFirmaCliente.ontouchmove = mover;
+  canvasFirmaCliente.ontouchend = terminar;
+
+if (btnLimpiarFirma) {
+  btnLimpiarFirma.onclick = limpiarCanvas;
+}
+}
+
+function abrirInformeSolicitud(solicitud) {
+  if (!solicitud) return;
+
+  informeSolicitudActual = solicitud;
+  informeArchivosSeleccionados = [];
+  informeFirmaDataUrl = "";
+
+  if (informeSolicitudId) informeSolicitudId.value = solicitud.id;
+  if (informeTrabajo) informeTrabajo.value = "";
+  if (informeObservaciones) informeObservaciones.value = "";
+  if (informeArchivos) informeArchivos.value = "";
+
+  if (informeClienteTitulo) {
+    informeClienteTitulo.textContent = `${solicitud.clienteNombre || "Cliente"} · ${solicitud.servicio || "Servicio"}`;
+  }
+
+  if (informeSolicitudTexto) {
+    informeSolicitudTexto.textContent = [
+      solicitud.direccion || "Sin dirección",
+      solicitud.fechaDeseada || "Sin fecha",
+      solicitud.horarioDeseado || "Sin horario"
+    ].join(" · ");
+  }
+
+  if (informeArchivosResumen) {
+    informeArchivosResumen.classList.add("hidden");
+    informeArchivosResumen.textContent = "";
+  }
+
+  prepararCanvasFirma();
+  abrirModal(modalInformeServicio);
+}
+
 function activarBotonesPanelInterno() {
   if (btnPanelSolicitudes) {
     btnPanelSolicitudes.onclick = async () => {
@@ -2913,7 +3032,18 @@ function activarBotonesDeSolicitudes(solicitudes) {
     };
   });
 
-  document.querySelectorAll("[data-wa-solicitud]").forEach(btn => {
+ document.querySelectorAll("[data-informe-solicitud]").forEach(btn => {
+  btn.onclick = () => {
+    const id = btn.dataset.informeSolicitud;
+    const solicitud = mapa.get(id);
+
+    if (!solicitud) return;
+
+    abrirInformeSolicitud(solicitud);
+  };
+});
+   
+   document.querySelectorAll("[data-wa-solicitud]").forEach(btn => {
     btn.onclick = () => {
       const id = btn.dataset.waSolicitud;
       const solicitud = mapa.get(id);
@@ -3144,6 +3274,26 @@ async function mostrarVista(vista) {
 /* =========================================================
    EVENTOS UI
 ========================================================= */
+
+informeArchivos?.addEventListener("change", () => {
+  informeArchivosSeleccionados = Array.from(informeArchivos.files || []);
+
+  if (!informeArchivosResumen) return;
+
+  if (!informeArchivosSeleccionados.length) {
+    informeArchivosResumen.classList.add("hidden");
+    informeArchivosResumen.textContent = "";
+    return;
+  }
+
+  const fotos = informeArchivosSeleccionados.filter(a => a.type.startsWith("image/")).length;
+  const videos = informeArchivosSeleccionados.filter(a => a.type.startsWith("video/")).length;
+  const audios = informeArchivosSeleccionados.filter(a => a.type.startsWith("audio/")).length;
+
+  informeArchivosResumen.classList.remove("hidden");
+  informeArchivosResumen.textContent =
+    `Seleccionaste ${informeArchivosSeleccionados.length} archivo(s): ${fotos} foto(s), ${videos} video(s), ${audios} audio(s).`;
+});
 
 btnMenuMobile?.addEventListener("click", () => {
   msNav?.classList.toggle("open");
@@ -3670,6 +3820,259 @@ const data = {
     toastMsg("No se pudo enviar la inscripción");
   }
 });
+
+/* =========================================================
+   FORM INFORME
+========================================================= */
+
+formInformeServicio?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  if (!informeSolicitudActual) {
+    toastMsg("No hay solicitud seleccionada");
+    return;
+  }
+
+  const btn = formInformeServicio.querySelector("button[type='submit']");
+
+  try {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando informe...`;
+
+    let subida = {
+      archivos: [],
+      galeriaUrl: "",
+      galeriaId: ""
+    };
+
+    if (informeArchivosSeleccionados.length) {
+      subida = await subirArchivosSolicitud(
+        informeArchivosSeleccionados,
+        informeSolicitudActual.clienteTelefono || ""
+      );
+    }
+
+    const dataInforme = {
+      solicitudId: informeSolicitudActual.id,
+      clienteNombre: informeSolicitudActual.clienteNombre || "",
+      clienteTelefono: informeSolicitudActual.clienteTelefono || "",
+      servicio: informeSolicitudActual.servicio || "",
+      direccion: informeSolicitudActual.direccion || "",
+      fechaDeseada: informeSolicitudActual.fechaDeseada || "",
+      horarioDeseado: informeSolicitudActual.horarioDeseado || "",
+      trabajo: limpiar(informeTrabajo?.value),
+      observaciones: limpiar(informeObservaciones?.value),
+      firmaCliente: informeFirmaDataUrl || "",
+      archivos: subida.archivos || [],
+      archivosGaleriaId: subida.galeriaId || "",
+      archivosGaleriaUrl: subida.galeriaUrl || "",
+      creadoEn: serverTimestamp(),
+creadoPorUid: usuarioActual?.uid || "",
+creadoPorEmail: usuarioActual?.email || ""
+    };
+
+    await addDoc(collection(db, "informesServicio"), dataInforme);
+
+    await updateDoc(doc(db, "solicitudes", informeSolicitudActual.id), {
+      tieneInforme: true,
+      estado: "cerrado",
+      actualizadoEn: serverTimestamp()
+    });
+
+    toastMsg("Informe guardado");
+    cerrarModal(modalInformeServicio);
+    await renderPaneles();
+
+  } catch (error) {
+    console.error(error);
+    toastMsg("No se pudo guardar el informe");
+
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Guardar informe`;
+  }
+});
+
+function abrirVistaInformePdf() {
+  if (!informeSolicitudActual) {
+    toastMsg("No hay solicitud seleccionada");
+    return;
+  }
+
+  const trabajo = limpiar(informeTrabajo?.value);
+  const observaciones = limpiar(informeObservaciones?.value);
+
+  const html = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8" />
+      <title>Informe Multi24</title>
+      <style>
+        body{
+          margin:0;
+          padding:28px;
+          font-family:Arial, Helvetica, sans-serif;
+          color:#071b3a;
+          background:#fff;
+        }
+
+        .page{
+          max-width:820px;
+          margin:0 auto;
+        }
+
+        header{
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-start;
+          border-bottom:3px solid #071b3a;
+          padding-bottom:16px;
+          margin-bottom:20px;
+        }
+
+        h1{
+          margin:0;
+          font-size:30px;
+        }
+
+        h2{
+          margin:22px 0 8px;
+          font-size:20px;
+          color:#e11f2a;
+        }
+
+        p{
+          line-height:1.5;
+          white-space:pre-wrap;
+        }
+
+        .meta{
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:10px;
+          margin-top:14px;
+        }
+
+        .box{
+          border:1px solid rgba(7,27,58,.18);
+          border-radius:14px;
+          padding:12px;
+          background:#f8fbff;
+        }
+
+        .firma{
+          margin-top:28px;
+          border-top:1px solid rgba(7,27,58,.2);
+          padding-top:16px;
+        }
+
+        .firma img{
+          width:300px;
+          max-height:120px;
+          object-fit:contain;
+          border:1px solid rgba(7,27,58,.15);
+          border-radius:10px;
+          background:#fff;
+        }
+
+        .actions{
+          margin:20px 0;
+          display:flex;
+          gap:10px;
+        }
+
+        button{
+          border:none;
+          border-radius:999px;
+          padding:12px 18px;
+          font-weight:900;
+          cursor:pointer;
+        }
+
+        .primary{
+          background:#071b3a;
+          color:#fff;
+        }
+
+        @media print{
+          .actions{ display:none; }
+          body{ padding:0; }
+          .page{ max-width:none; }
+        }
+      </style>
+    </head>
+
+    <body>
+      <div class="page">
+        <header>
+          <div>
+            <h1>MULTI24</h1>
+            <strong>Informe de servicio</strong>
+          </div>
+
+          <div>
+            <strong>Fecha:</strong>
+            ${new Date().toLocaleDateString("es-AR")}
+          </div>
+        </header>
+
+        <div class="meta">
+          <div class="box">
+            <strong>Cliente</strong><br>
+            ${escaparHtml(informeSolicitudActual.clienteNombre || "")}<br>
+            ${escaparHtml(informeSolicitudActual.clienteTelefono || "")}
+          </div>
+
+          <div class="box">
+            <strong>Servicio</strong><br>
+            ${escaparHtml(informeSolicitudActual.servicio || "")}<br>
+            ${escaparHtml(informeSolicitudActual.fechaDeseada || "")}
+            ${escaparHtml(informeSolicitudActual.horarioDeseado || "")}
+          </div>
+
+          <div class="box" style="grid-column:1/-1">
+            <strong>Dirección</strong><br>
+            ${escaparHtml(informeSolicitudActual.direccion || "")}
+          </div>
+        </div>
+
+        <h2>Trabajo realizado</h2>
+        <p>${escaparHtml(trabajo || "Sin detalle cargado.")}</p>
+
+        <h2>Observaciones / recomendaciones</h2>
+        <p>${escaparHtml(observaciones || "Sin observaciones.")}</p>
+
+        <div class="firma">
+          <h2>Firma del cliente</h2>
+          ${
+            informeFirmaDataUrl
+              ? `<img src="${informeFirmaDataUrl}" alt="Firma del cliente" />`
+              : `<p>Sin firma cargada.</p>`
+          }
+        </div>
+
+        <div class="actions">
+          <button class="primary" onclick="window.print()">Guardar / imprimir PDF</button>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const win = window.open("", "_blank");
+
+  if (!win) {
+    toastMsg("El navegador bloqueó la ventana del PDF");
+    return;
+  }
+
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+}
+
+btnVistaInformePdf?.addEventListener("click", abrirVistaInformePdf);
 
 /* =========================================================
    AUTH STATE
