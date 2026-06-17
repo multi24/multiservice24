@@ -2504,3 +2504,13 @@ button[title="WhatsApp"] i{
 .ms-icon-btn[title="Cargar informe"] i{
   color:var(--rojo);
 }
+
+.ms-icon-btn.informe-ok{
+  background:#e8fff1;
+  color:#08723b;
+  border:1px solid rgba(8,114,59,.18);
+}
+
+.ms-icon-btn.informe-ok i{
+  color:#08723b !important;
+}
