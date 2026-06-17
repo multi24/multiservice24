@@ -2226,3 +2226,142 @@ button[title="WhatsApp"] i{
     min-width:240px;
   }
 }
+
+/* =========================================================
+   PANEL INTERNO - SUBPANTALLAS / PLANILLAS
+========================================================= */
+
+.ms-panel-head-interno{
+  align-items:flex-start;
+}
+
+.ms-panel-admin-actions{
+  display:grid;
+  gap:8px;
+  justify-items:stretch;
+  min-width:170px;
+}
+
+.ms-icon-panel-btn{
+  border:1px solid var(--borde);
+  border-radius:16px;
+  background:#fff;
+  color:var(--azul-noche);
+  min-height:42px;
+  padding:9px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:9px;
+  font-weight:1000;
+  box-shadow:var(--sombra-suave);
+}
+
+.ms-icon-panel-btn i{
+  color:var(--rojo);
+}
+
+.ms-icon-panel-btn.active{
+  background:var(--azul-noche);
+  color:#fff;
+  border-color:var(--azul-noche);
+}
+
+.ms-icon-panel-btn.active i{
+  color:#fff;
+}
+
+.ms-admin-two-cols{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+}
+
+.ms-admin-two-cols h4{
+  margin:0 0 10px;
+  color:var(--azul-noche);
+}
+
+.ms-planillas-tabs{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  overflow-x:auto;
+  padding:0 0 10px;
+  margin:0 0 10px;
+}
+
+.ms-planilla-tab{
+  border:none;
+  border-radius:999px;
+  padding:9px 13px;
+  background:#fff;
+  color:var(--azul-noche);
+  border:1px solid var(--borde);
+  font-weight:1000;
+  white-space:nowrap;
+  position:relative;
+  overflow:hidden;
+}
+
+.ms-planilla-tab::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:7px;
+  background:var(--tab-color);
+}
+
+.ms-planilla-tab.active{
+  color:#fff;
+  background:var(--tab-color);
+  border-color:var(--tab-color);
+}
+
+.ms-planilla-tab.active::before{
+  background:rgba(255,255,255,.65);
+}
+
+.ms-day-divider td{
+  padding:0 !important;
+  background:#fff !important;
+  border-bottom:none !important;
+}
+
+.ms-day-divider span{
+  display:block;
+  padding:8px 10px;
+  background:#eef3f9;
+  color:var(--azul-noche);
+  font-weight:1000;
+  font-size:12px;
+  border-top:1px solid rgba(7,27,58,.08);
+  border-bottom:1px solid rgba(7,27,58,.08);
+}
+
+@media(max-width:900px){
+  .ms-panel-head-interno{
+    gap:12px;
+  }
+
+  .ms-panel-admin-actions{
+    width:100%;
+    grid-template-columns:1fr 1fr 1fr;
+    min-width:0;
+  }
+
+  .ms-icon-panel-btn{
+    justify-content:center;
+    padding:9px 8px;
+  }
+
+  .ms-icon-panel-btn span{
+    display:none;
+  }
+
+  .ms-admin-two-cols{
+    grid-template-columns:1fr;
+  }
+}
