@@ -465,13 +465,14 @@ function estadoBonito(estado) {
   const mapa = {
     nuevo: "Nuevo",
     contacto_rapido: "Contacto rápido",
-    pendiente_derivar: "Pendiente de derivar",
+    pendiente_derivar: "Pendiente",
     contactado: "Contactado",
     derivado: "Derivado",
     cotizando: "Cotizando",
-    programado: "Programado",
+    programado: "Coordinado",
+    en_lugar: "Técnico en lugar",
     realizado: "Realizado",
-    cerrado: "Cerrado",
+    cerrado: "Terminado",
     garantia: "Garantía",
     pendiente_entrevista: "Pendiente entrevista",
     habilitado: "Habilitado",
@@ -729,6 +730,11 @@ function cerrarCajaSugerencias(contenedor) {
 }
 
 function obtenerContextoGeoParaDireccion() {
+  /*
+    Ya no usamos campo Zona en la solicitud.
+    Si alguna vez existe solZona por compatibilidad, lo lee.
+    Si no existe, Google resuelve todo desde Dirección.
+  */
   if (geoZonaSeleccionada?.zonaLocalidad) {
     return geoZonaSeleccionada.zonaLocalidad;
   }
@@ -1513,6 +1519,441 @@ async function obtenerPrestadoresTodos() {
    RENDER ITEMS
 ========================================================= */
 
+const ESTADOS_OPERATIVOS = [
+  {
+    id: "pendiente_derivar",
+    label: "Pendiente",
+    icono: "fa-regular fa-clock",
+    clase: "estado-pendiente"
+  },
+  {
+    id: "programado",
+    label: "Coordinado",
+    icono: "fa-regular fa-calendar-check",
+    clase: "estado-coordinado"
+  },
+  {
+    id: "derivado",
+    label: "Derivado",
+    icono: "fa-solid fa-user-check",
+    clase: "estado-derivado"
+  },
+  {
+    id: "en_lugar",
+    label: "Técnico en lugar",
+    icono: "fa-solid fa-person-digging",
+    clase: "estado-en-lugar"
+  },
+  {
+    id: "cerrado",
+    label: "Terminado",
+    icono: "fa-solid fa-circle-check",
+    clase: "estado-terminado"
+  },
+  {
+    id: "garantia",
+    label: "Garantía",
+    icono: "fa-solid fa-triangle-exclamation",
+    clase: "estado-garantia"
+  }
+];
+
+let filtrosPanelEquipo = {
+  fecha: "",
+  horario: "",
+  zona: "",
+  servicio: "",
+  estado: "",
+  prestador: "",
+  texto: ""
+};
+
+function obtenerEstadoOperativo(estado) {
+  const normalizado = estado || "pendiente_derivar";
+
+  return ESTADOS_OPERATIVOS.find(e => e.id === normalizado)
+    || ESTADOS_OPERATIVOS[0];
+}
+
+function fechaSolicitudFiltro(s) {
+  return s.fechaDeseada || "";
+}
+
+function textoFechaDeseadaPanel(s) {
+  if (s.fechaDeseada) {
+    return fechaDeseadaBonita(s.fechaDeseada);
+  }
+
+  return "Sin coordinar";
+}
+
+function zonaSolicitudPanel(s) {
+  return s.zona || s.localidad || s.partido || "Sin zona";
+}
+
+function horarioSolicitudPanel(s) {
+  return s.horarioDeseado || "Sin horario";
+}
+
+function prestadorSolicitudPanel(s) {
+  return s.prestadorAsignadoNombre
+    || s.prestadorNombre
+    || s.prestadorAsignadoUid
+    || "Sin prestador";
+}
+
+function obtenerOpcionesUnicas(items, getter) {
+  return Array.from(
+    new Set(
+      items
+        .map(getter)
+        .filter(Boolean)
+        .filter(x => x !== "Sin zona" && x !== "Sin horario" && x !== "Sin prestador")
+    )
+  ).sort((a, b) => String(a).localeCompare(String(b), "es"));
+}
+
+function filtrarSolicitudesEquipo(solicitudes) {
+  const f = filtrosPanelEquipo;
+
+  return solicitudes.filter(s => {
+    const textoTodo = [
+      s.clienteNombre,
+      s.clienteTelefono,
+      s.servicio,
+      s.zona,
+      s.localidad,
+      s.partido,
+      s.direccion,
+      s.descripcion,
+      prestadorSolicitudPanel(s),
+      s.estado
+    ].filter(Boolean).join(" ").toLowerCase();
+
+    if (f.fecha && fechaSolicitudFiltro(s) !== f.fecha) return false;
+    if (f.horario && horarioSolicitudPanel(s) !== f.horario) return false;
+    if (f.zona && zonaSolicitudPanel(s) !== f.zona) return false;
+    if (f.servicio && s.servicio !== f.servicio) return false;
+    if (f.estado && (s.estado || "pendiente_derivar") !== f.estado) return false;
+    if (f.prestador && prestadorSolicitudPanel(s) !== f.prestador) return false;
+    if (f.texto && !textoTodo.includes(f.texto.toLowerCase())) return false;
+
+    return true;
+  });
+}
+
+function resumenSolicitudesEquipo(solicitudes) {
+  const hoy = new Date();
+  const yyyy = hoy.getFullYear();
+  const mm = String(hoy.getMonth() + 1).padStart(2, "0");
+  const dd = String(hoy.getDate()).padStart(2, "0");
+  const hoyKey = `${yyyy}-${mm}-${dd}`;
+
+  return {
+    total: solicitudes.length,
+    hoy: solicitudes.filter(s => s.fechaDeseada === hoyKey).length,
+    pendientes: solicitudes.filter(s => {
+      const estado = s.estado || "pendiente_derivar";
+      return estado === "pendiente_derivar" || estado === "nuevo";
+    }).length,
+    coordinados: solicitudes.filter(s => s.estado === "programado").length,
+    emergencias: solicitudes.filter(s => !!s.emergencia).length,
+    sinPrestador: solicitudes.filter(s => !s.prestadorAsignadoUid && !s.prestadorAsignadoNombre).length,
+    terminados: solicitudes.filter(s => s.estado === "cerrado").length
+  };
+}
+
+function renderResumenEquipo(solicitudes) {
+  const r = resumenSolicitudesEquipo(solicitudes);
+
+  return `
+    <div class="ms-board-summary">
+      <article>
+        <span>Total</span>
+        <strong>${r.total}</strong>
+      </article>
+
+      <article>
+        <span>Hoy</span>
+        <strong>${r.hoy}</strong>
+      </article>
+
+      <article class="soft-yellow">
+        <span>Pendientes</span>
+        <strong>${r.pendientes}</strong>
+      </article>
+
+      <article class="soft-blue">
+        <span>Coordinados</span>
+        <strong>${r.coordinados}</strong>
+      </article>
+
+      <article class="soft-red">
+        <span>Emergencias</span>
+        <strong>${r.emergencias}</strong>
+      </article>
+
+      <article>
+        <span>Sin prestador</span>
+        <strong>${r.sinPrestador}</strong>
+      </article>
+
+      <article class="soft-green">
+        <span>Terminados</span>
+        <strong>${r.terminados}</strong>
+      </article>
+    </div>
+  `;
+}
+
+function renderSelectFiltro(nombre, valorActual, opciones, placeholder) {
+  return `
+    <select data-filtro-equipo="${nombre}">
+      <option value="">${placeholder}</option>
+      ${opciones.map(op => `
+        <option value="${escaparHtml(op)}" ${op === valorActual ? "selected" : ""}>
+          ${escaparHtml(op)}
+        </option>
+      `).join("")}
+    </select>
+  `;
+}
+
+function renderFiltrosEquipo(solicitudes) {
+  const zonas = obtenerOpcionesUnicas(solicitudes, zonaSolicitudPanel);
+  const horarios = obtenerOpcionesUnicas(solicitudes, horarioSolicitudPanel);
+  const servicios = obtenerOpcionesUnicas(solicitudes, s => s.servicio || "");
+  const prestadores = obtenerOpcionesUnicas(solicitudes, prestadorSolicitudPanel);
+
+  return `
+    <div class="ms-board-filters">
+      <label>
+        Día
+        <input type="date" data-filtro-equipo="fecha" value="${escaparHtml(filtrosPanelEquipo.fecha)}" />
+      </label>
+
+      <label>
+        Horario
+        ${renderSelectFiltro("horario", filtrosPanelEquipo.horario, horarios, "Todos")}
+      </label>
+
+      <label>
+        Zona
+        ${renderSelectFiltro("zona", filtrosPanelEquipo.zona, zonas, "Todas")}
+      </label>
+
+      <label>
+        Servicio
+        ${renderSelectFiltro("servicio", filtrosPanelEquipo.servicio, servicios, "Todos")}
+      </label>
+
+      <label>
+        Estado
+        <select data-filtro-equipo="estado">
+          <option value="">Todos</option>
+          ${ESTADOS_OPERATIVOS.map(e => `
+            <option value="${e.id}" ${filtrosPanelEquipo.estado === e.id ? "selected" : ""}>
+              ${e.label}
+            </option>
+          `).join("")}
+        </select>
+      </label>
+
+      <label>
+        Prestador
+        ${renderSelectFiltro("prestador", filtrosPanelEquipo.prestador, prestadores, "Todos")}
+      </label>
+
+      <label class="ms-board-search">
+        Buscar
+        <input type="search" data-filtro-equipo="texto" value="${escaparHtml(filtrosPanelEquipo.texto)}" placeholder="Cliente, teléfono, dirección..." />
+      </label>
+
+      <button class="ms-mini-btn" data-limpiar-filtros-equipo type="button">
+        <i class="fa-solid fa-eraser"></i>
+        Limpiar filtros
+      </button>
+    </div>
+  `;
+}
+
+function tieneArchivosSolicitud(s) {
+  return Array.isArray(s.archivos) && s.archivos.length > 0;
+}
+
+function urlGaleriaSolicitud(s) {
+  return s.archivosGaleriaUrl || s.galeriaUrl || "";
+}
+
+function renderEstadoChip(s) {
+  const estado = obtenerEstadoOperativo(s.estado);
+
+  return `
+    <span class="ms-board-state ${estado.clase}">
+      <i class="${estado.icono}"></i>
+      ${estado.label}
+    </span>
+  `;
+}
+
+function renderSolicitudFila(s) {
+  const estado = obtenerEstadoOperativo(s.estado);
+  const galeria = urlGaleriaSolicitud(s);
+  const destino = obtenerDestinoSolicitudMaps(s);
+
+  return `
+    <tr class="${estado.clase}" data-solicitud-id="${s.id}">
+      <td class="td-check">
+        <input
+          type="checkbox"
+          data-ruta-check="${s.id}"
+          ${hojaRutaSeleccion.has(s.id) ? "checked" : ""}
+        />
+      </td>
+
+      <td>
+        <strong>${escaparHtml(textoFechaDeseadaPanel(s))}</strong>
+        <small>${escaparHtml(horarioSolicitudPanel(s))}</small>
+      </td>
+
+      <td>
+        <strong>${escaparHtml(s.clienteNombre || "Sin nombre")}</strong>
+        <small>${escaparHtml(s.clienteTelefono || "Sin teléfono")}</small>
+      </td>
+
+      <td>
+        <strong>${escaparHtml(s.servicio || "Sin servicio")}</strong>
+        ${s.emergencia ? `<small class="text-red">Emergencia</small>` : `<small>Normal</small>`}
+      </td>
+
+      <td>
+        <strong>${escaparHtml(zonaSolicitudPanel(s))}</strong>
+        <small>${escaparHtml(s.partido || s.localidad || "")}</small>
+      </td>
+
+      <td class="td-direccion">
+        <strong>${escaparHtml(s.direccion || "Sin dirección")}</strong>
+        <small>${escaparHtml(s.descripcion || "Sin detalle")}</small>
+      </td>
+
+      <td>
+        ${renderEstadoChip(s)}
+      </td>
+
+      <td>
+        <strong>${escaparHtml(prestadorSolicitudPanel(s))}</strong>
+      </td>
+
+      <td class="td-actions">
+        ${
+          galeria
+            ? `
+              <a class="ms-icon-btn" href="${escaparHtml(galeria)}" target="_blank" rel="noopener" title="Archivos">
+                <i class="fa-solid fa-images"></i>
+              </a>
+            `
+            : `
+              <button class="ms-icon-btn disabled" type="button" title="Sin archivos">
+                <i class="fa-regular fa-image"></i>
+              </button>
+            `
+        }
+
+        ${
+          destino
+            ? `
+              <button class="ms-icon-btn" data-ruta-solicitud="${s.id}" type="button" title="Ruta">
+                <i class="fa-solid fa-location-dot"></i>
+              </button>
+            `
+            : ""
+        }
+
+        <button class="ms-icon-btn" data-wa-solicitud="${s.id}" type="button" title="WhatsApp">
+          <i class="fa-brands fa-whatsapp"></i>
+        </button>
+
+        <button class="ms-icon-btn" data-estado-solicitud="${s.id}" data-estado="pendiente_derivar" type="button" title="Pendiente">
+          <i class="fa-regular fa-clock"></i>
+        </button>
+
+        <button class="ms-icon-btn" data-estado-solicitud="${s.id}" data-estado="programado" type="button" title="Coordinado">
+          <i class="fa-regular fa-calendar-check"></i>
+        </button>
+
+        <button class="ms-icon-btn" data-estado-solicitud="${s.id}" data-estado="derivado" type="button" title="Derivado">
+          <i class="fa-solid fa-user-check"></i>
+        </button>
+
+        <button class="ms-icon-btn" data-estado-solicitud="${s.id}" data-estado="en_lugar" type="button" title="Técnico en lugar">
+          <i class="fa-solid fa-person-digging"></i>
+        </button>
+
+        <button class="ms-icon-btn" data-estado-solicitud="${s.id}" data-estado="cerrado" type="button" title="Terminado">
+          <i class="fa-solid fa-circle-check"></i>
+        </button>
+      </td>
+    </tr>
+  `;
+}
+
+function renderTablaEquipo(solicitudes) {
+  const filtradas = filtrarSolicitudesEquipo(solicitudes);
+
+  return `
+    ${renderResumenEquipo(solicitudes)}
+
+    <div class="ms-route-toolbar">
+      <button class="ms-mini-btn red" data-abrir-hoja-ruta type="button">
+        <i class="fa-solid fa-route"></i>
+        Abrir hoja de ruta
+      </button>
+
+      <button class="ms-mini-btn" data-limpiar-hoja-ruta type="button">
+        Limpiar selección
+      </button>
+
+      <span id="hojaRutaContador" class="ms-status">
+        ${hojaRutaSeleccion.size} seleccionada${hojaRutaSeleccion.size === 1 ? "" : "s"}
+      </span>
+    </div>
+
+    ${renderFiltrosEquipo(solicitudes)}
+
+    <div class="ms-board-table-wrap">
+      <table class="ms-board-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Fecha / horario</th>
+            <th>Cliente</th>
+            <th>Servicio</th>
+            <th>Zona</th>
+            <th>Dirección / detalle</th>
+            <th>Estado</th>
+            <th>Prestador</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${
+            filtradas.length
+              ? filtradas.map(renderSolicitudFila).join("")
+              : `
+                <tr>
+                  <td colspan="9" class="td-empty">
+                    No hay solicitudes con esos filtros.
+                  </td>
+                </tr>
+              `
+          }
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
 function renderArchivosSolicitud(s) {
   if (!Array.isArray(s.archivos) || !s.archivos.length) {
     return "";
@@ -1792,28 +2233,11 @@ async function renderEquipo() {
   const solicitudes = await obtenerTodasLasSolicitudes();
   const avisos = await obtenerAvisosEquipo();
 
-if (listaSolicitudesEquipo) {
-  listaSolicitudesEquipo.innerHTML = solicitudes.length
-    ? `
-      <div class="ms-route-toolbar">
-        <button class="ms-mini-btn red" data-abrir-hoja-ruta type="button">
-          <i class="fa-solid fa-route"></i>
-          Abrir hoja de ruta
-        </button>
-
-        <button class="ms-mini-btn" data-limpiar-hoja-ruta type="button">
-          Limpiar selección
-        </button>
-
-        <span id="hojaRutaContador" class="ms-status">
-          ${hojaRutaSeleccion.size} seleccionada${hojaRutaSeleccion.size === 1 ? "" : "s"}
-        </span>
-      </div>
-
-      ${solicitudes.map(s => renderSolicitudItem(s, "equipo")).join("")}
-    `
-    : `<article class="ms-item"><p>No hay solicitudes todavía.</p></article>`;
-}
+  if (listaSolicitudesEquipo) {
+    listaSolicitudesEquipo.innerHTML = solicitudes.length
+      ? renderTablaEquipo(solicitudes)
+      : `<article class="ms-item"><p>No hay solicitudes todavía.</p></article>`;
+  }
 
   if (listaAvisosEquipo) {
     listaAvisosEquipo.innerHTML = avisos.length
@@ -1826,6 +2250,7 @@ if (listaSolicitudesEquipo) {
     contadorAvisos.textContent = `${nuevos} avisos`;
   }
 
+  activarFiltrosEquipo(solicitudes);
   activarBotonesDeSolicitudes(solicitudes);
 
   if (esAdminActual()) {
@@ -2142,6 +2567,44 @@ function abrirRutaSolicitud(solicitud) {
   window.open(url, "_blank");
 }
 
+function activarFiltrosEquipo(solicitudes) {
+  document.querySelectorAll("[data-filtro-equipo]").forEach(control => {
+    control.onchange = async () => {
+      const nombre = control.dataset.filtroEquipo;
+      filtrosPanelEquipo[nombre] = control.value;
+      await renderEquipo();
+    };
+
+    if (control.type === "search") {
+      control.oninput = async () => {
+        const nombre = control.dataset.filtroEquipo;
+        filtrosPanelEquipo[nombre] = control.value;
+
+        clearTimeout(control.__timerFiltro);
+        control.__timerFiltro = setTimeout(async () => {
+          await renderEquipo();
+        }, 250);
+      };
+    }
+  });
+
+  document.querySelectorAll("[data-limpiar-filtros-equipo]").forEach(btn => {
+    btn.onclick = async () => {
+      filtrosPanelEquipo = {
+        fecha: "",
+        horario: "",
+        zona: "",
+        servicio: "",
+        estado: "",
+        prestador: "",
+        texto: ""
+      };
+
+      await renderEquipo();
+    };
+  });
+}
+
 function activarBotonesDeSolicitudes(solicitudes) {
   const mapa = new Map();
   solicitudes.forEach(s => mapa.set(s.id, s));
@@ -2334,13 +2797,11 @@ btnCompartirApp?.addEventListener("click", async () => {
   const url = "https://www.multiservice24.com.ar/";
   const texto = "Te comparto Multi24 para solicitar servicios programados y emergencias.";
 
-  const mensajeCompartir = `${texto}\n${url}`;
-
   if (navigator.share) {
     try {
       await navigator.share({
         title: "Multi24",
-        text: mensajeCompartir,
+        text: texto,
         url
       });
       return;
@@ -2349,7 +2810,11 @@ btnCompartirApp?.addEventListener("click", async () => {
     }
   }
 
-  const mensaje = encodeWhatsAppText(mensajeCompartir);
+  const mensajeCompartir = `${texto}\n${url}`;
+  const mensaje = typeof encodeWhatsAppText === "function"
+    ? encodeWhatsAppText(mensajeCompartir)
+    : encodeURIComponent(mensajeCompartir);
+
   window.open(`https://wa.me/?text=${mensaje}`, "_blank");
 });
 
@@ -2536,7 +3001,7 @@ const data = {
   telefono: normalizarTelefono($("solTelefono")?.value),
   servicio: limpiar($("solServicio")?.value),
 
-  zona: limpiar($("solZona")?.value),
+  zona: geoFinal?.zonaLocalidad || geoFinal?.zona || "",
   localidad: geoFinal?.localidad || "",
   partido: geoFinal?.partido || "",
   provincia: geoFinal?.provincia || "",
@@ -2560,15 +3025,15 @@ const data = {
   horarioDeseado: limpiar($("solHorarioDeseado")?.value),
   emergencia: !!$("solEmergencia")?.checked,
   descripcion: limpiar($("solDescripcion")?.value),
-archivos: [],
-archivosGaleriaId: "",
-archivosGaleriaUrl: "",
-archivosVencenEn: ""
+  archivos: [],
+  archivosGaleriaId: "",
+  archivosGaleriaUrl: "",
+  archivosVencenEn: ""
 };
 
-  if (!data.nombre || !data.telefono || !data.servicio) {
+ if (!data.nombre || !data.telefono || !data.servicio || !data.direccion) {
     if (ventanaWhatsApp) ventanaWhatsApp.close();
-    toastMsg("Completá nombre, WhatsApp y servicio");
+    toastMsg("Completá nombre, WhatsApp, servicio y dirección");
     return;
   }
 
@@ -2629,10 +3094,6 @@ archivosVencenEn: ""
           lat: direccionDetectada.lat || null,
           lon: direccionDetectada.lon || null
         };
-
-        if (solZona && data.zona) {
-          solZona.value = data.zona;
-        }
 
         if (solDireccion && data.direccion) {
           solDireccion.value = data.direccion;
@@ -2799,7 +3260,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-16-wa-mobile-01";
+const SW_VERSION = "2026-06-16-panel-tabla-01";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
