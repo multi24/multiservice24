@@ -28,7 +28,7 @@
 <meta name="twitter:title" content="Multi24 | Servicios programados y emergencias" />
 <meta name="twitter:description" content="Solicitá servicios, emergencias y seguimiento desde Multi24." />
 <meta name="twitter:image" content="https://www.multiservice24.com.ar/preview-whatsapp.jpg" />
-<link rel="stylesheet" href="style.css?v=2026-06-16-panel-tabla-01" />
+<link rel="stylesheet" href="style.css?v=2026-06-17-panel-home-clean-01" />
 
 <link
   rel="stylesheet"
@@ -97,52 +97,42 @@
           También contamos con asistencia de <strong class="ms-emphasis-red">emergencia</strong>.
         </p>
 
-        <div class="ms-online-pill">
-          <i class="fa-solid fa-calendar-check"></i>
-          Presupuestos online sin cargo
-        </div>
+<div class="ms-hero-card">
+  <button id="btnLlamadaRapida" class="ms-phone-big" type="button">
+    <i class="fa-solid fa-phone"></i>
+    1130042287
+  </button>
 
-        <div class="ms-hero-actions">
-          <button id="btnAbrirContacto" class="ms-btn ms-btn-primary" type="button">
-            <i class="fa-brands fa-whatsapp"></i>
-            Quiero que me escriban
-          </button>
+  <button id="btnAbrirSolicitud" class="ms-btn ms-btn-primary ms-btn-request-big" type="button">
+    <i class="fa-solid fa-calendar-check"></i>
+    Quiero solicitar un servicio
+  </button>
 
-          <button id="btnCompartirApp" class="ms-btn ms-btn-light" type="button">
-            <i class="fa-brands fa-whatsapp"></i>
-            Compartir app
-          </button>
+  <div class="ms-online-note">
+    <i class="fa-solid fa-calendar-check"></i>
+    Presupuesto online sin cargo
+  </div>
 
-          <button id="btnInstalarApp" class="ms-btn ms-btn-light hidden" type="button">
-            <i class="fa-solid fa-download"></i>
-            Instalar app
-          </button>
-        </div>
-      </div>
+  <button id="btnCompartirApp" class="ms-btn ms-btn-light ms-btn-share-app" type="button">
+    <i class="fa-solid fa-share-nodes"></i>
+    Compartir app
+  </button>
 
-      <div class="ms-hero-card">
-        <button id="btnLlamadaRapida" class="ms-phone-big" type="button">
-          <i class="fa-solid fa-phone"></i>
-          1130042287
-        </button>
+  <button id="btnInstalarApp" class="ms-btn ms-btn-light hidden" type="button">
+    <i class="fa-solid fa-download"></i>
+    Instalar app
+  </button>
 
-        <div class="ms-hero-card-actions">
-          <button id="btnAbrirSolicitud" class="ms-btn ms-btn-light" type="button">
-            <i class="fa-solid fa-calendar-check"></i>
-            Solicitar servicio
-          </button>
-        </div>
+  <div class="ms-hero-card-points">
+    <span><i class="fa-solid fa-circle-check"></i> Rápido</span>
+    <span><i class="fa-solid fa-circle-check"></i> Confiable</span>
+    <span><i class="fa-solid fa-circle-check"></i> Profesional</span>
+  </div>
 
-        <div class="ms-hero-card-points">
-          <span><i class="fa-solid fa-circle-check"></i> Rápido</span>
-          <span><i class="fa-solid fa-circle-check"></i> Confiable</span>
-          <span><i class="fa-solid fa-circle-check"></i> Profesional</span>
-        </div>
-
-        <div class="ms-home-services">
-          <div id="serviciosGrid" class="ms-services-grid"></div>
-        </div>
-      </div>
+  <div class="ms-home-services">
+    <div id="serviciosGrid" class="ms-services-grid"></div>
+  </div>
+</div>
     </section>
 
 <div class="ms-contact-between">
@@ -326,21 +316,14 @@
   <div class="ms-panel-head">
     <div>
       <h2>Panel interno</h2>
-      <p>Solicitudes, avisos, usuarios, roles y prestadores.</p>
+      <p>Solicitudes, usuarios, roles y prestadores.</p>
     </div>
-
-    <span id="contadorAvisos" class="ms-counter">0 avisos</span>
   </div>
 
-  <div class="ms-panel-grid">
-    <div class="ms-panel-card">
+  <div class="ms-panel-grid ms-panel-grid-interno">
+    <div class="ms-panel-card ms-full-panel ms-board-panel">
       <h3>Solicitudes recibidas</h3>
       <div id="listaSolicitudesEquipo" class="ms-list"></div>
-    </div>
-
-    <div class="ms-panel-card">
-      <h3>Avisos internos</h3>
-      <div id="listaAvisosEquipo" class="ms-list"></div>
     </div>
 
     <div class="ms-panel-card ms-full-panel">
@@ -650,6 +633,6 @@
 
   <div id="toast" class="ms-toast hidden"></div>
 
-<script type="module" src="app.js?v=2026-06-16-panel-tabla-01"></script>
+<script type="module" src="app.js?v=2026-06-17-panel-home-clean-01"></script>
 </body>
 </html>
