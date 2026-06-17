@@ -556,6 +556,84 @@
     </div>
   </div>
 
+<!-- MODAL INFORME DE SERVICIO -->
+<div id="modalInformeServicio" class="ms-modal hidden">
+  <div class="ms-modal-card ms-modal-wide">
+    <button class="ms-modal-close" data-close-modal="modalInformeServicio" type="button">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <span class="ms-kicker">Informe de servicio</span>
+    <h2>Informe del trabajo realizado</h2>
+    <p class="ms-muted">
+      Cargá el detalle, evidencias y firma del cliente para generar una vista imprimible en PDF.
+    </p>
+
+    <form id="formInformeServicio" class="ms-form">
+      <input id="informeSolicitudId" type="hidden" />
+
+      <div class="ms-informe-resumen">
+        <strong id="informeClienteTitulo">Solicitud</strong>
+        <span id="informeSolicitudTexto">Sin datos cargados.</span>
+      </div>
+
+      <label>
+        Trabajo realizado
+        <textarea id="informeTrabajo" rows="5" placeholder="Ej: Se reparó pérdida, se reemplazó flexible, se verificó funcionamiento..."></textarea>
+      </label>
+
+      <label>
+        Observaciones / recomendaciones
+        <textarea id="informeObservaciones" rows="4" placeholder="Ej: Se recomienda revisar instalación en 30 días..."></textarea>
+      </label>
+
+      <div class="ms-full ms-file-box">
+        <strong class="ms-label-title">Evidencias del informe</strong>
+
+        <p class="ms-form-note">
+          Podés cargar fotos, videos o audios del trabajo realizado.
+        </p>
+
+        <label class="ms-file-input-row">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span>Seleccionar evidencias</span>
+          <input id="informeArchivos" type="file" accept="image/*,video/*,audio/*" multiple />
+        </label>
+
+        <p id="informeArchivosResumen" class="ms-file-summary hidden"></p>
+      </div>
+
+      <div class="ms-firma-box">
+        <strong class="ms-label-title">Firma del cliente</strong>
+        <p class="ms-form-note">
+          El cliente puede firmar acá. Esa firma aparecerá en la vista imprimible del informe.
+        </p>
+
+        <canvas id="canvasFirmaCliente" width="620" height="220"></canvas>
+
+        <div class="ms-item-actions">
+          <button id="btnLimpiarFirma" class="ms-mini-btn" type="button">
+            <i class="fa-solid fa-eraser"></i>
+            Limpiar firma
+          </button>
+        </div>
+      </div>
+
+      <div class="ms-item-actions">
+        <button class="ms-btn ms-btn-primary" type="submit">
+          <i class="fa-solid fa-floppy-disk"></i>
+          Guardar informe
+        </button>
+
+        <button id="btnVistaInformePdf" class="ms-btn ms-btn-light" type="button">
+          <i class="fa-solid fa-file-pdf"></i>
+          Vista PDF
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+  
   <!-- MODAL PRESTADOR -->
   <div id="modalPrestador" class="ms-modal hidden">
     <div class="ms-modal-card ms-modal-wide">
