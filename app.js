@@ -168,6 +168,11 @@ const btnPanelArchivoPlanillas = $("btnPanelArchivoPlanillas");
 
 const listaPlanillasArchivadas = $("listaPlanillasArchivadas");
 
+const modalPrestadoresServicio = $("modalPrestadoresServicio");
+const prestadoresServicioTitulo = $("prestadoresServicioTitulo");
+const prestadoresServicioSubtitulo = $("prestadoresServicioSubtitulo");
+const listaPrestadoresServicio = $("listaPrestadoresServicio");
+
 const modalInformeServicio = $("modalInformeServicio");
 const formInformeServicio = $("formInformeServicio");
 const informeSolicitudId = $("informeSolicitudId");
@@ -1946,7 +1951,9 @@ function renderSolicitudFila(s) {
       </td>
 
 <td>
-  <strong>${escaparHtml(prestadorSolicitudPanel(s))}</strong>
+  <button class="ms-prestador-cell-btn" data-ver-prestadores="${s.id}" type="button">
+    ${escaparHtml(prestadorSolicitudPanel(s))}
+  </button>
 </td>
 
 <td>
@@ -2872,6 +2879,166 @@ filtrosPanelEquipo = {
   });
 }
 
+function normalizarServicioTexto(texto) {
+  return String(texto || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function prestadorTieneServicio(prestador, servicio) {
+  const objetivo = normalizarServicioTexto(servicio);
+
+  if (!objetivo) return false;
+
+  const habilidades = Array.isArray(prestador?.habilidades)
+    ? prestador.habilidades
+    : [];
+
+  return habilidades.some(habilidad => {
+    return normalizarServicioTexto(habilidad) === objetivo;
+  });
+}
+
+async function abrirPrestadoresParaSolicitud(solicitud) {
+  if (!solicitud) return;
+
+  const servicio = solicitud.servicio || "";
+
+  if (!servicio) {
+    toastMsg("Esta solicitud no tiene servicio cargado");
+    return;
+  }
+
+  if (prestadoresServicioTitulo) {
+    prestadoresServicioTitulo.textContent = `Prestadores para ${servicio}`;
+  }
+
+  if (prestadoresServicioSubtitulo) {
+    prestadoresServicioSubtitulo.textContent = [
+      solicitud.clienteNombre || "Cliente",
+      solicitud.direccion || "Sin dirección",
+      solicitud.fechaDeseada || "Sin fecha",
+      solicitud.horarioDeseado || "Sin horario"
+    ].join(" · ");
+  }
+
+  if (listaPrestadoresServicio) {
+    listaPrestadoresServicio.innerHTML = `
+      <article class="ms-item">
+        <p>Buscando prestadores habilitados...</p>
+      </article>
+    `;
+  }
+
+  abrirModal(modalPrestadoresServicio);
+
+  try {
+    const prestadores = await obtenerPrestadoresTodos();
+
+    const disponibles = prestadores.filter(prestador => {
+      return prestador.habilitado && prestadorTieneServicio(prestador, servicio);
+    });
+
+    if (!disponibles.length) {
+      listaPrestadoresServicio.innerHTML = `
+        <article class="ms-item">
+          <h4>No hay prestadores habilitados para ${escaparHtml(servicio)}</h4>
+          <p>
+            Revisá si hay prestadores con esa habilidad cargada o si todavía no fueron habilitados.
+          </p>
+        </article>
+      `;
+      return;
+    }
+
+    listaPrestadoresServicio.innerHTML = disponibles.map(prestador => {
+      const habilidades = Array.isArray(prestador.habilidades)
+        ? prestador.habilidades.join(", ")
+        : "Sin habilidades cargadas";
+
+      return `
+        <article class="ms-item ms-prestador-servicio-item">
+          <div>
+            <h4>${escaparHtml(prestador.nombre || "Prestador")}</h4>
+            <p><strong>WhatsApp:</strong> ${escaparHtml(prestador.telefono || "Sin teléfono")}</p>
+            <p><strong>Zona:</strong> ${escaparHtml(prestador.zona || "Sin zona")}</p>
+            <p><strong>Habilidades:</strong> ${escaparHtml(habilidades)}</p>
+          </div>
+
+          <div class="ms-item-actions">
+            <button
+              class="ms-mini-btn red"
+              data-asignar-prestador="${escaparHtml(prestador.uid || prestador.id)}"
+              type="button"
+            >
+              <i class="fa-solid fa-user-check"></i>
+              Asignar
+            </button>
+
+            ${
+              prestador.telefono
+                ? `
+                  <a
+                    class="ms-mini-btn"
+                    href="https://wa.me/549${escaparHtml(prestador.telefono)}"
+                    target="_blank"
+                    rel="noopener"
+                  >
+                    <i class="fa-brands fa-whatsapp"></i>
+                    WhatsApp
+                  </a>
+                `
+                : ""
+            }
+          </div>
+        </article>
+      `;
+    }).join("");
+
+    document.querySelectorAll("[data-asignar-prestador]").forEach(btn => {
+      btn.onclick = async () => {
+        const uid = btn.dataset.asignarPrestador;
+        const prestador = disponibles.find(p => String(p.uid || p.id) === String(uid));
+
+        if (!prestador) {
+          toastMsg("No se encontró el prestador");
+          return;
+        }
+
+        try {
+          await updateDoc(doc(db, "solicitudes", solicitud.id), {
+            prestadorAsignadoUid: prestador.uid || prestador.id || "",
+            prestadorAsignadoNombre: prestador.nombre || "",
+            estado: "derivado",
+            actualizadoEn: serverTimestamp()
+          });
+
+          toastMsg("Prestador asignado");
+          cerrarModal(modalPrestadoresServicio);
+          await renderEquipo();
+
+        } catch (error) {
+          console.error(error);
+          toastMsg("No se pudo asignar el prestador");
+        }
+      };
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    if (listaPrestadoresServicio) {
+      listaPrestadoresServicio.innerHTML = `
+        <article class="ms-item">
+          <p>No se pudieron cargar los prestadores.</p>
+        </article>
+      `;
+    }
+  }
+}
+
 function cargarSolicitudEnModalEdicion(solicitud) {
   if (!solicitud) return;
 
@@ -3338,6 +3505,17 @@ function activarBotonesDeSolicitudes(solicitudes) {
     };
   });
 
+   document.querySelectorAll("[data-ver-prestadores]").forEach(btn => {
+  btn.onclick = async () => {
+    const id = btn.dataset.verPrestadores;
+    const solicitud = mapa.get(id);
+
+    if (!solicitud) return;
+
+    await abrirPrestadoresParaSolicitud(solicitud);
+  };
+});
+   
 document.querySelectorAll("[data-informe-solicitud]").forEach(btn => {
   btn.onclick = async () => {
     const id = btn.dataset.informeSolicitud;
