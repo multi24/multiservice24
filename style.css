@@ -2099,6 +2099,22 @@ main{
   min-width:0;
 }
 
+.ms-service-edit-btn{
+  border:none;
+  background:transparent;
+  color:var(--azul-noche);
+  font-weight:1000;
+  padding:0;
+  text-align:left;
+  line-height:1.15;
+  cursor:pointer;
+}
+
+.ms-service-edit-btn:hover{
+  color:var(--rojo);
+  text-decoration:underline;
+}
+
 .ms-icon-btn{
   width:34px;
   height:34px;
@@ -2139,6 +2155,10 @@ button[title="WhatsApp"] i{
   color:var(--azul-noche);
 }
 
+.estado-sin-coordinar{
+  background:#fff0df;
+}
+
 .estado-pendiente{
   background:#fff8dd;
 }
@@ -2152,7 +2172,7 @@ button[title="WhatsApp"] i{
 }
 
 .estado-en-lugar{
-  background:#e9f0ff;
+  background:#ffe8f3;
 }
 
 .estado-terminado{
@@ -2160,10 +2180,43 @@ button[title="WhatsApp"] i{
 }
 
 .estado-garantia{
-  background:#fff1df;
+  background:#f1e8ff;
 }
 
 .estado-cancelado{
+  background:#ffecec;
+}
+
+.ms-estado-select.estado-sin-coordinar{
+  background:#fff0df;
+  border-color:#ffd0a1;
+}
+
+.ms-estado-select.estado-pendiente{
+  background:#fff8dd;
+}
+
+.ms-estado-select.estado-coordinado{
+  background:#eaf4ff;
+}
+
+.ms-estado-select.estado-derivado{
+  background:#ecfff4;
+}
+
+.ms-estado-select.estado-en-lugar{
+  background:#ffe8f3;
+}
+
+.ms-estado-select.estado-terminado{
+  background:#eef9f1;
+}
+
+.ms-estado-select.estado-garantia{
+  background:#f1e8ff;
+}
+
+.ms-estado-select.estado-cancelado{
   background:#ffecec;
 }
 
@@ -2235,26 +2288,34 @@ button[title="WhatsApp"] i{
   align-items:flex-start;
 }
 
+.ms-panel-head-interno{
+  align-items:center;
+  gap:14px;
+}
+
 .ms-panel-admin-actions{
-  display:grid;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
   gap:8px;
-  justify-items:stretch;
-  min-width:170px;
+  min-width:0;
+  flex-wrap:wrap;
 }
 
 .ms-icon-panel-btn{
   border:1px solid var(--borde);
-  border-radius:16px;
+  border-radius:999px;
   background:#fff;
   color:var(--azul-noche);
-  min-height:42px;
-  padding:9px 12px;
-  display:flex;
+  min-height:38px;
+  padding:8px 12px;
+  display:inline-flex;
   align-items:center;
-  justify-content:flex-start;
-  gap:9px;
+  justify-content:center;
+  gap:8px;
   font-weight:1000;
   box-shadow:var(--sombra-suave);
+  white-space:nowrap;
 }
 
 .ms-icon-panel-btn i{
@@ -2285,16 +2346,17 @@ button[title="WhatsApp"] i{
 .ms-planillas-tabs{
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:6px;
   overflow-x:auto;
-  padding:0 0 10px;
-  margin:0 0 10px;
+  padding:0;
+  margin:4px 0 8px;
 }
 
 .ms-planilla-tab{
   border:none;
   border-radius:999px;
-  padding:9px 13px;
+  padding:7px 12px 7px 16px;
+  min-height:34px;
   background:#fff;
   color:var(--azul-noche);
   border:1px solid var(--borde);
@@ -2302,6 +2364,7 @@ button[title="WhatsApp"] i{
   white-space:nowrap;
   position:relative;
   overflow:hidden;
+  line-height:1;
 }
 
 .ms-planilla-tab::before{
@@ -2346,11 +2409,12 @@ button[title="WhatsApp"] i{
     gap:12px;
   }
 
-  .ms-panel-admin-actions{
-    width:100%;
-    grid-template-columns:1fr 1fr 1fr;
-    min-width:0;
-  }
+.ms-panel-admin-actions{
+  width:100%;
+  display:flex;
+  justify-content:space-between;
+  min-width:0;
+}
 
   .ms-icon-panel-btn{
     justify-content:center;
