@@ -2514,3 +2514,44 @@ button[title="WhatsApp"] i{
 .ms-icon-btn.informe-ok i{
   color:#08723b !important;
 }
+
+/* =========================================================
+   PRESTADORES POR SERVICIO
+========================================================= */
+
+.ms-prestador-cell-btn{
+  border:none;
+  background:transparent;
+  color:var(--azul-noche);
+  font-weight:1000;
+  padding:0;
+  text-align:left;
+  cursor:pointer;
+  line-height:1.2;
+}
+
+.ms-prestador-cell-btn:hover{
+  color:var(--rojo);
+  text-decoration:underline;
+}
+
+.ms-prestador-servicio-item{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:14px;
+  align-items:center;
+}
+
+.ms-prestador-servicio-item h4{
+  margin:0 0 6px;
+}
+
+.ms-prestador-servicio-item p{
+  margin:3px 0;
+}
+
+@media(max-width:700px){
+  .ms-prestador-servicio-item{
+    grid-template-columns:1fr;
+  }
+}
