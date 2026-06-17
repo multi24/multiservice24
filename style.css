@@ -1969,3 +1969,275 @@ main{
     font-size:22px;
   }
 }
+
+/* =========================================================
+   PANEL INTERNO TIPO TABLERO
+========================================================= */
+
+.ms-board-summary{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(110px,1fr));
+  gap:10px;
+  margin:0 0 14px;
+}
+
+.ms-board-summary article{
+  background:#fff;
+  border:1px solid var(--borde);
+  border-radius:18px;
+  padding:12px;
+  box-shadow:var(--sombra-suave);
+}
+
+.ms-board-summary span{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:900;
+}
+
+.ms-board-summary strong{
+  display:block;
+  margin-top:4px;
+  color:var(--azul-noche);
+  font-size:26px;
+  line-height:1;
+}
+
+.ms-board-summary .soft-yellow{
+  background:#fff8dd;
+}
+
+.ms-board-summary .soft-blue{
+  background:#eaf4ff;
+}
+
+.ms-board-summary .soft-red{
+  background:#fff0f1;
+}
+
+.ms-board-summary .soft-green{
+  background:#ecfff4;
+}
+
+.ms-board-filters{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(130px,1fr));
+  gap:10px;
+  align-items:end;
+  margin:0 0 14px;
+  padding:12px;
+  background:#f8fbff;
+  border:1px solid var(--borde);
+  border-radius:22px;
+}
+
+.ms-board-filters label{
+  display:grid;
+  gap:5px;
+  color:var(--azul-noche);
+  font-size:12px;
+  font-weight:1000;
+}
+
+.ms-board-filters input,
+.ms-board-filters select{
+  width:100%;
+  min-height:40px;
+  border:1px solid var(--borde);
+  border-radius:13px;
+  padding:8px 10px;
+  background:#fff;
+  color:var(--texto);
+  font-weight:800;
+}
+
+.ms-board-search{
+  grid-column:span 2;
+}
+
+.ms-board-table-wrap{
+  width:100%;
+  overflow:auto;
+  border:1px solid var(--borde);
+  border-radius:22px;
+  background:#fff;
+  box-shadow:var(--sombra-suave);
+}
+
+.ms-board-table{
+  width:100%;
+  min-width:1180px;
+  border-collapse:separate;
+  border-spacing:0;
+  font-size:13px;
+}
+
+.ms-board-table thead th{
+  position:sticky;
+  top:0;
+  z-index:2;
+  background:#071b3a;
+  color:#fff;
+  padding:12px 10px;
+  text-align:left;
+  font-size:12px;
+  white-space:nowrap;
+}
+
+.ms-board-table tbody td{
+  padding:10px;
+  border-bottom:1px solid rgba(7,27,58,.08);
+  vertical-align:top;
+}
+
+.ms-board-table tbody tr:hover{
+  filter:brightness(.985);
+}
+
+.ms-board-table td strong{
+  display:block;
+  color:var(--azul-noche);
+  font-weight:1000;
+}
+
+.ms-board-table td small{
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-weight:800;
+  max-width:340px;
+}
+
+.td-check{
+  width:42px;
+  text-align:center;
+}
+
+.td-check input{
+  width:17px;
+  height:17px;
+}
+
+.td-direccion{
+  min-width:270px;
+}
+
+.td-actions{
+  min-width:270px;
+  white-space:nowrap;
+}
+
+.ms-icon-btn{
+  width:34px;
+  height:34px;
+  border:none;
+  border-radius:11px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 2px 4px 0;
+  background:#edf3fb;
+  color:var(--azul-noche);
+  text-decoration:none;
+  font-size:15px;
+}
+
+.ms-icon-btn:hover{
+  transform:translateY(-1px);
+  background:#dfeaf8;
+}
+
+.ms-icon-btn.disabled{
+  opacity:.35;
+  cursor:not-allowed;
+}
+
+.ms-icon-btn .fa-whatsapp,
+button[title="WhatsApp"] i{
+  color:#128c7e;
+}
+
+.ms-board-state{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 9px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:1000;
+  white-space:nowrap;
+}
+
+.estado-pendiente{
+  background:#fff8dd;
+}
+
+.estado-coordinado{
+  background:#eaf4ff;
+}
+
+.estado-derivado{
+  background:#ecfff4;
+}
+
+.estado-en-lugar{
+  background:#e9f0ff;
+}
+
+.estado-terminado{
+  background:#eef9f1;
+}
+
+.estado-garantia{
+  background:#fff1df;
+}
+
+.ms-board-state.estado-pendiente{
+  color:#8a6500;
+}
+
+.ms-board-state.estado-coordinado{
+  color:#075899;
+}
+
+.ms-board-state.estado-derivado{
+  color:#08723b;
+}
+
+.ms-board-state.estado-en-lugar{
+  color:#0b2d5c;
+}
+
+.ms-board-state.estado-terminado{
+  color:#075f36;
+}
+
+.ms-board-state.estado-garantia{
+  color:#a95000;
+}
+
+.text-red{
+  color:var(--rojo) !important;
+}
+
+.td-empty{
+  text-align:center;
+  padding:26px !important;
+  color:var(--muted);
+  font-weight:900;
+}
+
+@media(max-width:900px){
+  .ms-board-summary{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .ms-board-filters{
+    grid-template-columns:1fr;
+  }
+
+  .ms-board-search{
+    grid-column:auto;
+  }
+}
