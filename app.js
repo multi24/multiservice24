@@ -206,6 +206,9 @@ let planillasPanel = [
   }
 ];
 
+let solicitudEditandoId = "";
+let solicitudEditandoData = null;
+
 let mediaRecorderSolicitud = null;
 let streamAudioSolicitud = null;
 let audioChunksSolicitud = [];
@@ -997,6 +1000,25 @@ function configurarSugerenciasGeo(input, contenedor, modo) {
 function limpiarFormularioSolicitud() {
   formSolicitudServicio?.reset();
 
+     solicitudEditandoId = "";
+  solicitudEditandoData = null;
+
+  const titulo = modalSolicitud?.querySelector("h2");
+  const texto = modalSolicitud?.querySelector(".ms-muted");
+  const submit = formSolicitudServicio?.querySelector("button[type='submit']");
+
+  if (titulo) {
+    titulo.textContent = "Programar un servicio";
+  }
+
+  if (texto) {
+    texto.textContent = "La solicitud queda registrada y el equipo puede verla desde el panel interno.";
+  }
+
+  if (submit) {
+    submit.innerHTML = `<i class="fa-brands fa-whatsapp"></i> Guardar solicitud y abrir WhatsApp`;
+  }
+   
   geoZonaSeleccionada = null;
   geoDireccionSeleccionada = null;
 
@@ -1774,7 +1796,15 @@ function urlGaleriaSolicitud(s) {
   return s.archivosGaleriaUrl || s.galeriaUrl || "";
 }
 
-function claseFilaEstado(estado) {
+function solicitudSinCoordinar(s) {
+  return !s?.fechaDeseada || !s?.horarioDeseado;
+}
+
+function claseFilaEstado(estado, solicitud = null) {
+  if (solicitud && solicitudSinCoordinar(solicitud)) {
+    return "estado-sin-coordinar";
+  }
+
   const e = estado || "pendiente_derivar";
 
   if (e === "programado") return "estado-coordinado";
@@ -1791,7 +1821,7 @@ function renderEstadoSelect(s) {
   const actual = s.estado || "pendiente_derivar";
 
   return `
-    <select class="ms-estado-select ${claseFilaEstado(actual)}" data-estado-select="${s.id}">
+    <select class="ms-estado-select ${claseFilaEstado(actual, s)}" data-estado-select="${s.id}">
       ${ESTADOS_OPERATIVOS.map(e => `
         <option value="${e.id}" ${actual === e.id ? "selected" : ""}>
           ${e.label}
@@ -1802,7 +1832,7 @@ function renderEstadoSelect(s) {
 }
 
 function renderSolicitudFila(s) {
-  const estadoClase = claseFilaEstado(s.estado);
+  const estadoClase = claseFilaEstado(s.estado, s);
   const galeria = urlGaleriaSolicitud(s);
   const destino = obtenerDestinoSolicitudMaps(s);
 
@@ -1829,7 +1859,10 @@ function renderSolicitudFila(s) {
       <td>
         <div class="td-service-line">
           <span>
-            <strong>${escaparHtml(s.servicio || "Sin servicio")}</strong>
+            <button class="ms-service-edit-btn" data-editar-solicitud="${s.id}" type="button">
+              ${escaparHtml(s.servicio || "Sin servicio")}
+            </button>
+
             ${s.emergencia ? `<small class="text-red">Emergencia</small>` : `<small>Normal</small>`}
           </span>
 
@@ -1898,7 +1931,15 @@ function millisSolicitudOrden(s) {
 }
 
 function ordenarSolicitudesPanel(items) {
-  return [...items].sort((a, b) => millisSolicitudOrden(b) - millisSolicitudOrden(a));
+  return [...items].sort((a, b) => {
+    const aSinCoordinar = solicitudSinCoordinar(a);
+    const bSinCoordinar = solicitudSinCoordinar(b);
+
+    if (aSinCoordinar && !bSinCoordinar) return -1;
+    if (!aSinCoordinar && bSinCoordinar) return 1;
+
+    return millisSolicitudOrden(b) - millisSolicitudOrden(a);
+  });
 }
 
 function fechaGrupoSolicitud(s) {
@@ -2785,6 +2826,55 @@ filtrosPanelEquipo = {
   });
 }
 
+function cargarSolicitudEnModalEdicion(solicitud) {
+  if (!solicitud) return;
+
+  solicitudEditandoId = solicitud.id;
+  solicitudEditandoData = solicitud;
+
+  if ($("solNombre")) $("solNombre").value = solicitud.clienteNombre || "";
+  if ($("solTelefono")) $("solTelefono").value = solicitud.clienteTelefono || "";
+  if ($("solServicio")) $("solServicio").value = solicitud.servicio || "";
+  if ($("solDireccion")) $("solDireccion").value = solicitud.direccion || "";
+  if ($("solFechaDeseada")) $("solFechaDeseada").value = solicitud.fechaDeseada || "";
+  if ($("solHorarioDeseado")) $("solHorarioDeseado").value = solicitud.horarioDeseado || "";
+  if ($("solEmergencia")) $("solEmergencia").checked = !!solicitud.emergencia;
+  if ($("solDescripcion")) $("solDescripcion").value = solicitud.descripcion || "";
+
+  geoDireccionSeleccionada = solicitud.geo || {
+    zona: solicitud.zona || "",
+    zonaLocalidad: solicitud.zona || "",
+    localidad: solicitud.localidad || "",
+    partido: solicitud.partido || "",
+    provincia: solicitud.provincia || "",
+    direccion: solicitud.direccion || "",
+    lat: solicitud.lat || null,
+    lon: solicitud.lon || null
+  };
+
+  geoZonaSeleccionada = geoDireccionSeleccionada;
+
+  actualizarNotaEmergencia();
+
+  const titulo = modalSolicitud?.querySelector("h2");
+  const texto = modalSolicitud?.querySelector(".ms-muted");
+  const submit = formSolicitudServicio?.querySelector("button[type='submit']");
+
+  if (titulo) {
+    titulo.textContent = "Editar solicitud";
+  }
+
+  if (texto) {
+    texto.textContent = "Modificá los datos de coordinación, dirección, servicio o detalle.";
+  }
+
+  if (submit) {
+    submit.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Guardar cambios`;
+  }
+
+  abrirModal(modalSolicitud);
+}
+
 function activarBotonesPanelInterno() {
   if (btnPanelSolicitudes) {
     btnPanelSolicitudes.onclick = async () => {
@@ -2811,6 +2901,17 @@ function activarBotonesPanelInterno() {
 function activarBotonesDeSolicitudes(solicitudes) {
   const mapa = new Map();
   solicitudes.forEach(s => mapa.set(s.id, s));
+
+     document.querySelectorAll("[data-editar-solicitud]").forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.editarSolicitud;
+      const solicitud = mapa.get(id);
+
+      if (!solicitud) return;
+
+      cargarSolicitudEnModalEdicion(solicitud);
+    };
+  });
 
   document.querySelectorAll("[data-wa-solicitud]").forEach(btn => {
     btn.onclick = () => {
@@ -3282,8 +3383,9 @@ formContactoRapido?.addEventListener("submit", async (e) => {
 formSolicitudServicio?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const btn = formSolicitudServicio.querySelector("button[type='submit']");
- const ventanaWhatsApp = prepararVentanaWhatsApp();
+const btn = formSolicitudServicio.querySelector("button[type='submit']");
+const esEdicionSolicitud = !!solicitudEditandoId;
+const ventanaWhatsApp = esEdicionSolicitud ? null : prepararVentanaWhatsApp();
 
   const archivosSeleccionados = obtenerArchivosSolicitudParaSubir();
 
@@ -3328,6 +3430,78 @@ const data = {
     if (ventanaWhatsApp) ventanaWhatsApp.close();
     toastMsg("Completá nombre, WhatsApp, servicio y dirección");
     return;
+  }
+
+     if (esEdicionSolicitud) {
+    try {
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando cambios...`;
+
+      let direccionDetectada = null;
+
+      if (data.direccion) {
+        try {
+          direccionDetectada = await resolverDireccionEscritaGoogle(data.direccion);
+        } catch (error) {
+          console.warn("No se pudo validar la dirección editada, se guarda el texto ingresado:", error);
+        }
+      }
+
+      if (direccionDetectada) {
+        data.zona = direccionDetectada.zonaLocalidad || direccionDetectada.zona || data.zona;
+        data.localidad = direccionDetectada.localidad || "";
+        data.partido = direccionDetectada.partido || "";
+        data.provincia = direccionDetectada.provincia || "";
+        data.direccion = direccionDetectada.direccion || data.direccion;
+        data.lat = direccionDetectada.lat || null;
+        data.lon = direccionDetectada.lon || null;
+
+        data.geo = {
+          zona: direccionDetectada.zona || "",
+          zonaLocalidad: direccionDetectada.zonaLocalidad || "",
+          localidad: direccionDetectada.localidad || "",
+          partido: direccionDetectada.partido || "",
+          provincia: direccionDetectada.provincia || "",
+          direccion: direccionDetectada.direccion || "",
+          lat: direccionDetectada.lat || null,
+          lon: direccionDetectada.lon || null
+        };
+      }
+
+      await updateDoc(doc(db, "solicitudes", solicitudEditandoId), {
+        clienteNombre: data.nombre,
+        clienteTelefono: data.telefono,
+        servicio: data.servicio,
+        emergencia: data.emergencia,
+        zona: data.zona,
+        localidad: data.localidad,
+        partido: data.partido,
+        provincia: data.provincia,
+        direccion: data.direccion,
+        lat: data.lat,
+        lon: data.lon,
+        geo: data.geo,
+        fechaDeseada: data.fechaDeseada,
+        horarioDeseado: data.horarioDeseado,
+        descripcion: data.descripcion,
+        actualizadoEn: serverTimestamp()
+      });
+
+      toastMsg("Solicitud actualizada");
+      limpiarFormularioSolicitud();
+      cerrarModal(modalSolicitud);
+      await renderPaneles();
+      return;
+
+    } catch (error) {
+      console.error(error);
+      toastMsg("No se pudo actualizar la solicitud");
+      return;
+
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Guardar cambios`;
+    }
   }
 
   if (archivosSeleccionados.length > MAX_ARCHIVOS_SOLICITUD) {
@@ -3553,7 +3727,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-17-planillas-01";
+const SW_VERSION = "2026-06-17-hero-side-01";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
