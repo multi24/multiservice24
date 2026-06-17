@@ -556,7 +556,24 @@
     </div>
   </div>
 
-<!-- MODAL INFORME DE SERVICIO -->
+<!-- MODAL PRESTADORES POR SERVICIO -->
+<div id="modalPrestadoresServicio" class="ms-modal hidden">
+  <div class="ms-modal-card ms-modal-wide">
+    <button class="ms-modal-close" data-close-modal="modalPrestadoresServicio" type="button">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+
+    <span class="ms-kicker">Prestadores disponibles</span>
+    <h2 id="prestadoresServicioTitulo">Prestadores</h2>
+    <p id="prestadoresServicioSubtitulo" class="ms-muted">
+      Prestadores habilitados para este servicio.
+    </p>
+
+    <div id="listaPrestadoresServicio" class="ms-list"></div>
+  </div>
+</div>
+  
+  <!-- MODAL INFORME DE SERVICIO -->
 <div id="modalInformeServicio" class="ms-modal hidden">
   <div class="ms-modal-card ms-modal-wide">
     <button class="ms-modal-close" data-close-modal="modalInformeServicio" type="button">
