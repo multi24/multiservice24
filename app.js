@@ -181,6 +181,14 @@ const canvasFirmaCliente = $("canvasFirmaCliente");
 const btnLimpiarFirma = $("btnLimpiarFirma");
 const btnVistaInformePdf = $("btnVistaInformePdf");
 
+const btnEditarInforme = $("btnEditarInforme");
+
+const btnInformeAudioGrabar = $("btnInformeAudioGrabar");
+const btnInformeAudioDetener = $("btnInformeAudioDetener");
+const btnInformeAudioBorrar = $("btnInformeAudioBorrar");
+const informeAudioPreview = $("informeAudioPreview");
+const informeAudioEstado = $("informeAudioEstado");
+
 const estadoPrestador = $("estadoPrestador");
 const contadorAvisos = $("contadorAvisos");
 
@@ -224,6 +232,16 @@ let solicitudEditandoData = null;
 let informeSolicitudActual = null;
 let informeFirmaDataUrl = "";
 let informeArchivosSeleccionados = [];
+let informeCargadoId = "";
+let informeCargadoData = null;
+let informeModoLectura = false;
+
+let mediaRecorderInforme = null;
+let streamAudioInforme = null;
+let audioChunksInforme = [];
+let audioInformeBlob = null;
+let audioInformeFile = null;
+let audioInformeUrl = "";
 
 let mediaRecorderSolicitud = null;
 let streamAudioSolicitud = null;
@@ -1932,9 +1950,14 @@ function renderSolicitudFila(s) {
 </td>
 
 <td>
-  <button class="ms-icon-btn" data-informe-solicitud="${s.id}" type="button" title="Cargar informe">
-    <i class="fa-solid fa-file-signature"></i>
-  </button>
+<button
+  class="ms-icon-btn ${s.tieneInforme ? "informe-ok" : ""}"
+  data-informe-solicitud="${s.id}"
+  type="button"
+  title="${s.tieneInforme ? "Ver informe" : "Cargar informe"}"
+>
+  <i class="fa-solid ${s.tieneInforme ? "fa-file-circle-check" : "fa-file-signature"}"></i>
+</button>
 </td>
     </tr>
   `;
@@ -2898,6 +2921,250 @@ function cargarSolicitudEnModalEdicion(solicitud) {
   abrirModal(modalSolicitud);
 }
 
+async function obtenerInformePorSolicitudId(solicitudId) {
+  if (!solicitudId) return null;
+
+  const snap = await getDocs(collection(db, "informesServicio"));
+
+  const informes = snap.docs
+    .map(d => ({
+      id: d.id,
+      ...d.data()
+    }))
+    .filter(informe => informe.solicitudId === solicitudId);
+
+  informes.sort((a, b) => {
+    const fa = a.creadoEn?.toMillis ? a.creadoEn.toMillis() : 0;
+    const fb = b.creadoEn?.toMillis ? b.creadoEn.toMillis() : 0;
+    return fb - fa;
+  });
+
+  return informes[0] || null;
+}
+
+function cargarAudioExistenteInforme(informe) {
+  const archivos = Array.isArray(informe?.archivos) ? informe.archivos : [];
+
+  const audio = archivos.find(archivo => {
+    const tipo = String(archivo.tipo || "").toLowerCase();
+    const tipoGeneral = String(archivo.tipoGeneral || "").toLowerCase();
+
+    return tipo.startsWith("audio/") || tipoGeneral === "audio";
+  });
+
+  if (!audio) {
+    if (informeAudioPreview) {
+      informeAudioPreview.pause();
+      informeAudioPreview.removeAttribute("src");
+      informeAudioPreview.classList.add("hidden");
+    }
+
+    if (informeAudioEstado) {
+      informeAudioEstado.textContent = "Sin audio grabado.";
+    }
+
+    return;
+  }
+
+  const url = audio.urlCorta || audio.shortUrl || audio.url || "";
+
+  if (informeAudioPreview && url) {
+    informeAudioPreview.src = url;
+    informeAudioPreview.classList.remove("hidden");
+  }
+
+  if (informeAudioEstado) {
+    informeAudioEstado.textContent = "Este informe ya tiene una nota de voz cargada.";
+  }
+}
+
+function aplicarModoLecturaInforme(lectura) {
+  informeModoLectura = !!lectura;
+
+  if (informeTrabajo) informeTrabajo.readOnly = informeModoLectura;
+  if (informeObservaciones) informeObservaciones.readOnly = informeModoLectura;
+  if (informeArchivos) informeArchivos.disabled = informeModoLectura;
+
+  if (canvasFirmaCliente) {
+    canvasFirmaCliente.style.pointerEvents = informeModoLectura ? "none" : "auto";
+  }
+
+  btnInformeAudioGrabar?.classList.toggle("hidden", informeModoLectura);
+  btnInformeAudioDetener?.classList.add("hidden");
+  btnInformeAudioBorrar?.classList.toggle("hidden", informeModoLectura || !audioInformeFile);
+
+  const submit = formInformeServicio?.querySelector("button[type='submit']");
+
+  if (submit) {
+    submit.classList.toggle("hidden", informeModoLectura);
+  }
+
+  btnEditarInforme?.classList.toggle("hidden", !informeModoLectura);
+}
+
+function limpiarAudioInforme(mostrarMensaje = true) {
+  if (streamAudioInforme) {
+    streamAudioInforme.getTracks().forEach(track => track.stop());
+  }
+
+  streamAudioInforme = null;
+  mediaRecorderInforme = null;
+  audioChunksInforme = [];
+  audioInformeBlob = null;
+  audioInformeFile = null;
+
+  if (audioInformeUrl) {
+    URL.revokeObjectURL(audioInformeUrl);
+  }
+
+  audioInformeUrl = "";
+
+  if (informeAudioPreview) {
+    informeAudioPreview.pause();
+    informeAudioPreview.removeAttribute("src");
+    informeAudioPreview.classList.add("hidden");
+  }
+
+  btnInformeAudioGrabar?.classList.remove("hidden");
+  btnInformeAudioDetener?.classList.add("hidden");
+  btnInformeAudioBorrar?.classList.add("hidden");
+
+  if (informeAudioEstado) {
+    informeAudioEstado.textContent = "Sin audio grabado.";
+  }
+
+  actualizarResumenArchivosInforme();
+
+  if (mostrarMensaje) {
+    toastMsg("Audio del informe borrado");
+  }
+}
+
+async function iniciarGrabacionInforme() {
+  try {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      toastMsg("Tu navegador no permite grabar audio desde la web");
+      return;
+    }
+
+    limpiarAudioInforme(false);
+
+    streamAudioInforme = await navigator.mediaDevices.getUserMedia({
+      audio: true
+    });
+
+    const opciones = {};
+
+    if (MediaRecorder.isTypeSupported("audio/webm")) {
+      opciones.mimeType = "audio/webm";
+    }
+
+    mediaRecorderInforme = new MediaRecorder(streamAudioInforme, opciones);
+    audioChunksInforme = [];
+
+    mediaRecorderInforme.addEventListener("dataavailable", (event) => {
+      if (event.data && event.data.size > 0) {
+        audioChunksInforme.push(event.data);
+      }
+    });
+
+    mediaRecorderInforme.addEventListener("stop", () => {
+      const tipo = mediaRecorderInforme?.mimeType || "audio/webm";
+      const extension = obtenerExtensionAudio(tipo);
+
+      audioInformeBlob = new Blob(audioChunksInforme, {
+        type: tipo
+      });
+
+      audioInformeFile = new File(
+        [audioInformeBlob],
+        `audio-informe-${Date.now()}.${extension}`,
+        { type: tipo }
+      );
+
+      audioInformeUrl = URL.createObjectURL(audioInformeBlob);
+
+      if (informeAudioPreview) {
+        informeAudioPreview.src = audioInformeUrl;
+        informeAudioPreview.classList.remove("hidden");
+      }
+
+      if (informeAudioEstado) {
+        informeAudioEstado.textContent = "Audio del informe listo para guardar.";
+      }
+
+      btnInformeAudioGrabar?.classList.remove("hidden");
+      btnInformeAudioDetener?.classList.add("hidden");
+      btnInformeAudioBorrar?.classList.remove("hidden");
+
+      if (streamAudioInforme) {
+        streamAudioInforme.getTracks().forEach(track => track.stop());
+      }
+
+      streamAudioInforme = null;
+
+      actualizarResumenArchivosInforme();
+    });
+
+    mediaRecorderInforme.start();
+
+    btnInformeAudioGrabar?.classList.add("hidden");
+    btnInformeAudioDetener?.classList.remove("hidden");
+    btnInformeAudioBorrar?.classList.add("hidden");
+
+    if (informeAudioEstado) {
+      informeAudioEstado.textContent = "Grabando audio del informe...";
+    }
+  } catch (error) {
+    console.error(error);
+    toastMsg("No se pudo iniciar la grabación del informe");
+    limpiarAudioInforme(false);
+  }
+}
+
+function detenerGrabacionInforme() {
+  if (!mediaRecorderInforme) return;
+
+  if (mediaRecorderInforme.state === "recording") {
+    mediaRecorderInforme.stop();
+  }
+}
+
+function obtenerArchivosInformeParaSubir() {
+  const archivos = Array.from(informeArchivos?.files || []);
+
+  if (audioInformeFile) {
+    archivos.push(audioInformeFile);
+  }
+
+  return archivos;
+}
+
+function actualizarResumenArchivosInforme() {
+  if (!informeArchivosResumen) return;
+
+  const archivos = Array.from(informeArchivos?.files || []);
+  const total = archivos.length + (audioInformeFile ? 1 : 0);
+
+  if (!total) {
+    informeArchivosResumen.classList.add("hidden");
+    informeArchivosResumen.textContent = "";
+    return;
+  }
+
+  const fotos = archivos.filter(a => a.type.startsWith("image/")).length;
+  const videos = archivos.filter(a => a.type.startsWith("video/")).length;
+  const audiosSubidos = archivos.filter(a => a.type.startsWith("audio/")).length;
+  const audioGrabado = audioInformeFile ? 1 : 0;
+  const otros = archivos.length - fotos - videos - audiosSubidos;
+
+  informeArchivosResumen.classList.remove("hidden");
+  informeArchivosResumen.textContent =
+    `Seleccionaste ${total} archivo(s): ` +
+    `${fotos} foto(s), ${videos} video(s), ${audiosSubidos + audioGrabado} audio(s)` +
+    `${otros ? `, ${otros} otro(s)` : ""}.`;
+}
+
 function prepararCanvasFirma() {
   if (!canvasFirmaCliente) return;
 
@@ -2961,10 +3228,12 @@ if (btnLimpiarFirma) {
 }
 }
 
-function abrirInformeSolicitud(solicitud) {
+async function abrirInformeSolicitud(solicitud) {
   if (!solicitud) return;
 
   informeSolicitudActual = solicitud;
+  informeCargadoId = "";
+  informeCargadoData = null;
   informeArchivosSeleccionados = [];
   informeFirmaDataUrl = "";
 
@@ -2972,6 +3241,8 @@ function abrirInformeSolicitud(solicitud) {
   if (informeTrabajo) informeTrabajo.value = "";
   if (informeObservaciones) informeObservaciones.value = "";
   if (informeArchivos) informeArchivos.value = "";
+
+  limpiarAudioInforme(false);
 
   if (informeClienteTitulo) {
     informeClienteTitulo.textContent = `${solicitud.clienteNombre || "Cliente"} · ${solicitud.servicio || "Servicio"}`;
@@ -2991,6 +3262,41 @@ function abrirInformeSolicitud(solicitud) {
   }
 
   prepararCanvasFirma();
+
+  if (solicitud.tieneInforme) {
+    const informe = await obtenerInformePorSolicitudId(solicitud.id);
+
+    if (informe) {
+      informeCargadoId = informe.id;
+      informeCargadoData = informe;
+
+      if (informeTrabajo) informeTrabajo.value = informe.trabajo || "";
+      if (informeObservaciones) informeObservaciones.value = informe.observaciones || "";
+
+      if (informe.firmaCliente) {
+        informeFirmaDataUrl = informe.firmaCliente;
+
+        const ctx = canvasFirmaCliente?.getContext("2d");
+        const img = new Image();
+
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvasFirmaCliente.width, canvasFirmaCliente.height);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvasFirmaCliente.width, canvasFirmaCliente.height);
+          ctx.drawImage(img, 0, 0, canvasFirmaCliente.width, canvasFirmaCliente.height);
+        };
+
+        img.src = informe.firmaCliente;
+      }
+
+      cargarAudioExistenteInforme(informe);
+      aplicarModoLecturaInforme(true);
+      abrirModal(modalInformeServicio);
+      return;
+    }
+  }
+
+  aplicarModoLecturaInforme(false);
   abrirModal(modalInformeServicio);
 }
 
@@ -3032,14 +3338,14 @@ function activarBotonesDeSolicitudes(solicitudes) {
     };
   });
 
- document.querySelectorAll("[data-informe-solicitud]").forEach(btn => {
-  btn.onclick = () => {
+document.querySelectorAll("[data-informe-solicitud]").forEach(btn => {
+  btn.onclick = async () => {
     const id = btn.dataset.informeSolicitud;
     const solicitud = mapa.get(id);
 
     if (!solicitud) return;
 
-    abrirInformeSolicitud(solicitud);
+    await abrirInformeSolicitud(solicitud);
   };
 });
    
@@ -3292,22 +3598,17 @@ async function mostrarVista(vista) {
 
 informeArchivos?.addEventListener("change", () => {
   informeArchivosSeleccionados = Array.from(informeArchivos.files || []);
+  actualizarResumenArchivosInforme();
+});
 
-  if (!informeArchivosResumen) return;
+btnInformeAudioGrabar?.addEventListener("click", iniciarGrabacionInforme);
+btnInformeAudioDetener?.addEventListener("click", detenerGrabacionInforme);
+btnInformeAudioBorrar?.addEventListener("click", () => limpiarAudioInforme(true));
 
-  if (!informeArchivosSeleccionados.length) {
-    informeArchivosResumen.classList.add("hidden");
-    informeArchivosResumen.textContent = "";
-    return;
-  }
-
-  const fotos = informeArchivosSeleccionados.filter(a => a.type.startsWith("image/")).length;
-  const videos = informeArchivosSeleccionados.filter(a => a.type.startsWith("video/")).length;
-  const audios = informeArchivosSeleccionados.filter(a => a.type.startsWith("audio/")).length;
-
-  informeArchivosResumen.classList.remove("hidden");
-  informeArchivosResumen.textContent =
-    `Seleccionaste ${informeArchivosSeleccionados.length} archivo(s): ${fotos} foto(s), ${videos} video(s), ${audios} audio(s).`;
+btnEditarInforme?.addEventListener("click", () => {
+  aplicarModoLecturaInforme(false);
+  btnEditarInforme.classList.add("hidden");
+  toastMsg("Ahora podés editar el informe");
 });
 
 btnMenuMobile?.addEventListener("click", () => {
@@ -3854,19 +4155,20 @@ formInformeServicio?.addEventListener("submit", async (e) => {
     btn.disabled = true;
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando informe...`;
 
-    let subida = {
-      archivos: [],
-      galeriaUrl: "",
-      galeriaId: ""
-    };
+const archivosInformeParaSubir = obtenerArchivosInformeParaSubir();
 
-    if (informeArchivosSeleccionados.length) {
-      subida = await subirArchivosSolicitud(
-        informeArchivosSeleccionados,
-        informeSolicitudActual.clienteTelefono || ""
-      );
-    }
+let subida = {
+  archivos: [],
+  galeriaUrl: "",
+  galeriaId: ""
+};
 
+if (archivosInformeParaSubir.length) {
+  subida = await subirArchivosSolicitud(
+    archivosInformeParaSubir,
+    informeSolicitudActual.clienteTelefono || ""
+  );
+}
     const dataInforme = {
       solicitudId: informeSolicitudActual.id,
       clienteNombre: informeSolicitudActual.clienteNombre || "",
@@ -3878,23 +4180,35 @@ formInformeServicio?.addEventListener("submit", async (e) => {
       trabajo: limpiar(informeTrabajo?.value),
       observaciones: limpiar(informeObservaciones?.value),
       firmaCliente: informeFirmaDataUrl || "",
-      archivos: subida.archivos || [],
-      archivosGaleriaId: subida.galeriaId || "",
-      archivosGaleriaUrl: subida.galeriaUrl || "",
-      creadoEn: serverTimestamp(),
-creadoPorUid: usuarioActual?.uid || "",
-creadoPorEmail: usuarioActual?.email || ""
+archivos: [
+  ...(Array.isArray(informeCargadoData?.archivos) ? informeCargadoData.archivos : []),
+  ...(subida.archivos || [])
+],
+archivosGaleriaId: subida.galeriaId || informeCargadoData?.archivosGaleriaId || "",
+archivosGaleriaUrl: subida.galeriaUrl || informeCargadoData?.archivosGaleriaUrl || "",
+actualizadoEn: serverTimestamp(),
+creadoEn: informeCargadoData?.creadoEn || serverTimestamp(),
+creadoPorUid: informeCargadoData?.creadoPorUid || usuarioActual?.uid || "",
+creadoPorEmail: informeCargadoData?.creadoPorEmail || usuarioActual?.email || ""
     };
 
-    await addDoc(collection(db, "informesServicio"), dataInforme);
+let informeRefId = informeCargadoId;
 
-    await updateDoc(doc(db, "solicitudes", informeSolicitudActual.id), {
-      tieneInforme: true,
-      estado: "cerrado",
-      actualizadoEn: serverTimestamp()
-    });
+if (informeCargadoId) {
+  await updateDoc(doc(db, "informesServicio", informeCargadoId), dataInforme);
+} else {
+  const informeRef = await addDoc(collection(db, "informesServicio"), dataInforme);
+  informeRefId = informeRef.id;
+}
 
-    toastMsg("Informe guardado");
+await updateDoc(doc(db, "solicitudes", informeSolicitudActual.id), {
+  tieneInforme: true,
+  informeId: informeRefId,
+  estado: "cerrado",
+  actualizadoEn: serverTimestamp()
+});
+
+toastMsg(informeCargadoId ? "Informe actualizado" : "Informe guardado");
     cerrarModal(modalInformeServicio);
     await renderPaneles();
 
