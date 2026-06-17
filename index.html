@@ -600,8 +600,39 @@
           <input id="informeArchivos" type="file" accept="image/*,video/*,audio/*" multiple />
         </label>
 
-        <p id="informeArchivosResumen" class="ms-file-summary hidden"></p>
-      </div>
+<p id="informeArchivosResumen" class="ms-file-summary hidden"></p>
+</div>
+
+<div class="ms-full ms-audio-box">
+  <strong class="ms-label-title">Nota de voz del informe</strong>
+
+  <p class="ms-form-note">
+    También podés grabar un audio explicando lo realizado o dejando una aclaración técnica.
+  </p>
+
+  <div class="ms-audio-actions">
+    <button id="btnInformeAudioGrabar" class="ms-btn ms-btn-light" type="button">
+      <i class="fa-solid fa-microphone"></i>
+      Grabar audio
+    </button>
+
+    <button id="btnInformeAudioDetener" class="ms-btn ms-btn-primary hidden" type="button">
+      <i class="fa-solid fa-stop"></i>
+      Detener
+    </button>
+
+    <button id="btnInformeAudioBorrar" class="ms-btn ms-btn-light hidden" type="button">
+      <i class="fa-solid fa-trash"></i>
+      Borrar audio
+    </button>
+  </div>
+
+  <audio id="informeAudioPreview" class="ms-audio-preview hidden" controls></audio>
+
+  <p id="informeAudioEstado" class="ms-file-note">
+    Sin audio grabado.
+  </p>
+</div>
 
       <div class="ms-firma-box">
         <strong class="ms-label-title">Firma del cliente</strong>
@@ -629,6 +660,11 @@
           <i class="fa-solid fa-file-pdf"></i>
           Vista PDF
         </button>
+
+        <button id="btnEditarInforme" class="ms-btn ms-btn-light hidden" type="button">
+  <i class="fa-solid fa-pen-to-square"></i>
+  Editar informe
+</button>
       </div>
     </form>
   </div>
