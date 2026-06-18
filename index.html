@@ -447,105 +447,25 @@
           <input id="solTelefono" type="tel" required />
         </label>
 
-        <label>
-          Servicio
-          <select id="solServicio" required></select>
-        </label>
-
-<label class="ms-full ms-autocomplete-wrap">
-  Dirección
-  <input id="solDireccion" type="text" autocomplete="off" placeholder="Calle, número, localidad" required />
-  <div id="solDireccionSugerencias" class="ms-suggest-box hidden"></div>
-</label>
-
-        <label>
-          Fecha deseada
-          <input id="solFechaDeseada" type="date" />
-        </label>
-
-<label>
-  Horario deseado
-  <select id="solHorarioDeseado">
-    <option value="">Elegir franja horaria</option>
-    <option value="7 a 11hs">7 a 11hs</option>
-    <option value="8 a 12hs">8 a 12hs</option>
-    <option value="9 a 13hs">9 a 13hs</option>
-    <option value="10 a 14hs">10 a 14hs</option>
-    <option value="11 a 15hs">11 a 15hs</option>
-    <option value="12 a 16hs">12 a 16hs</option>
-    <option value="13 a 17hs">13 a 17hs</option>
-    <option value="14 a 18hs">14 a 18hs</option>
-    <option value="15 a 19hs">15 a 19hs</option>
-    <option value="16 a 20hs">16 a 20hs</option>
-    <option value="17 a 21hs">17 a 21hs</option>
-    <option value="18 a 22hs">18 a 22hs</option>
-  </select>
-</label>
-
-<label class="ms-check">
-  <input id="solEmergencia" type="checkbox" />
-  <span>Es emergencia</span>
-</label>
-
-<p id="emergenciaNota" class="ms-emergency-note hidden">
-  Las emergencias se resuelven dentro de las próximas 4 horas a la confirmación de la solicitud
-  y se confirman con un pago de $30mil.
-</p>
-
-<label class="ms-full">
-  Descripción del trabajo
-  <textarea id="solDescripcion" rows="4" placeholder="Contanos qué necesitás, qué pasó, desde cuándo ocurre y cualquier detalle importante"></textarea>
-</label>
-
-<div class="ms-full ms-audio-box">
-  <strong class="ms-label-title">Audio explicando el problema</strong>
+<div class="ms-full ms-servicios-solicitud-box">
+  <strong class="ms-label-title">Servicios solicitados</strong>
 
   <p class="ms-form-note">
-    También podés grabar un audio para explicar mejor el inconveniente.
+    Podés cargar uno o más servicios. Cada servicio tendrá su propia descripción, audio y archivos.
   </p>
 
-  <div class="ms-audio-actions">
-    <button id="btnAudioGrabar" class="ms-btn ms-btn-light" type="button">
-      <i class="fa-solid fa-microphone"></i>
-      Grabar audio
-    </button>
+  <div class="ms-servicio-add-row">
+    <select id="solServicio"></select>
 
-    <button id="btnAudioDetener" class="ms-btn ms-btn-primary hidden" type="button">
-      <i class="fa-solid fa-stop"></i>
-      Detener
-    </button>
-
-    <button id="btnAudioBorrar" class="ms-btn ms-btn-light hidden" type="button">
-      <i class="fa-solid fa-trash"></i>
-      Borrar audio
+    <button id="btnAgregarServicioSolicitud" class="ms-btn ms-btn-light" type="button">
+      <i class="fa-solid fa-plus"></i>
+      Agregar servicio
     </button>
   </div>
 
-  <audio id="solAudioPreview" class="ms-audio-preview hidden" controls></audio>
+  <div id="solServiciosTabs" class="ms-servicios-tabs"></div>
 
-  <p id="solAudioEstado" class="ms-file-note">
-    Sin audio grabado.
-  </p>
-</div>
-
-<div class="ms-full ms-file-box">
-  <strong class="ms-label-title">Fotos, videos o audios del inconveniente</strong>
-
-  <p class="ms-form-note">
-    Podés cargar archivos para mostrar mejor la situación: fotos, videos o audios.
-  </p>
-
-  <label class="ms-file-input-row">
-    <i class="fa-solid fa-cloud-arrow-up"></i>
-    <span>Seleccionar archivos</span>
-    <input id="solArchivos" type="file" accept="image/*,video/*,audio/*" multiple />
-  </label>
-
-  <p class="ms-file-note">
-    Hay limites de carga de archivos.
-  </p>
-
-  <p id="solArchivosResumen" class="ms-file-summary hidden"></p>
+  <div id="solServiciosDetalle" class="ms-servicios-detalle"></div>
 </div>
 
 <button class="ms-btn ms-btn-primary ms-full" type="submit">
