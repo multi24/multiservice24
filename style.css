@@ -227,14 +227,38 @@ main{
   display:grid;
   grid-template-columns:minmax(0,1fr) 330px;
   gap:18px;
-  align-items:stretch;
+  align-items:start;
+}
+
+/* Si el hero, prestador y cómo funciona están dentro de un wrapper, esto permite que se acomoden como partes del grid principal sin tocar HTML. */
+.ms-home-shell > div:first-child:has(.ms-hero){
+  display:contents;
+}
+
+.ms-home-shell .ms-hero{
+  grid-column:1;
+  grid-row:1;
+}
+
+.ms-home-shell .ms-home-right{
+  grid-column:2;
+  grid-row:1;
+  align-self:start;
+}
+
+.ms-home-shell .ms-contact-between,
+.ms-home-shell #comoFunciona{
+  grid-column:1 / -1;
+}
+
+.ms-home-shell #comoFunciona{
+  margin-top:0;
 }
 
 .ms-home-right{
-  display:grid;
-  grid-template-rows:auto auto;
-  gap:14px;
+  display:block;
   min-width:0;
+  align-self:start;
 }
 
 .ms-hero{
@@ -513,7 +537,9 @@ main{
   box-shadow:var(--sombra);
   display:flex;
   flex-direction:column;
-  min-height:100%;
+  min-height:auto;
+  height:auto;
+  align-self:start;
   overflow:hidden;
 }
 
@@ -530,8 +556,9 @@ main{
 
 .ms-zonas-mapa-pro{
   position:relative;
-  flex:1;
-  min-height:450px;
+  flex:0 0 auto;
+  height:340px;
+  min-height:0;
   margin-top:18px;
   border-radius:28px;
   border:1px solid var(--borde);
@@ -1345,20 +1372,44 @@ main{
 
 @media (max-width:900px){
 
-  .ms-home-shell{
-    display:grid;
-    grid-template-columns:1fr;
-  }
+.ms-home-shell{
+  display:grid;
+  grid-template-columns:1fr;
+  align-items:start;
+}
 
-  .ms-home-right{
-    order:1;
-  }
+.ms-home-shell > div:first-child:has(.ms-hero){
+  display:contents;
+}
 
-  .ms-zonas-card{
-    order:2;
-    min-height:auto;
-    text-align:center;
-  }
+.ms-home-shell .ms-hero{
+  grid-column:1;
+  grid-row:auto;
+  order:1;
+}
+
+.ms-home-right{
+  grid-column:1;
+  grid-row:auto;
+  order:2;
+}
+
+.ms-contact-between{
+  grid-column:1;
+  order:3;
+}
+
+#comoFunciona{
+  grid-column:1;
+  order:4;
+}
+
+.ms-zonas-card{
+  order:2;
+  min-height:auto;
+  height:auto;
+  text-align:center;
+}
 
   .ms-zonas-head{
     text-align:center;
