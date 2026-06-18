@@ -496,7 +496,7 @@ function abrirWhatsAppConMensaje(mensaje, ventanaPrevia = null) {
   window.open(url, "_blank");
 }
 
-async function subirArchivosSolicitud(archivosSeleccionados, telefono = "") {
+async function subirArchivosSolicitud(archivosSeleccionados, telefono = "", meta = {}) {
   if (!archivosSeleccionados.length) {
     return {
       archivos: [],
@@ -504,13 +504,21 @@ async function subirArchivosSolicitud(archivosSeleccionados, telefono = "") {
     };
   }
 
-const formData = new FormData();
+  const formData = new FormData();
 
-formData.append("telefono", normalizarTelefono(telefono));
+  formData.append("telefono", normalizarTelefono(telefono));
 
-archivosSeleccionados.forEach((archivo) => {
-  formData.append("files", archivo);
-});
+  if (meta.titulo) {
+    formData.append("titulo", limpiar(meta.titulo));
+  }
+
+  if (meta.descripcion) {
+    formData.append("descripcion", limpiar(meta.descripcion));
+  }
+
+  archivosSeleccionados.forEach((archivo) => {
+    formData.append("files", archivo);
+  });
 
   const respuesta = await fetch(WORKER_UPLOAD_URL, {
     method: "POST",
@@ -529,13 +537,14 @@ archivosSeleccionados.forEach((archivo) => {
     throw new Error(data?.error || "No se pudieron subir los archivos.");
   }
 
-return {
-  archivos: Array.isArray(data.archivos) ? data.archivos : [],
-  galeriaId: data.galeriaId || "",
-  galeriaUrl: data.galeriaUrl || "",
-  vencenEn: data.vencenEn || ""
-};
+  return {
+    archivos: Array.isArray(data.archivos) ? data.archivos : [],
+    galeriaId: data.galeriaId || "",
+    galeriaUrl: data.galeriaUrl || "",
+    vencenEn: data.vencenEn || ""
+  };
 }
+
 function escaparHtml(texto) {
   return String(texto || "")
     .replaceAll("&", "&amp;")
@@ -805,15 +814,25 @@ function renderSelectServicios() {
   }
 
   if (solServiciosPicker) {
-    solServiciosPicker.innerHTML = SERVICIOS.map(s => `
-      <label class="ms-servicio-pick">
-        <input type="checkbox" value="${s.nombre}" data-servicio-pick="${s.nombre}" />
-        <span>
-          <i class="${s.icono}"></i>
-          ${s.nombre}
-        </span>
-      </label>
-    `).join("");
+    solServiciosPicker.innerHTML = `
+      <div class="ms-servicios-picker-head">
+        <strong>Elegí uno o más servicios</strong>
+
+        <button data-cerrar-servicios-picker type="button" title="Cerrar">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      ${SERVICIOS.map(s => `
+        <label class="ms-servicio-pick">
+          <input type="checkbox" value="${s.nombre}" data-servicio-pick="${s.nombre}" />
+          <span>
+            <i class="${s.icono}"></i>
+            ${s.nombre}
+          </span>
+        </label>
+      `).join("")}
+    `;
   }
 
   if (prestadorHabilidades) {
@@ -1733,7 +1752,14 @@ async function obtenerServiciosDetalleParaGuardar(telefono) {
     };
 
     if (archivosLocales.length) {
-      subida = await subirArchivosSolicitud(archivosLocales, telefono);
+  subida = await subirArchivosSolicitud(
+  archivosLocales,
+  telefono,
+  {
+    titulo: `Archivos de ${item.servicio}`,
+    descripcion: item.descripcion || ""
+  }
+);
     }
 
     const archivosFinales = [
@@ -2336,8 +2362,130 @@ function obtenerEstadoOperativo(estado) {
     || ESTADOS_OPERATIVOS[0];
 }
 
+function serviciosDetallePanel(s) {
+  const detalles = Array.isArray(s?.serviciosDetalle)
+    ? s.serviciosDetalle.filter(item => item && item.servicio)
+    : [];
+
+  if (detalles.length) {
+    return detalles.map((item, index) => ({
+      ...item,
+      id: item.id || `servicio-${index}`,
+      servicio: item.servicio || s.servicio || "Servicio",
+      descripcion: item.descripcion || "",
+      fechaDeseada: item.fechaDeseada || s.fechaDeseada || "",
+      horarioDeseado: item.horarioDeseado || s.horarioDeseado || "",
+      estado: item.estado || s.estado || "pendiente_derivar",
+      prestadorAsignadoUid: item.prestadorAsignadoUid || "",
+      prestadorAsignadoNombre: item.prestadorAsignadoNombre || "",
+      archivos: Array.isArray(item.archivos) ? item.archivos : [],
+      archivosGaleriaUrl: item.archivosGaleriaUrl || "",
+      archivosGaleriaId: item.archivosGaleriaId || "",
+      tieneInforme: !!item.tieneInforme,
+      informeId: item.informeId || ""
+    }));
+  }
+
+  return [{
+    id: "principal",
+    servicio: s.servicio || "Servicio",
+    descripcion: s.descripcion || "",
+    fechaDeseada: s.fechaDeseada || "",
+    horarioDeseado: s.horarioDeseado || "",
+    estado: s.estado || "pendiente_derivar",
+    prestadorAsignadoUid: s.prestadorAsignadoUid || "",
+    prestadorAsignadoNombre: s.prestadorAsignadoNombre || "",
+    archivos: Array.isArray(s.archivos) ? s.archivos : [],
+    archivosGaleriaUrl: s.archivosGaleriaUrl || s.galeriaUrl || "",
+    archivosGaleriaId: s.archivosGaleriaId || "",
+    tieneInforme: !!s.tieneInforme,
+    informeId: s.informeId || ""
+  }];
+}
+
+function servicioDetallePorId(solicitud, servicioId) {
+  return serviciosDetallePanel(solicitud).find(item => String(item.id) === String(servicioId))
+    || serviciosDetallePanel(solicitud)[0]
+    || null;
+}
+
+function fechaServicioPanel(s, item) {
+  return item?.fechaDeseada || s.fechaDeseada || "";
+}
+
+function textoFechaServicioPanel(s, item) {
+  const fecha = fechaServicioPanel(s, item);
+
+  if (fecha) {
+    return fechaDeseadaBonita(fecha);
+  }
+
+  return "Sin coordinar";
+}
+
+function horarioServicioPanel(s, item) {
+  return item?.horarioDeseado || s.horarioDeseado || "Sin horario";
+}
+
+function estadoServicioPanel(s, item) {
+  return item?.estado || s.estado || "pendiente_derivar";
+}
+
+function prestadorServicioPanel(s, item) {
+  return item?.prestadorAsignadoNombre
+    || item?.prestadorAsignadoUid
+    || s.prestadorAsignadoNombre
+    || s.prestadorNombre
+    || s.prestadorAsignadoUid
+    || "Sin prestador";
+}
+
+function galeriaServicioPanel(s, item) {
+  return item?.archivosGaleriaUrl || s.archivosGaleriaUrl || s.galeriaUrl || "";
+}
+
+function tieneArchivosServicioPanel(s, item) {
+  return !!galeriaServicioPanel(s, item)
+    || (Array.isArray(item?.archivos) && item.archivos.length > 0)
+    || (Array.isArray(s.archivos) && s.archivos.length > 0);
+}
+
+function servicioSinCoordinar(s, item) {
+  return !fechaServicioPanel(s, item) || horarioServicioPanel(s, item) === "Sin horario";
+}
+
+function claseFilaServicioEstado(s, item) {
+  if (servicioSinCoordinar(s, item)) {
+    return "estado-sin-coordinar";
+  }
+
+  return claseFilaEstado(estadoServicioPanel(s, item), null);
+}
+
+function actualizarServicioDetalleLocal(solicitud, servicioId, cambios) {
+  const detallesOriginales = Array.isArray(solicitud.serviciosDetalle)
+    ? solicitud.serviciosDetalle
+    : [];
+
+  if (!detallesOriginales.length || servicioId === "principal") {
+    return null;
+  }
+
+  return detallesOriginales.map(item => {
+    if (String(item.id) !== String(servicioId)) return item;
+
+    return {
+      ...item,
+      ...cambios
+    };
+  });
+}
+
 function fechaSolicitudFiltro(s) {
-  return s.fechaDeseada || "";
+  const servicios = serviciosDetallePanel(s);
+  const primerConFecha = servicios.find(item => item.fechaDeseada);
+
+  return primerConFecha?.fechaDeseada || s.fechaDeseada || "";
 }
 
 function textoFechaDeseadaPanel(s) {
@@ -2353,11 +2501,19 @@ function zonaSolicitudPanel(s) {
 }
 
 function horarioSolicitudPanel(s) {
-  return s.horarioDeseado || "Sin horario";
+  const servicios = serviciosDetallePanel(s);
+  const primerConHorario = servicios.find(item => item.horarioDeseado);
+
+  return primerConHorario?.horarioDeseado || s.horarioDeseado || "Sin horario";
 }
 
 function prestadorSolicitudPanel(s) {
-  return s.prestadorAsignadoNombre
+  const servicios = serviciosDetallePanel(s);
+  const primerConPrestador = servicios.find(item => item.prestadorAsignadoNombre || item.prestadorAsignadoUid);
+
+  return primerConPrestador?.prestadorAsignadoNombre
+    || primerConPrestador?.prestadorAsignadoUid
+    || s.prestadorAsignadoNombre
     || s.prestadorNombre
     || s.prestadorAsignadoUid
     || "Sin prestador";
@@ -2378,6 +2534,8 @@ function filtrarSolicitudesEquipo(solicitudes) {
   const f = filtrosPanelEquipo;
 
   return solicitudes.filter(s => {
+    const servicios = serviciosDetallePanel(s);
+
     const textoTodo = [
       s.clienteNombre,
       s.clienteTelefono,
@@ -2388,14 +2546,22 @@ function filtrarSolicitudesEquipo(solicitudes) {
       s.direccion,
       s.descripcion,
       prestadorSolicitudPanel(s),
-      s.estado
+      s.estado,
+      ...servicios.flatMap(item => [
+        item.servicio,
+        item.descripcion,
+        item.fechaDeseada,
+        item.horarioDeseado,
+        item.estado,
+        prestadorServicioPanel(s, item)
+      ])
     ].filter(Boolean).join(" ").toLowerCase();
 
-    if (f.fecha && fechaSolicitudFiltro(s) !== f.fecha) return false;
-    if (f.horario && horarioSolicitudPanel(s) !== f.horario) return false;
-    if (f.servicio && s.servicio !== f.servicio) return false;
-    if (f.estado && (s.estado || "pendiente_derivar") !== f.estado) return false;
-    if (f.prestador && prestadorSolicitudPanel(s) !== f.prestador) return false;
+    if (f.fecha && !servicios.some(item => fechaServicioPanel(s, item) === f.fecha)) return false;
+    if (f.horario && !servicios.some(item => horarioServicioPanel(s, item) === f.horario)) return false;
+    if (f.servicio && !servicios.some(item => item.servicio === f.servicio)) return false;
+    if (f.estado && !servicios.some(item => estadoServicioPanel(s, item) === f.estado)) return false;
+    if (f.prestador && !servicios.some(item => prestadorServicioPanel(s, item) === f.prestador)) return false;
     if (f.texto && !textoTodo.includes(f.texto.toLowerCase())) return false;
 
     return true;
@@ -2480,9 +2646,16 @@ function renderSelectFiltro(nombre, valorActual, opciones, placeholder) {
 }
 
 function renderFiltrosEquipo(solicitudes) {
-  const horarios = obtenerOpcionesUnicas(solicitudes, horarioSolicitudPanel);
-  const servicios = obtenerOpcionesUnicas(solicitudes, s => s.servicio || "");
-  const prestadores = obtenerOpcionesUnicas(solicitudes, prestadorSolicitudPanel);
+  const serviciosFlat = solicitudes.flatMap(s => {
+    return serviciosDetallePanel(s).map(item => ({
+      solicitud: s,
+      item
+    }));
+  });
+
+  const horarios = obtenerOpcionesUnicas(serviciosFlat, x => horarioServicioPanel(x.solicitud, x.item));
+  const servicios = obtenerOpcionesUnicas(serviciosFlat, x => x.item.servicio || "");
+  const prestadores = obtenerOpcionesUnicas(serviciosFlat, x => prestadorServicioPanel(x.solicitud, x.item));
 
   return `
     <div class="ms-board-filters">
@@ -2560,13 +2733,25 @@ function claseFilaEstado(estado, solicitud = null) {
   return "estado-pendiente";
 }
 
-function renderEstadoSelect(s) {
-  const actual = s.estado || "pendiente_derivar";
+function renderEstadoSelect(s, servicioItem = null) {
+  const actual = servicioItem
+    ? estadoServicioPanel(s, servicioItem)
+    : (s.estado || "pendiente_derivar");
+
+  const clase = servicioItem
+    ? claseFilaServicioEstado(s, servicioItem)
+    : claseFilaEstado(actual, s);
+
+  const servicioId = servicioItem?.id || "";
 
   return `
-    <select class="ms-estado-select ${claseFilaEstado(actual, s)}" data-estado-select="${s.id}">
+    <select
+      class="ms-estado-select ${clase}"
+      data-estado-servicio="${s.id}"
+      data-servicio-id="${escaparHtml(servicioId)}"
+    >
       ${ESTADOS_OPERATIVOS.map(e => `
-        <option value="${e.id}" ${actual === e.id ? "selected" : ""}>
+        <option value="${e.id}" ${e.id === actual ? "selected" : ""}>
           ${e.label}
         </option>
       `).join("")}
@@ -2575,103 +2760,149 @@ function renderEstadoSelect(s) {
 }
 
 function renderSolicitudFila(s) {
-  const estadoClase = claseFilaEstado(s.estado, s);
-  const galeria = urlGaleriaSolicitud(s);
-  const destino = obtenerDestinoSolicitudMaps(s);
+  const servicios = serviciosDetallePanel(s);
 
-  return `
-    <tr class="${estadoClase}" data-solicitud-id="${s.id}">
-      <td class="td-check">
-        <input
-          type="checkbox"
-          data-ruta-check="${s.id}"
-          ${hojaRutaSeleccion.has(s.id) ? "checked" : ""}
-        />
-      </td>
+  const cliente = s.clienteNombre || "Sin cliente";
+  const telefono = s.clienteTelefono || "Sin teléfono";
+  const direccion = s.direccion || "Sin dirección";
+  const zona = [s.localidad, s.partido].filter(Boolean).join(" · ");
+  const destino = s.lat && s.lon
+    ? `${s.lat},${s.lon}`
+    : direccion;
 
-      <td>
-        <strong>${escaparHtml(textoFechaDeseadaPanel(s))}</strong>
-        <small>${escaparHtml(horarioSolicitudPanel(s))}</small>
-      </td>
+  const header = `
+    <tr class="ms-solicitud-grupo-row">
+      <td colspan="8">
+        <div class="ms-solicitud-grupo-head">
+          <div>
+            <strong>${escaparHtml(cliente)}</strong>
+            <small>${escaparHtml(telefono)} · ${escaparHtml(direccion)}${zona ? ` · ${escaparHtml(zona)}` : ""}</small>
+          </div>
 
-      <td>
-        <strong>${escaparHtml(s.clienteNombre || "Sin nombre")}</strong>
-        <small>${escaparHtml(s.clienteTelefono || "Sin teléfono")}</small>
-      </td>
-
-      <td>
-        <div class="td-service-line">
-          <span>
-            <button class="ms-service-edit-btn" data-editar-solicitud="${s.id}" type="button">
-              ${escaparHtml(s.servicio || "Sin servicio")}
-            </button>
-
-            ${s.emergencia ? `<small class="text-red">Emergencia</small>` : `<small>Normal</small>`}
-          </span>
-
-          ${
-            galeria
-              ? `
-                <a class="ms-icon-btn" href="${escaparHtml(galeria)}" target="_blank" rel="noopener" title="Archivos">
-                  <i class="fa-solid fa-images"></i>
-                </a>
-              `
-              : `
-                <button class="ms-icon-btn disabled" type="button" title="Sin archivos">
-                  <i class="fa-regular fa-image"></i>
-                </button>
-              `
-          }
-        </div>
-      </td>
-
-      <td class="td-direccion">
-        <div class="td-address-line">
-          <span>
-            <strong>${escaparHtml(s.direccion || "Sin dirección")}</strong>
-            <small>${escaparHtml(s.descripcion || "Sin detalle")}</small>
-          </span>
-
-          ${
-            destino
-              ? `
-                <button class="ms-icon-btn" data-ruta-solicitud="${s.id}" type="button" title="Ver ruta">
-                  <i class="fa-solid fa-location-dot"></i>
-                </button>
-              `
-              : ""
-          }
-        </div>
-      </td>
-
-      <td>
-        <div class="td-state-line">
-          ${renderEstadoSelect(s)}
-
-          <button class="ms-icon-btn" data-wa-solicitud="${s.id}" type="button" title="WhatsApp">
-            <i class="fa-brands fa-whatsapp"></i>
+          <button class="ms-mini-btn" data-editar-solicitud="${s.id}" type="button">
+            <i class="fa-solid fa-pen-to-square"></i>
+            Editar solicitud
           </button>
         </div>
       </td>
-
-<td>
-  <button class="ms-prestador-cell-btn" data-ver-prestadores="${s.id}" type="button">
-    ${escaparHtml(prestadorSolicitudPanel(s))}
-  </button>
-</td>
-
-<td>
-<button
-  class="ms-icon-btn ${s.tieneInforme ? "informe-ok" : ""}"
-  data-informe-solicitud="${s.id}"
-  type="button"
-  title="${s.tieneInforme ? "Ver informe" : "Cargar informe"}"
->
-  <i class="fa-solid ${s.tieneInforme ? "fa-file-circle-check" : "fa-file-signature"}"></i>
-</button>
-</td>
     </tr>
   `;
+
+  const rows = servicios.map(item => {
+    const galeria = galeriaServicioPanel(s, item);
+    const tieneArchivos = tieneArchivosServicioPanel(s, item);
+    const filaClase = claseFilaServicioEstado(s, item);
+
+    return `
+      <tr class="${filaClase} ms-servicio-subfila">
+        <td class="td-check">
+          <input
+            type="checkbox"
+            data-ruta-check="${s.id}"
+            ${hojaRutaSeleccion.has(s.id) ? "checked" : ""}
+          />
+        </td>
+
+        <td>
+          <strong>${escaparHtml(textoFechaServicioPanel(s, item))}</strong>
+          <small>${escaparHtml(horarioServicioPanel(s, item))}</small>
+        </td>
+
+        <td>
+          <strong>${escaparHtml(cliente)}</strong>
+          <small>${escaparHtml(telefono)}</small>
+        </td>
+
+        <td>
+          <div class="td-service-line">
+            <span>
+              <strong>${escaparHtml(item.servicio || "Servicio")}</strong>
+              <small>${escaparHtml(item.descripcion || "Sin detalle")}</small>
+            </span>
+
+            ${
+              galeria
+                ? `
+                  <a class="ms-icon-btn" href="${escaparHtml(galeria)}" target="_blank" rel="noopener" title="Archivos de ${escaparHtml(item.servicio)}">
+                    <i class="fa-solid fa-images"></i>
+                  </a>
+                `
+                : tieneArchivos
+                  ? `
+                    <button class="ms-icon-btn disabled" type="button" title="Archivos guardados sin galería">
+                      <i class="fa-solid fa-images"></i>
+                    </button>
+                  `
+                  : `
+                    <button class="ms-icon-btn disabled" type="button" title="Sin archivos">
+                      <i class="fa-regular fa-image"></i>
+                    </button>
+                  `
+            }
+          </div>
+        </td>
+
+        <td class="td-direccion">
+          <div class="td-address-line">
+            <span>
+              <strong>${escaparHtml(direccion)}</strong>
+              <small>${escaparHtml(zona || "Sin localidad/partido")}</small>
+            </span>
+
+            ${
+              destino
+                ? `
+                  <button class="ms-icon-btn" data-ruta-solicitud="${s.id}" type="button" title="Ver ruta">
+                    <i class="fa-solid fa-location-dot"></i>
+                  </button>
+                `
+                : ""
+            }
+          </div>
+        </td>
+
+        <td>
+          <div class="td-state-line">
+            ${renderEstadoSelect(s, item)}
+
+            <button
+              class="ms-icon-btn"
+              data-wa-servicio="${s.id}"
+              data-servicio-id="${escaparHtml(item.id)}"
+              type="button"
+              title="WhatsApp"
+            >
+              <i class="fa-brands fa-whatsapp"></i>
+            </button>
+          </div>
+        </td>
+
+        <td>
+          <button
+            class="ms-prestador-cell-btn"
+            data-ver-prestadores-servicio="${s.id}"
+            data-servicio-id="${escaparHtml(item.id)}"
+            type="button"
+          >
+            ${escaparHtml(prestadorServicioPanel(s, item))}
+          </button>
+        </td>
+
+        <td>
+          <button
+            class="ms-icon-btn ${item.tieneInforme ? "informe-ok" : ""}"
+            data-informe-solicitud="${s.id}"
+            type="button"
+            title="${item.tieneInforme ? "Ver informe" : "Cargar informe"}"
+          >
+            <i class="fa-solid ${item.tieneInforme ? "fa-file-circle-check" : "fa-file-signature"}"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  return header + rows;
 }
 
 function millisSolicitudOrden(s) {
@@ -3605,10 +3836,10 @@ function prestadorTieneServicio(prestador, servicio) {
   });
 }
 
-async function abrirPrestadoresParaSolicitud(solicitud) {
+async function abrirPrestadoresParaSolicitud(solicitud, servicioDetalle = null) {
   if (!solicitud) return;
 
-  const servicio = solicitud.servicio || "";
+const servicio = servicioDetalle?.servicio || solicitud.servicio || "";
 
   if (!servicio) {
     toastMsg("Esta solicitud no tiene servicio cargado");
@@ -3712,12 +3943,25 @@ async function abrirPrestadoresParaSolicitud(solicitud) {
         }
 
         try {
-          await updateDoc(doc(db, "solicitudes", solicitud.id), {
-            prestadorAsignadoUid: prestador.uid || prestador.id || "",
-            prestadorAsignadoNombre: prestador.nombre || "",
-            estado: "derivado",
-            actualizadoEn: serverTimestamp()
-          });
+const cambiosServicio = actualizarServicioDetalleLocal(solicitud, servicioDetalle?.id || "", {
+  prestadorAsignadoUid: prestador.uid || prestador.id || "",
+  prestadorAsignadoNombre: prestador.nombre || "",
+  estado: "derivado"
+});
+
+if (cambiosServicio) {
+  await updateDoc(doc(db, "solicitudes", solicitud.id), {
+    serviciosDetalle: cambiosServicio,
+    actualizadoEn: serverTimestamp()
+  });
+} else {
+  await updateDoc(doc(db, "solicitudes", solicitud.id), {
+    prestadorAsignadoUid: prestador.uid || prestador.id || "",
+    prestadorAsignadoNombre: prestador.nombre || "",
+    estado: "derivado",
+    actualizadoEn: serverTimestamp()
+  });
+}
 
           toastMsg("Prestador asignado");
           cerrarModal(modalPrestadoresServicio);
@@ -4209,14 +4453,17 @@ function activarBotonesDeSolicitudes(solicitudes) {
     };
   });
 
-   document.querySelectorAll("[data-ver-prestadores]").forEach(btn => {
+document.querySelectorAll("[data-ver-prestadores-servicio]").forEach(btn => {
   btn.onclick = async () => {
-    const id = btn.dataset.verPrestadores;
+    const id = btn.dataset.verPrestadoresServicio;
+    const servicioId = btn.dataset.servicioId;
     const solicitud = mapa.get(id);
 
     if (!solicitud) return;
 
-    await abrirPrestadoresParaSolicitud(solicitud);
+    const servicioDetalle = servicioDetallePorId(solicitud, servicioId);
+
+    await abrirPrestadoresParaSolicitud(solicitud, servicioDetalle);
   };
 });
    
@@ -4240,6 +4487,31 @@ document.querySelectorAll("[data-informe-solicitud]").forEach(btn => {
       abrirWhatsAppConMensaje(mensajeWhatsAppSolicitud(solicitud, id));
     };
   });
+
+   document.querySelectorAll("[data-wa-servicio]").forEach(btn => {
+  btn.onclick = () => {
+    const id = btn.dataset.waServicio;
+    const servicioId = btn.dataset.servicioId;
+    const solicitud = mapa.get(id);
+
+    if (!solicitud) return;
+
+    const servicioDetalle = servicioDetallePorId(solicitud, servicioId);
+
+    abrirWhatsAppConMensaje(
+      mensajeWhatsAppSolicitud({
+        ...solicitud,
+        servicio: servicioDetalle?.servicio || solicitud.servicio,
+        serviciosDetalle: servicioDetalle ? [servicioDetalle] : [],
+        fechaDeseada: servicioDetalle?.fechaDeseada || solicitud.fechaDeseada || "",
+        horarioDeseado: servicioDetalle?.horarioDeseado || solicitud.horarioDeseado || "",
+        descripcion: servicioDetalle?.descripcion || solicitud.descripcion || "",
+        archivos: servicioDetalle?.archivos || [],
+        archivosGaleriaUrl: servicioDetalle?.archivosGaleriaUrl || ""
+      }, id)
+    );
+  };
+});
 
    document.querySelectorAll("[data-ruta-check]").forEach(check => {
   check.onchange = () => {
@@ -4388,6 +4660,41 @@ document.querySelectorAll("[data-estado-select]").forEach(select => {
 
       toastMsg(`Estado actualizado: ${estadoBonito(nuevoEstado)}`);
       await renderEquipo();
+    } catch (error) {
+      console.error(error);
+      toastMsg("No se pudo actualizar el estado");
+    }
+  };
+});
+
+   document.querySelectorAll("[data-estado-servicio]").forEach(control => {
+  control.onchange = async () => {
+    const id = control.dataset.estadoServicio;
+    const servicioId = control.dataset.servicioId;
+    const solicitud = mapa.get(id);
+
+    if (!solicitud) return;
+
+    const nuevosServicios = actualizarServicioDetalleLocal(solicitud, servicioId, {
+      estado: control.value
+    });
+
+    try {
+      if (nuevosServicios) {
+        await updateDoc(doc(db, "solicitudes", id), {
+          serviciosDetalle: nuevosServicios,
+          actualizadoEn: serverTimestamp()
+        });
+      } else {
+        await updateDoc(doc(db, "solicitudes", id), {
+          estado: control.value,
+          actualizadoEn: serverTimestamp()
+        });
+      }
+
+      toastMsg("Estado actualizado");
+      await renderEquipo();
+
     } catch (error) {
       console.error(error);
       toastMsg("No se pudo actualizar el estado");
@@ -4669,6 +4976,14 @@ btnSolServiciosDropdown?.addEventListener("click", () => {
   solServiciosPicker?.classList.toggle("hidden");
 });
 
+solServiciosPicker?.addEventListener("click", (e) => {
+  const cerrar = e.target.closest("[data-cerrar-servicios-picker]");
+
+  if (cerrar) {
+    solServiciosPicker.classList.add("hidden");
+  }
+});
+
 solServiciosPicker?.addEventListener("change", (e) => {
   const input = e.target.closest("[data-servicio-pick]");
   if (!input) return;
@@ -4679,7 +4994,7 @@ solServiciosPicker?.addEventListener("change", (e) => {
     quitarServicioDesdePicker(input.value);
   }
 
-  solServiciosPicker?.classList.add("hidden");
+  /* IMPORTANTE: No cerramos la lista al elegir un servicio. Se cierra con la X o tocando afuera. */
 });
 
 document.addEventListener("click", (e) => {
