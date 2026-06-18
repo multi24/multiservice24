@@ -2555,3 +2555,115 @@ button[title="WhatsApp"] i{
     grid-template-columns:1fr;
   }
 }
+
+/* =========================================================
+   SOLICITUD MULTI-SERVICIO
+========================================================= */
+
+.ms-servicios-solicitud-box{
+  border:1px solid rgba(7,27,58,.14);
+  border-radius:22px;
+  padding:14px;
+  background:#f8fbff;
+  display:grid;
+  gap:12px;
+}
+
+.ms-servicio-add-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:end;
+}
+
+.ms-servicio-add-row select{
+  width:100%;
+  min-height:44px;
+  border:1px solid var(--borde);
+  border-radius:14px;
+  padding:8px 12px;
+  background:#fff;
+  font-weight:800;
+}
+
+.ms-servicios-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.ms-servicio-tab{
+  border:1px solid var(--borde);
+  border-radius:999px;
+  background:#fff;
+  color:var(--azul-noche);
+  padding:9px 12px;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-weight:1000;
+}
+
+.ms-servicio-tab.active{
+  background:var(--azul-noche);
+  color:#fff;
+  border-color:var(--azul-noche);
+}
+
+.ms-servicio-tab.active i{
+  color:#fff;
+}
+
+.ms-servicio-tab i{
+  color:var(--rojo);
+}
+
+.ms-servicio-panel{
+  display:grid;
+  gap:12px;
+  padding:14px;
+  border:1px solid var(--borde);
+  border-radius:20px;
+  background:#fff;
+}
+
+.ms-servicio-panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+
+.ms-servicio-panel-head strong{
+  color:var(--azul-noche);
+  font-size:16px;
+}
+
+.ms-servicio-panel label{
+  display:grid;
+  gap:6px;
+  font-weight:1000;
+  color:var(--azul-noche);
+}
+
+.ms-servicio-panel select,
+.ms-servicio-panel textarea{
+  width:100%;
+  border:1px solid var(--borde);
+  border-radius:14px;
+  padding:10px 12px;
+  background:#fff;
+  color:var(--texto);
+  font-weight:800;
+}
+
+.ms-servicio-panel textarea{
+  resize:vertical;
+  line-height:1.4;
+}
+
+@media(max-width:700px){
+  .ms-servicio-add-row{
+    grid-template-columns:1fr;
+  }
+}
