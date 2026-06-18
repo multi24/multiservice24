@@ -2667,3 +2667,97 @@ button[title="WhatsApp"] i{
     grid-template-columns:1fr;
   }
 }
+
+/* =========================================================
+   SELECTOR MULTI-SERVICIO EN SOLICITUD
+========================================================= */
+
+.ms-servicios-picker{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+}
+
+.ms-servicio-pick{
+  cursor:pointer;
+}
+
+.ms-servicio-pick input{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+}
+
+.ms-servicio-pick span{
+  min-height:42px;
+  border:1px solid var(--borde);
+  border-radius:16px;
+  background:#fff;
+  color:var(--azul-noche);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  font-weight:1000;
+  font-size:13px;
+}
+
+.ms-servicio-pick i{
+  width:24px;
+  height:24px;
+  border-radius:9px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--gris-suave);
+  color:var(--azul-noche);
+  flex:0 0 auto;
+}
+
+.ms-servicio-pick input:checked + span{
+  background:var(--azul-noche);
+  color:#fff;
+  border-color:var(--azul-noche);
+  box-shadow:0 10px 22px rgba(7,27,58,.16);
+}
+
+.ms-servicio-pick input:checked + span i{
+  background:rgba(255,255,255,.18);
+  color:#fff;
+}
+
+.ms-servicio-empty{
+  color:var(--muted);
+  font-weight:900;
+}
+
+.ms-emergencia-row{
+  display:flex !important;
+  align-items:center;
+  gap:10px;
+  border:1px solid var(--borde);
+  border-radius:16px;
+  padding:12px;
+  background:#fff;
+}
+
+.ms-emergencia-row input{
+  width:18px;
+  height:18px;
+}
+
+.ms-alert-soft{
+  margin:0;
+  padding:10px 12px;
+  border-radius:16px;
+  background:#fff8dd;
+  color:#7a5900;
+  font-weight:900;
+  border:1px solid rgba(122,89,0,.14);
+}
+
+@media(max-width:700px){
+  .ms-servicios-picker{
+    grid-template-columns:1fr;
+  }
+}
