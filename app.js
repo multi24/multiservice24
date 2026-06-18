@@ -143,6 +143,7 @@ const btnAgregarServicioSolicitud = $("btnAgregarServicioSolicitud");
 const solServiciosTabs = $("solServiciosTabs");
 const solServiciosDetalle = $("solServiciosDetalle");
 const solServiciosPicker = $("solServiciosPicker");
+const btnSolServiciosDropdown = $("btnSolServiciosDropdown");
 
 const prestadorHabilidades = $("prestadorHabilidades");
 
@@ -696,14 +697,6 @@ function mensajeWhatsAppSolicitud(data, id = "") {
     }
   }
 
-  if (data.fechaDeseada) {
-    partes.push(`*Fecha deseada:* ${fechaDeseadaBonita(data.fechaDeseada)}`);
-  }
-
-  if (data.horarioDeseado) {
-    partes.push(`*Horario deseado:* ${data.horarioDeseado}`);
-  }
-
   if (serviciosDetalle.length) {
     partes.push("");
     partes.push("*Detalle por servicio:*");
@@ -712,34 +705,52 @@ function mensajeWhatsAppSolicitud(data, id = "") {
       partes.push("");
       partes.push(`${index + 1}. *${item.servicio || "Servicio"}*`);
 
+      if (item.fechaDeseada) {
+        partes.push(`Fecha: ${fechaDeseadaBonita(item.fechaDeseada)}`);
+      }
+
+      if (item.horarioDeseado) {
+        partes.push(`Horario: ${item.horarioDeseado}`);
+      }
+
       if (item.descripcion) {
-        partes.push(item.descripcion);
+        partes.push(`Detalle: ${item.descripcion}`);
       }
 
       if (item.archivosGaleriaUrl) {
-        partes.push(`Archivos: ${item.archivosGaleriaUrl}`);
+        partes.push(`Archivos de ${item.servicio}: ${item.archivosGaleriaUrl}`);
       }
     });
-  } else if (data.descripcion) {
-    partes.push("");
-    partes.push("*Detalle del trabajo:*");
-    partes.push(data.descripcion);
-  }
+  } else {
+    if (data.fechaDeseada) {
+      partes.push(`*Fecha deseada:* ${fechaDeseadaBonita(data.fechaDeseada)}`);
+    }
 
-  if (!serviciosDetalle.length && archivos.length) {
-    partes.push("");
-    partes.push("*Archivos cargados:*");
+    if (data.horarioDeseado) {
+      partes.push(`*Horario deseado:* ${data.horarioDeseado}`);
+    }
 
-    if (galeriaUrl) {
-      partes.push(galeriaUrl);
-    } else {
-      archivos.forEach((archivo, index) => {
-        const url = archivo.urlCorta || archivo.shortUrl || archivo.url || "";
-        if (!url) return;
+    if (data.descripcion) {
+      partes.push("");
+      partes.push("*Detalle del trabajo:*");
+      partes.push(data.descripcion);
+    }
 
-        const tipo = archivo.tipoGeneral || "Archivo";
-        partes.push(`${index + 1}. ${tipo}: ${url}`);
-      });
+    if (archivos.length) {
+      partes.push("");
+      partes.push("*Archivos cargados:*");
+
+      if (galeriaUrl) {
+        partes.push(galeriaUrl);
+      } else {
+        archivos.forEach((archivo, index) => {
+          const url = archivo.urlCorta || archivo.shortUrl || archivo.url || "";
+          if (!url) return;
+
+          const tipo = archivo.tipoGeneral || "Archivo";
+          partes.push(`${index + 1}. ${tipo}: ${url}`);
+        });
+      }
     }
   }
 
@@ -1160,15 +1171,24 @@ function servicioIcono(nombre) {
 function crearServicioDetalleSolicitud(nombre = "") {
   const id = crearIdServicioSolicitud();
 
+  const primerServicio = serviciosDetalleSolicitud[0] || {};
+
   serviciosDetalleSolicitud.push({
     id,
     servicio: nombre || "",
     descripcion: "",
+
+    fechaDeseada: primerServicio.fechaDeseada || "",
+    horarioDeseado: primerServicio.horarioDeseado || "",
+
     audioFile: null,
     audioUrl: "",
+
+    archivosLocales: [],
     archivosSubidos: [],
     archivosGaleriaUrl: "",
     archivosGaleriaId: "",
+
     prestadorAsignadoUid: "",
     prestadorAsignadoNombre: "",
     estado: "pendiente_derivar",
@@ -1210,11 +1230,18 @@ function cargarServiciosDetalleDesdeSolicitud(solicitud) {
       id: item.id || crearIdServicioSolicitud(),
       servicio: item.servicio || "",
       descripcion: item.descripcion || "",
+
+      fechaDeseada: item.fechaDeseada || solicitud?.fechaDeseada || "",
+      horarioDeseado: item.horarioDeseado || solicitud?.horarioDeseado || "",
+
       audioFile: null,
       audioUrl: "",
+
+      archivosLocales: [],
       archivosSubidos: Array.isArray(item.archivos) ? item.archivos : [],
       archivosGaleriaUrl: item.archivosGaleriaUrl || "",
       archivosGaleriaId: item.archivosGaleriaId || "",
+
       prestadorAsignadoUid: item.prestadorAsignadoUid || "",
       prestadorAsignadoNombre: item.prestadorAsignadoNombre || "",
       estado: item.estado || "pendiente_derivar",
@@ -1226,11 +1253,18 @@ function cargarServiciosDetalleDesdeSolicitud(solicitud) {
       id: crearIdServicioSolicitud(),
       servicio: solicitud?.servicio || "",
       descripcion: solicitud?.descripcion || "",
+
+      fechaDeseada: solicitud?.fechaDeseada || "",
+      horarioDeseado: solicitud?.horarioDeseado || "",
+
       audioFile: null,
       audioUrl: "",
+
+      archivosLocales: [],
       archivosSubidos: Array.isArray(solicitud?.archivos) ? solicitud.archivos : [],
       archivosGaleriaUrl: solicitud?.archivosGaleriaUrl || "",
       archivosGaleriaId: solicitud?.archivosGaleriaId || "",
+
       prestadorAsignadoUid: solicitud?.prestadorAsignadoUid || "",
       prestadorAsignadoNombre: solicitud?.prestadorAsignadoNombre || "",
       estado: solicitud?.estado || "pendiente_derivar",
@@ -1247,11 +1281,13 @@ function sincronizarServicioDesdeDom(id) {
   const item = serviciosDetalleSolicitud.find(s => s.id === id);
   if (!item) return;
 
-  const select = document.querySelector(`[data-servicio-select="${id}"]`);
   const textarea = document.querySelector(`[data-servicio-descripcion="${id}"]`);
+  const fecha = document.querySelector(`[data-servicio-fecha="${id}"]`);
+  const horario = document.querySelector(`[data-servicio-horario="${id}"]`);
 
-  if (select) item.servicio = limpiar(select.value);
   if (textarea) item.descripcion = limpiar(textarea.value);
+  if (fecha) item.fechaDeseada = limpiar(fecha.value);
+  if (horario) item.horarioDeseado = limpiar(horario.value);
 }
 
 function sincronizarTodosLosServiciosDesdeDom() {
@@ -1307,6 +1343,30 @@ function quitarServicioDesdePicker(nombre) {
   renderServiciosDetalleSolicitud();
 }
 
+function opcionesHorarioServicio(actual = "") {
+  const horarios = [
+    "7 a 11hs",
+    "8 a 12hs",
+    "9 a 13hs",
+    "10 a 14hs",
+    "11 a 15hs",
+    "12 a 16hs",
+    "13 a 17hs",
+    "14 a 18hs",
+    "15 a 19hs",
+    "16 a 20hs",
+    "17 a 21hs",
+    "18 a 22hs"
+  ];
+
+  return `
+    <option value="">Elegir franja</option>
+    ${horarios.map(h => `
+      <option value="${h}" ${actual === h ? "selected" : ""}>${h}</option>
+    `).join("")}
+  `;
+}
+
 function renderServiciosDetalleSolicitud() {
   if (!solServiciosTabs || !solServiciosDetalle) return;
 
@@ -1315,7 +1375,7 @@ function renderServiciosDetalleSolicitud() {
 
     solServiciosDetalle.innerHTML = `
       <div class="ms-servicio-panel ms-servicio-empty">
-        <p>Seleccioná uno o más servicios de la lista de arriba para cargar el detalle.</p>
+        <p>Seleccioná uno o más servicios desde “Elegir servicios”.</p>
       </div>
     `;
 
@@ -1340,6 +1400,8 @@ function renderServiciosDetalleSolicitud() {
 
   solServiciosDetalle.innerHTML = serviciosDetalleSolicitud.map((item, index) => {
     const activo = item.id === servicioActivoSolicitudId;
+    const archivosLocales = Array.isArray(item.archivosLocales) ? item.archivosLocales : [];
+    const archivosGuardados = Array.isArray(item.archivosSubidos) ? item.archivosSubidos : [];
 
     return `
       <div class="ms-servicio-panel ${activo ? "" : "hidden"}" data-servicio-panel="${item.id}">
@@ -1350,6 +1412,24 @@ function renderServiciosDetalleSolicitud() {
             <i class="fa-solid fa-trash"></i>
             Quitar
           </button>
+        </div>
+
+        <div class="ms-servicio-agenda">
+          <label>
+            Fecha deseada
+            <input
+              type="date"
+              data-servicio-fecha="${item.id}"
+              value="${escaparHtml(item.fechaDeseada || "")}"
+            />
+          </label>
+
+          <label>
+            Horario deseado
+            <select data-servicio-horario="${item.id}">
+              ${opcionesHorarioServicio(item.horarioDeseado || "")}
+            </select>
+          </label>
         </div>
 
         <label>
@@ -1401,7 +1481,7 @@ function renderServiciosDetalleSolicitud() {
           <strong class="ms-label-title">Fotos, videos o audios de este servicio</strong>
 
           <p class="ms-form-note">
-            Cargá archivos específicos para este servicio.
+            Cargá archivos específicos para ${escaparHtml(item.servicio || "este servicio")}.
           </p>
 
           <label class="ms-file-input-row">
@@ -1411,15 +1491,27 @@ function renderServiciosDetalleSolicitud() {
           </label>
 
           ${
+            archivosLocales.length
+              ? `<p class="ms-file-summary">Archivos seleccionados para guardar: ${archivosLocales.length}</p>`
+              : ""
+          }
+
+          ${
             item.archivosGaleriaUrl
               ? `
                 <p class="ms-file-note">
-                  Archivos ya cargados:
+                  Galería de ${escaparHtml(item.servicio || "servicio")}:
                   <a href="${escaparHtml(item.archivosGaleriaUrl)}" target="_blank" rel="noopener">
-                    Ver galería
+                    Abrir galería
                   </a>
                 </p>
               `
+              : ""
+          }
+
+          ${
+            archivosGuardados.length && !item.archivosGaleriaUrl
+              ? `<p class="ms-file-note">Este servicio ya tiene ${archivosGuardados.length} archivo(s) guardado(s).</p>`
               : ""
           }
 
@@ -1433,13 +1525,12 @@ function renderServiciosDetalleSolicitud() {
 }
 
 function actualizarResumenArchivosServicio(id) {
-  const input = document.querySelector(`[data-servicio-archivos="${id}"]`);
   const resumen = document.querySelector(`[data-servicio-archivos-resumen="${id}"]`);
   const item = serviciosDetalleSolicitud.find(s => s.id === id);
 
-  if (!resumen || !input || !item) return;
+  if (!resumen || !item) return;
 
-  const archivos = Array.from(input.files || []);
+  const archivos = Array.isArray(item.archivosLocales) ? item.archivosLocales : [];
   const total = archivos.length + (item.audioFile ? 1 : 0);
 
   if (!total) {
@@ -1581,10 +1672,11 @@ function detenerAudioServicioSolicitud(id) {
 }
 
 function obtenerArchivosServicioSolicitud(id) {
-  const input = document.querySelector(`[data-servicio-archivos="${id}"]`);
   const item = serviciosDetalleSolicitud.find(s => s.id === id);
 
-  const archivos = Array.from(input?.files || []);
+  const archivos = Array.isArray(item?.archivosLocales)
+    ? [...item.archivosLocales]
+    : [];
 
   if (item?.audioFile) {
     archivos.push(item.audioFile);
@@ -1612,7 +1704,9 @@ async function obtenerServiciosDetalleParaGuardar(telefono) {
     .map(item => ({
       ...item,
       servicio: limpiar(item.servicio),
-      descripcion: limpiar(item.descripcion)
+      descripcion: limpiar(item.descripcion),
+      fechaDeseada: limpiar(item.fechaDeseada),
+      horarioDeseado: limpiar(item.horarioDeseado)
     }))
     .filter(item => item.servicio);
 
@@ -1642,21 +1736,26 @@ async function obtenerServiciosDetalleParaGuardar(telefono) {
       subida = await subirArchivosSolicitud(archivosLocales, telefono);
     }
 
+    const archivosFinales = [
+      ...(Array.isArray(item.archivosSubidos) ? item.archivosSubidos : []),
+      ...(subida.archivos || [])
+    ];
+
     resultado.push({
       id: item.id,
       servicio: item.servicio,
       descripcion: item.descripcion,
-      archivos: [
-        ...(Array.isArray(item.archivosSubidos) ? item.archivosSubidos : []),
-        ...(subida.archivos || [])
-      ],
-      archivosCantidad: [
-        ...(Array.isArray(item.archivosSubidos) ? item.archivosSubidos : []),
-        ...(subida.archivos || [])
-      ].length,
+
+      fechaDeseada: item.fechaDeseada || "",
+      horarioDeseado: item.horarioDeseado || "",
+
+      archivos: archivosFinales,
+      archivosCantidad: archivosFinales.length,
+
       archivosGaleriaId: subida.galeriaId || item.archivosGaleriaId || "",
       archivosGaleriaUrl: subida.galeriaUrl || item.archivosGaleriaUrl || "",
       archivosVencenEn: subida.vencenEn || "",
+
       prestadorAsignadoUid: item.prestadorAsignadoUid || "",
       prestadorAsignadoNombre: item.prestadorAsignadoNombre || "",
       estado: item.estado || "pendiente_derivar",
@@ -4566,6 +4665,10 @@ if (prestadorRecursosInput) {
 
 configurarSugerenciasGeo(solDireccion, solDireccionSugerencias, "direccion");
 
+btnSolServiciosDropdown?.addEventListener("click", () => {
+  solServiciosPicker?.classList.toggle("hidden");
+});
+
 solServiciosPicker?.addEventListener("change", (e) => {
   const input = e.target.closest("[data-servicio-pick]");
   if (!input) return;
@@ -4575,6 +4678,22 @@ solServiciosPicker?.addEventListener("change", (e) => {
   } else {
     quitarServicioDesdePicker(input.value);
   }
+
+  solServiciosPicker?.classList.add("hidden");
+});
+
+document.addEventListener("click", (e) => {
+  if (!solServiciosPicker || !btnSolServiciosDropdown) return;
+
+  if (
+    e.target === btnSolServiciosDropdown ||
+    btnSolServiciosDropdown.contains(e.target) ||
+    solServiciosPicker.contains(e.target)
+  ) {
+    return;
+  }
+
+  solServiciosPicker.classList.add("hidden");
 });
 
 solServiciosTabs?.addEventListener("click", (e) => {
@@ -4587,18 +4706,29 @@ solServiciosTabs?.addEventListener("click", (e) => {
 });
 
 solServiciosDetalle?.addEventListener("change", (e) => {
-  const select = e.target.closest("[data-servicio-select]");
   const inputArchivos = e.target.closest("[data-servicio-archivos]");
+  const fecha = e.target.closest("[data-servicio-fecha]");
+  const horario = e.target.closest("[data-servicio-horario]");
 
-  if (select) {
-    const id = select.dataset.servicioSelect;
-    sincronizarServicioDesdeDom(id);
-    renderServiciosDetalleSolicitud();
+  if (inputArchivos) {
+    const id = inputArchivos.dataset.servicioArchivos;
+    const item = serviciosDetalleSolicitud.find(s => s.id === id);
+
+    if (item) {
+      item.archivosLocales = Array.from(inputArchivos.files || []);
+    }
+
+    actualizarResumenArchivosServicio(id);
     return;
   }
 
-  if (inputArchivos) {
-    actualizarResumenArchivosServicio(inputArchivos.dataset.servicioArchivos);
+  if (fecha) {
+    sincronizarServicioDesdeDom(fecha.dataset.servicioFecha);
+    return;
+  }
+
+  if (horario) {
+    sincronizarServicioDesdeDom(horario.dataset.servicioHorario);
   }
 });
 
@@ -4757,6 +4887,13 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparando servicios...`;
 
     data.serviciosDetalle = await obtenerServiciosDetalleParaGuardar(data.telefono);
+
+     const primerServicioConAgenda = data.serviciosDetalle.find(item => item.fechaDeseada || item.horarioDeseado)
+  || data.serviciosDetalle[0]
+  || null;
+
+data.fechaDeseada = primerServicioConAgenda?.fechaDeseada || "";
+data.horarioDeseado = primerServicioConAgenda?.horarioDeseado || "";
 
     data.servicio = servicioResumenDesdeDetalle(data.serviciosDetalle);
     data.descripcion = descripcionResumenDesdeDetalle(data.serviciosDetalle);
