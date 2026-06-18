@@ -139,6 +139,10 @@ const btnAudioBorrar = $("btnAudioBorrar");
 const solAudioPreview = $("solAudioPreview");
 const solAudioEstado = $("solAudioEstado");
 
+const btnAgregarServicioSolicitud = $("btnAgregarServicioSolicitud");
+const solServiciosTabs = $("solServiciosTabs");
+const solServiciosDetalle = $("solServiciosDetalle");
+
 const prestadorHabilidades = $("prestadorHabilidades");
 
 const formContactoRapido = $("formContactoRapido");
@@ -254,6 +258,16 @@ let audioChunksSolicitud = [];
 let audioSolicitudBlob = null;
 let audioSolicitudFile = null;
 let audioSolicitudUrl = "";
+
+let serviciosDetalleSolicitud = [];
+let servicioActivoSolicitudId = "";
+
+let audioServicioSolicitud = {
+  id: "",
+  recorder: null,
+  stream: null,
+  chunks: []
+};
 
 /* =========================================================
    HELPERS
@@ -644,6 +658,7 @@ function linkUbicacionSolicitud(data) {
 
 function mensajeWhatsAppSolicitud(data, id = "") {
   const partes = [];
+  const serviciosDetalle = Array.isArray(data.serviciosDetalle) ? data.serviciosDetalle : [];
   const archivos = Array.isArray(data.archivos) ? data.archivos : [];
   const galeriaUrl = data.archivosGaleriaUrl || data.galeriaUrl || "";
 
@@ -652,7 +667,12 @@ function mensajeWhatsAppSolicitud(data, id = "") {
 
   partes.push(`*Nombre:* ${data.clienteNombre || "Sin nombre"}`);
   partes.push(`*WhatsApp:* ${data.clienteTelefono || "Sin teléfono"}`);
-  partes.push(`*Servicio:* ${data.servicio || "Sin servicio"}`);
+
+  if (serviciosDetalle.length) {
+    partes.push(`*Servicios:* ${serviciosDetalle.map(s => s.servicio).filter(Boolean).join(" + ")}`);
+  } else {
+    partes.push(`*Servicio:* ${data.servicio || "Sin servicio"}`);
+  }
 
   if (data.emergencia) {
     partes.push("");
@@ -661,17 +681,9 @@ function mensajeWhatsAppSolicitud(data, id = "") {
 
   partes.push("");
 
-  if (data.zona) {
-    partes.push(`*Zona:* ${data.zona}`);
-  }
-
-  if (data.localidad) {
-    partes.push(`*Localidad:* ${data.localidad}`);
-  }
-
-  if (data.partido) {
-    partes.push(`*Partido:* ${data.partido}`);
-  }
+  if (data.zona) partes.push(`*Zona:* ${data.zona}`);
+  if (data.localidad) partes.push(`*Localidad:* ${data.localidad}`);
+  if (data.partido) partes.push(`*Partido:* ${data.partido}`);
 
   if (data.direccion) {
     partes.push(`*Dirección:* ${data.direccion}`);
@@ -691,13 +703,29 @@ function mensajeWhatsAppSolicitud(data, id = "") {
     partes.push(`*Horario deseado:* ${data.horarioDeseado}`);
   }
 
-  if (data.descripcion) {
+  if (serviciosDetalle.length) {
+    partes.push("");
+    partes.push("*Detalle por servicio:*");
+
+    serviciosDetalle.forEach((item, index) => {
+      partes.push("");
+      partes.push(`${index + 1}. *${item.servicio || "Servicio"}*`);
+
+      if (item.descripcion) {
+        partes.push(item.descripcion);
+      }
+
+      if (item.archivosGaleriaUrl) {
+        partes.push(`Archivos: ${item.archivosGaleriaUrl}`);
+      }
+    });
+  } else if (data.descripcion) {
     partes.push("");
     partes.push("*Detalle del trabajo:*");
     partes.push(data.descripcion);
   }
 
-  if (archivos.length) {
+  if (!serviciosDetalle.length && archivos.length) {
     partes.push("");
     partes.push("*Archivos cargados:*");
 
@@ -742,11 +770,15 @@ function renderServicios() {
     card.addEventListener("click", () => {
       const servicio = card.dataset.servicioCard || "";
 
-      if (solServicio) {
-        solServicio.value = servicio;
-      }
+if (solServicio) {
+  solServicio.value = "";
+}
 
-      abrirModal(modalSolicitud);
+if (!solicitudEditandoId) {
+  reiniciarServiciosDetalleSolicitud(servicio);
+}
+
+abrirModal(modalSolicitud);
     });
   });
 }
@@ -1065,6 +1097,7 @@ function limpiarFormularioSolicitud() {
   cerrarCajaSugerencias(solDireccionSugerencias);
 
   actualizarNotaEmergencia();
+  reiniciarServiciosDetalleSolicitud("");
   borrarAudioSolicitud(false);
 
   if (solArchivosResumen) {
@@ -1097,6 +1130,513 @@ function obtenerExtensionAudio(tipo) {
   if (tipo.includes("ogg")) return "ogg";
   if (tipo.includes("wav")) return "wav";
   return "webm";
+}
+
+function crearIdServicioSolicitud() {
+  return `serv-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function servicioIcono(nombre) {
+  const item = SERVICIOS.find(s => s.nombre === nombre);
+  return item?.icono || "fa-solid fa-screwdriver-wrench";
+}
+
+function crearServicioDetalleSolicitud(nombre = "") {
+  const id = crearIdServicioSolicitud();
+
+  serviciosDetalleSolicitud.push({
+    id,
+    servicio: nombre || "",
+    descripcion: "",
+    audioFile: null,
+    audioUrl: "",
+    archivosSubidos: [],
+    archivosGaleriaUrl: "",
+    archivosGaleriaId: "",
+    prestadorAsignadoUid: "",
+    prestadorAsignadoNombre: "",
+    estado: "pendiente_derivar",
+    tieneInforme: false,
+    informeId: ""
+  });
+
+  servicioActivoSolicitudId = id;
+  renderServiciosDetalleSolicitud();
+
+  return id;
+}
+
+function obtenerServicioActivoSolicitud() {
+  return serviciosDetalleSolicitud.find(s => s.id === servicioActivoSolicitudId)
+    || serviciosDetalleSolicitud[0]
+    || null;
+}
+
+function asegurarUnServicioSolicitud() {
+  if (!serviciosDetalleSolicitud.length) {
+    crearServicioDetalleSolicitud(solServicio?.value || "");
+  }
+}
+
+function reiniciarServiciosDetalleSolicitud(servicioInicial = "") {
+  serviciosDetalleSolicitud = [];
+  servicioActivoSolicitudId = "";
+  crearServicioDetalleSolicitud(servicioInicial || "");
+}
+
+function cargarServiciosDetalleDesdeSolicitud(solicitud) {
+  const detalles = Array.isArray(solicitud?.serviciosDetalle)
+    ? solicitud.serviciosDetalle
+    : [];
+
+  if (detalles.length) {
+    serviciosDetalleSolicitud = detalles.map(item => ({
+      id: item.id || crearIdServicioSolicitud(),
+      servicio: item.servicio || "",
+      descripcion: item.descripcion || "",
+      audioFile: null,
+      audioUrl: "",
+      archivosSubidos: Array.isArray(item.archivos) ? item.archivos : [],
+      archivosGaleriaUrl: item.archivosGaleriaUrl || "",
+      archivosGaleriaId: item.archivosGaleriaId || "",
+      prestadorAsignadoUid: item.prestadorAsignadoUid || "",
+      prestadorAsignadoNombre: item.prestadorAsignadoNombre || "",
+      estado: item.estado || "pendiente_derivar",
+      tieneInforme: !!item.tieneInforme,
+      informeId: item.informeId || ""
+    }));
+  } else {
+    serviciosDetalleSolicitud = [{
+      id: crearIdServicioSolicitud(),
+      servicio: solicitud?.servicio || "",
+      descripcion: solicitud?.descripcion || "",
+      audioFile: null,
+      audioUrl: "",
+      archivosSubidos: Array.isArray(solicitud?.archivos) ? solicitud.archivos : [],
+      archivosGaleriaUrl: solicitud?.archivosGaleriaUrl || "",
+      archivosGaleriaId: solicitud?.archivosGaleriaId || "",
+      prestadorAsignadoUid: solicitud?.prestadorAsignadoUid || "",
+      prestadorAsignadoNombre: solicitud?.prestadorAsignadoNombre || "",
+      estado: solicitud?.estado || "pendiente_derivar",
+      tieneInforme: !!solicitud?.tieneInforme,
+      informeId: solicitud?.informeId || ""
+    }];
+  }
+
+  servicioActivoSolicitudId = serviciosDetalleSolicitud[0]?.id || "";
+  renderServiciosDetalleSolicitud();
+}
+
+function sincronizarServicioDesdeDom(id) {
+  const item = serviciosDetalleSolicitud.find(s => s.id === id);
+  if (!item) return;
+
+  const select = document.querySelector(`[data-servicio-select="${id}"]`);
+  const textarea = document.querySelector(`[data-servicio-descripcion="${id}"]`);
+
+  if (select) item.servicio = limpiar(select.value);
+  if (textarea) item.descripcion = limpiar(textarea.value);
+}
+
+function sincronizarTodosLosServiciosDesdeDom() {
+  serviciosDetalleSolicitud.forEach(item => {
+    sincronizarServicioDesdeDom(item.id);
+  });
+}
+
+function renderServiciosDetalleSolicitud() {
+  if (!solServiciosTabs || !solServiciosDetalle) return;
+
+  asegurarUnServicioSolicitud();
+
+  solServiciosTabs.innerHTML = serviciosDetalleSolicitud.map((item, index) => {
+    const nombre = item.servicio || `Servicio ${index + 1}`;
+
+    return `
+      <button
+        class="ms-servicio-tab ${item.id === servicioActivoSolicitudId ? "active" : ""}"
+        data-servicio-tab="${item.id}"
+        type="button"
+      >
+        <i class="${servicioIcono(item.servicio)}"></i>
+        <span>${escaparHtml(nombre)}</span>
+      </button>
+    `;
+  }).join("");
+
+  solServiciosDetalle.innerHTML = serviciosDetalleSolicitud.map((item, index) => {
+    const activo = item.id === servicioActivoSolicitudId;
+
+    return `
+      <div class="ms-servicio-panel ${activo ? "" : "hidden"}" data-servicio-panel="${item.id}">
+        <div class="ms-servicio-panel-head">
+          <strong>Detalle del servicio ${index + 1}</strong>
+
+          ${
+            serviciosDetalleSolicitud.length > 1
+              ? `
+                <button class="ms-mini-btn" data-servicio-quitar="${item.id}" type="button">
+                  <i class="fa-solid fa-trash"></i>
+                  Quitar
+                </button>
+              `
+              : ""
+          }
+        </div>
+
+        <label>
+          Tipo de servicio
+          <select data-servicio-select="${item.id}">
+            <option value="">Elegir servicio</option>
+            ${SERVICIOS.map(s => `
+              <option value="${s.nombre}" ${item.servicio === s.nombre ? "selected" : ""}>
+                ${s.nombre}
+              </option>
+            `).join("")}
+          </select>
+        </label>
+
+        <label>
+          Descripción del problema
+          <textarea
+            data-servicio-descripcion="${item.id}"
+            rows="4"
+            placeholder="Contanos qué necesitás para este servicio, qué pasó, desde cuándo ocurre y cualquier detalle importante"
+          >${escaparHtml(item.descripcion || "")}</textarea>
+        </label>
+
+        <div class="ms-audio-box">
+          <strong class="ms-label-title">Audio de este servicio</strong>
+
+          <p class="ms-form-note">
+            Grabá un audio específico para este servicio.
+          </p>
+
+          <div class="ms-audio-actions">
+            <button class="ms-btn ms-btn-light" data-servicio-audio-grabar="${item.id}" type="button">
+              <i class="fa-solid fa-microphone"></i>
+              Grabar audio
+            </button>
+
+            <button class="ms-btn ms-btn-primary hidden" data-servicio-audio-detener="${item.id}" type="button">
+              <i class="fa-solid fa-stop"></i>
+              Detener
+            </button>
+
+            <button class="ms-btn ms-btn-light ${item.audioFile || item.audioUrl ? "" : "hidden"}" data-servicio-audio-borrar="${item.id}" type="button">
+              <i class="fa-solid fa-trash"></i>
+              Borrar audio
+            </button>
+          </div>
+
+          <audio
+            class="ms-audio-preview ${item.audioUrl ? "" : "hidden"}"
+            data-servicio-audio-preview="${item.id}"
+            ${item.audioUrl ? `src="${item.audioUrl}"` : ""}
+            controls
+          ></audio>
+
+          <p class="ms-file-note" data-servicio-audio-estado="${item.id}">
+            ${item.audioFile ? "Audio grabado listo para enviar." : "Sin audio grabado."}
+          </p>
+        </div>
+
+        <div class="ms-file-box">
+          <strong class="ms-label-title">Fotos, videos o audios de este servicio</strong>
+
+          <p class="ms-form-note">
+            Cargá archivos específicos para este servicio.
+          </p>
+
+          <label class="ms-file-input-row">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Seleccionar archivos</span>
+            <input data-servicio-archivos="${item.id}" type="file" accept="image/*,video/*,audio/*" multiple />
+          </label>
+
+          ${
+            item.archivosGaleriaUrl
+              ? `
+                <p class="ms-file-note">
+                  Archivos ya cargados:
+                  <a href="${escaparHtml(item.archivosGaleriaUrl)}" target="_blank" rel="noopener">
+                    Ver galería
+                  </a>
+                </p>
+              `
+              : ""
+          }
+
+          <p class="ms-file-summary hidden" data-servicio-archivos-resumen="${item.id}"></p>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function actualizarResumenArchivosServicio(id) {
+  const input = document.querySelector(`[data-servicio-archivos="${id}"]`);
+  const resumen = document.querySelector(`[data-servicio-archivos-resumen="${id}"]`);
+  const item = serviciosDetalleSolicitud.find(s => s.id === id);
+
+  if (!resumen || !input || !item) return;
+
+  const archivos = Array.from(input.files || []);
+  const total = archivos.length + (item.audioFile ? 1 : 0);
+
+  if (!total) {
+    resumen.classList.add("hidden");
+    resumen.textContent = "";
+    return;
+  }
+
+  const fotos = archivos.filter(a => a.type.startsWith("image/")).length;
+  const videos = archivos.filter(a => a.type.startsWith("video/")).length;
+  const audiosSubidos = archivos.filter(a => a.type.startsWith("audio/")).length;
+  const audioGrabado = item.audioFile ? 1 : 0;
+  const otros = archivos.length - fotos - videos - audiosSubidos;
+
+  resumen.classList.remove("hidden");
+  resumen.textContent =
+    `Seleccionaste ${total} archivo(s): ` +
+    `${fotos} foto(s), ${videos} video(s), ${audiosSubidos + audioGrabado} audio(s)` +
+    `${otros ? `, ${otros} otro(s)` : ""}.`;
+}
+
+function borrarAudioServicioSolicitud(id, mostrarMensaje = true) {
+  const item = serviciosDetalleSolicitud.find(s => s.id === id);
+  if (!item) return;
+
+  if (audioServicioSolicitud.stream && audioServicioSolicitud.id === id) {
+    audioServicioSolicitud.stream.getTracks().forEach(track => track.stop());
+  }
+
+  if (item.audioUrl) {
+    URL.revokeObjectURL(item.audioUrl);
+  }
+
+  item.audioFile = null;
+  item.audioUrl = "";
+
+  audioServicioSolicitud = {
+    id: "",
+    recorder: null,
+    stream: null,
+    chunks: []
+  };
+
+  renderServiciosDetalleSolicitud();
+
+  if (mostrarMensaje) {
+    toastMsg("Audio borrado");
+  }
+}
+
+async function iniciarAudioServicioSolicitud(id) {
+  const item = serviciosDetalleSolicitud.find(s => s.id === id);
+  if (!item) return;
+
+  try {
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      toastMsg("Tu navegador no permite grabar audio desde la web");
+      return;
+    }
+
+    borrarAudioServicioSolicitud(id, false);
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+    const opciones = {};
+    if (MediaRecorder.isTypeSupported("audio/webm")) {
+      opciones.mimeType = "audio/webm";
+    }
+
+    const recorder = new MediaRecorder(stream, opciones);
+    const chunks = [];
+
+    audioServicioSolicitud = {
+      id,
+      recorder,
+      stream,
+      chunks
+    };
+
+    recorder.addEventListener("dataavailable", (event) => {
+      if (event.data && event.data.size > 0) {
+        chunks.push(event.data);
+      }
+    });
+
+    recorder.addEventListener("stop", () => {
+      const tipo = recorder.mimeType || "audio/webm";
+      const extension = obtenerExtensionAudio(tipo);
+
+      const blob = new Blob(chunks, { type: tipo });
+      const file = new File(
+        [blob],
+        `audio-servicio-${Date.now()}.${extension}`,
+        { type: tipo }
+      );
+
+      item.audioFile = file;
+      item.audioUrl = URL.createObjectURL(blob);
+
+      stream.getTracks().forEach(track => track.stop());
+
+      audioServicioSolicitud = {
+        id: "",
+        recorder: null,
+        stream: null,
+        chunks: []
+      };
+
+      renderServiciosDetalleSolicitud();
+    });
+
+    recorder.start();
+
+    const btnGrabar = document.querySelector(`[data-servicio-audio-grabar="${id}"]`);
+    const btnDetener = document.querySelector(`[data-servicio-audio-detener="${id}"]`);
+    const estado = document.querySelector(`[data-servicio-audio-estado="${id}"]`);
+
+    btnGrabar?.classList.add("hidden");
+    btnDetener?.classList.remove("hidden");
+
+    if (estado) {
+      estado.textContent = "Grabando audio...";
+    }
+
+  } catch (error) {
+    console.error(error);
+    toastMsg("No se pudo iniciar la grabación");
+  }
+}
+
+function detenerAudioServicioSolicitud(id) {
+  if (audioServicioSolicitud.id !== id) return;
+
+  const recorder = audioServicioSolicitud.recorder;
+
+  if (recorder && recorder.state === "recording") {
+    recorder.stop();
+  }
+}
+
+function obtenerArchivosServicioSolicitud(id) {
+  const input = document.querySelector(`[data-servicio-archivos="${id}"]`);
+  const item = serviciosDetalleSolicitud.find(s => s.id === id);
+
+  const archivos = Array.from(input?.files || []);
+
+  if (item?.audioFile) {
+    archivos.push(item.audioFile);
+  }
+
+  return archivos;
+}
+
+function validarArchivoServicio(archivo) {
+  const tipo = archivo.type || "";
+
+  if (!tipo.startsWith("image/") && !tipo.startsWith("video/") && !tipo.startsWith("audio/")) {
+    throw new Error(`Archivo no permitido: ${archivo.name}`);
+  }
+
+  if (archivo.size > MAX_BYTES_ARCHIVO_SOLICITUD) {
+    throw new Error(`El archivo ${archivo.name} supera ${MAX_MB_ARCHIVO_SOLICITUD}MB`);
+  }
+}
+
+async function obtenerServiciosDetalleParaGuardar(telefono) {
+  sincronizarTodosLosServiciosDesdeDom();
+
+  const limpios = serviciosDetalleSolicitud
+    .map(item => ({
+      ...item,
+      servicio: limpiar(item.servicio),
+      descripcion: limpiar(item.descripcion)
+    }))
+    .filter(item => item.servicio);
+
+  if (!limpios.length) {
+    throw new Error("Agregá al menos un servicio");
+  }
+
+  const resultado = [];
+
+  for (const item of limpios) {
+    const archivosLocales = obtenerArchivosServicioSolicitud(item.id);
+
+    if (archivosLocales.length > MAX_ARCHIVOS_SOLICITUD) {
+      throw new Error(`En ${item.servicio}, cargá hasta ${MAX_ARCHIVOS_SOLICITUD} archivos`);
+    }
+
+    archivosLocales.forEach(validarArchivoServicio);
+
+    let subida = {
+      archivos: [],
+      galeriaId: item.archivosGaleriaId || "",
+      galeriaUrl: item.archivosGaleriaUrl || "",
+      vencenEn: ""
+    };
+
+    if (archivosLocales.length) {
+      subida = await subirArchivosSolicitud(archivosLocales, telefono);
+    }
+
+    resultado.push({
+      id: item.id,
+      servicio: item.servicio,
+      descripcion: item.descripcion,
+      archivos: [
+        ...(Array.isArray(item.archivosSubidos) ? item.archivosSubidos : []),
+        ...(subida.archivos || [])
+      ],
+      archivosCantidad: [
+        ...(Array.isArray(item.archivosSubidos) ? item.archivosSubidos : []),
+        ...(subida.archivos || [])
+      ].length,
+      archivosGaleriaId: subida.galeriaId || item.archivosGaleriaId || "",
+      archivosGaleriaUrl: subida.galeriaUrl || item.archivosGaleriaUrl || "",
+      archivosVencenEn: subida.vencenEn || "",
+      prestadorAsignadoUid: item.prestadorAsignadoUid || "",
+      prestadorAsignadoNombre: item.prestadorAsignadoNombre || "",
+      estado: item.estado || "pendiente_derivar",
+      tieneInforme: !!item.tieneInforme,
+      informeId: item.informeId || ""
+    });
+  }
+
+  return resultado;
+}
+
+function servicioResumenDesdeDetalle(serviciosDetalle) {
+  const nombres = (Array.isArray(serviciosDetalle) ? serviciosDetalle : [])
+    .map(s => s.servicio)
+    .filter(Boolean);
+
+  return nombres.length ? nombres.join(" + ") : "";
+}
+
+function descripcionResumenDesdeDetalle(serviciosDetalle) {
+  return (Array.isArray(serviciosDetalle) ? serviciosDetalle : [])
+    .map(item => {
+      const texto = limpiar(item.descripcion);
+      return texto ? `[${item.servicio}]\n${texto}` : `[${item.servicio}]`;
+    })
+    .join("\n\n");
+}
+
+function archivosPlanosDesdeDetalle(serviciosDetalle) {
+  return (Array.isArray(serviciosDetalle) ? serviciosDetalle : [])
+    .flatMap(item => Array.isArray(item.archivos) ? item.archivos : []);
+}
+
+function galeriaPrincipalDesdeDetalle(serviciosDetalle) {
+  const item = (Array.isArray(serviciosDetalle) ? serviciosDetalle : [])
+    .find(s => s.archivosGaleriaUrl);
+
+  return item?.archivosGaleriaUrl || "";
 }
 
 function actualizarResumenArchivosSolicitud() {
@@ -1407,26 +1947,33 @@ async function guardarSolicitudServicio(data) {
     clienteEmail: usuarioActual?.email || "",
     clienteNombre: data.nombre,
     clienteTelefono: data.telefono,
+
     servicio: data.servicio,
+    serviciosDetalle: Array.isArray(data.serviciosDetalle) ? data.serviciosDetalle : [],
+    serviciosCantidad: Array.isArray(data.serviciosDetalle) ? data.serviciosDetalle.length : 0,
+
     emergencia: data.emergencia,
-zona: data.zona,
-localidad: data.localidad || "",
-partido: data.partido || "",
-provincia: data.provincia || "",
-direccion: data.direccion,
-lat: data.lat || null,
-lon: data.lon || null,
-geo: data.geo || null,
+    zona: data.zona,
+    localidad: data.localidad || "",
+    partido: data.partido || "",
+    provincia: data.provincia || "",
+    direccion: data.direccion,
+    lat: data.lat || null,
+    lon: data.lon || null,
+    geo: data.geo || null,
+
     fechaDeseada: data.fechaDeseada,
     horarioDeseado: data.horarioDeseado,
-descripcion: data.descripcion,
-archivos: data.archivos || [],
-archivosCantidad: Array.isArray(data.archivos) ? data.archivos.length : 0,
-     archivosGaleriaId: data.archivosGaleriaId || "",
-archivosGaleriaUrl: data.archivosGaleriaUrl || "",
-archivosRetencionMeses: 6,
-archivosVencenEn: data.archivosVencenEn || "",
-estado: "pendiente_derivar",
+
+    descripcion: data.descripcion,
+    archivos: data.archivos || [],
+    archivosCantidad: Array.isArray(data.archivos) ? data.archivos.length : 0,
+    archivosGaleriaId: data.archivosGaleriaId || "",
+    archivosGaleriaUrl: data.archivosGaleriaUrl || "",
+    archivosRetencionMeses: 6,
+    archivosVencenEn: data.archivosVencenEn || "",
+
+    estado: "pendiente_derivar",
     prestadorAsignadoUid: "",
     colaboradorAsignadoUid: "",
     creadoEn: serverTimestamp(),
@@ -3052,7 +3599,7 @@ function cargarSolicitudEnModalEdicion(solicitud) {
   if ($("solFechaDeseada")) $("solFechaDeseada").value = solicitud.fechaDeseada || "";
   if ($("solHorarioDeseado")) $("solHorarioDeseado").value = solicitud.horarioDeseado || "";
   if ($("solEmergencia")) $("solEmergencia").checked = !!solicitud.emergencia;
-  if ($("solDescripcion")) $("solDescripcion").value = solicitud.descripcion || "";
+  cargarServiciosDetalleDesdeSolicitud(solicitud);
 
   geoDireccionSeleccionada = solicitud.geo || {
     zona: solicitud.zona || "",
@@ -3961,11 +4508,100 @@ if (prestadorRecursosInput) {
 
 configurarSugerenciasGeo(solDireccion, solDireccionSugerencias, "direccion");
 
-solArchivos?.addEventListener("change", actualizarResumenArchivosSolicitud);
+btnAgregarServicioSolicitud?.addEventListener("click", () => {
+  const servicio = limpiar(solServicio?.value);
 
-btnAudioGrabar?.addEventListener("click", iniciarGrabacionSolicitud);
-btnAudioDetener?.addEventListener("click", detenerGrabacionSolicitud);
-btnAudioBorrar?.addEventListener("click", () => borrarAudioSolicitud(true));
+  if (!servicio) {
+    toastMsg("Elegí un servicio para agregar");
+    return;
+  }
+
+  sincronizarTodosLosServiciosDesdeDom();
+
+  const repetido = serviciosDetalleSolicitud.some(item => item.servicio === servicio);
+
+  if (repetido) {
+    toastMsg("Ese servicio ya está agregado");
+    return;
+  }
+
+  crearServicioDetalleSolicitud(servicio);
+
+  if (solServicio) {
+    solServicio.value = "";
+  }
+});
+
+solServiciosTabs?.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-servicio-tab]");
+  if (!btn) return;
+
+  sincronizarTodosLosServiciosDesdeDom();
+  servicioActivoSolicitudId = btn.dataset.servicioTab;
+  renderServiciosDetalleSolicitud();
+});
+
+solServiciosDetalle?.addEventListener("change", (e) => {
+  const select = e.target.closest("[data-servicio-select]");
+  const inputArchivos = e.target.closest("[data-servicio-archivos]");
+
+  if (select) {
+    const id = select.dataset.servicioSelect;
+    sincronizarServicioDesdeDom(id);
+    renderServiciosDetalleSolicitud();
+    return;
+  }
+
+  if (inputArchivos) {
+    actualizarResumenArchivosServicio(inputArchivos.dataset.servicioArchivos);
+  }
+});
+
+solServiciosDetalle?.addEventListener("input", (e) => {
+  const textarea = e.target.closest("[data-servicio-descripcion]");
+  if (!textarea) return;
+
+  sincronizarServicioDesdeDom(textarea.dataset.servicioDescripcion);
+});
+
+solServiciosDetalle?.addEventListener("click", (e) => {
+  const quitar = e.target.closest("[data-servicio-quitar]");
+  const grabar = e.target.closest("[data-servicio-audio-grabar]");
+  const detener = e.target.closest("[data-servicio-audio-detener]");
+  const borrar = e.target.closest("[data-servicio-audio-borrar]");
+
+  if (quitar) {
+    const id = quitar.dataset.servicioQuitar;
+
+    if (serviciosDetalleSolicitud.length <= 1) {
+      toastMsg("La solicitud debe tener al menos un servicio");
+      return;
+    }
+
+    serviciosDetalleSolicitud = serviciosDetalleSolicitud.filter(item => item.id !== id);
+
+    if (servicioActivoSolicitudId === id) {
+      servicioActivoSolicitudId = serviciosDetalleSolicitud[0]?.id || "";
+    }
+
+    renderServiciosDetalleSolicitud();
+    return;
+  }
+
+  if (grabar) {
+    iniciarAudioServicioSolicitud(grabar.dataset.servicioAudioGrabar);
+    return;
+  }
+
+  if (detener) {
+    detenerAudioServicioSolicitud(detener.dataset.servicioAudioDetener);
+    return;
+  }
+
+  if (borrar) {
+    borrarAudioServicioSolicitud(borrar.dataset.servicioAudioBorrar, true);
+  }
+});
 
 /* =========================================================
    FORM CONTACTO RÁPIDO
@@ -4027,58 +4663,68 @@ formContactoRapido?.addEventListener("submit", async (e) => {
 formSolicitudServicio?.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-const btn = formSolicitudServicio.querySelector("button[type='submit']");
-const esEdicionSolicitud = !!solicitudEditandoId;
-const ventanaWhatsApp = esEdicionSolicitud ? null : prepararVentanaWhatsApp();
+  const btn = formSolicitudServicio.querySelector("button[type='submit']");
+  const esEdicionSolicitud = !!solicitudEditandoId;
+  const ventanaWhatsApp = esEdicionSolicitud ? null : prepararVentanaWhatsApp();
 
-  const archivosSeleccionados = obtenerArchivosSolicitudParaSubir();
+  const geoFinal = geoDireccionSeleccionada || geoZonaSeleccionada || null;
 
-const geoFinal = geoDireccionSeleccionada || geoZonaSeleccionada || null;
+  const data = {
+    nombre: limpiar($("solNombre")?.value),
+    telefono: normalizarTelefono($("solTelefono")?.value),
 
-const data = {
-  nombre: limpiar($("solNombre")?.value),
-  telefono: normalizarTelefono($("solTelefono")?.value),
-  servicio: limpiar($("solServicio")?.value),
+    zona: geoFinal?.zonaLocalidad || geoFinal?.zona || "",
+    localidad: geoFinal?.localidad || "",
+    partido: geoFinal?.partido || "",
+    provincia: geoFinal?.provincia || "",
 
-  zona: geoFinal?.zonaLocalidad || geoFinal?.zona || "",
-  localidad: geoFinal?.localidad || "",
-  partido: geoFinal?.partido || "",
-  provincia: geoFinal?.provincia || "",
+    direccion: limpiar($("solDireccion")?.value),
+    lat: geoFinal?.lat || null,
+    lon: geoFinal?.lon || null,
 
-  direccion: limpiar($("solDireccion")?.value),
-  lat: geoFinal?.lat || null,
-  lon: geoFinal?.lon || null,
+    geo: geoFinal ? {
+      zona: geoFinal.zona || "",
+      zonaLocalidad: geoFinal.zonaLocalidad || "",
+      localidad: geoFinal.localidad || "",
+      partido: geoFinal.partido || "",
+      provincia: geoFinal.provincia || "",
+      direccion: geoFinal.direccion || "",
+      lat: geoFinal.lat || null,
+      lon: geoFinal.lon || null
+    } : null,
 
-  geo: geoFinal ? {
-    zona: geoFinal.zona || "",
-    zonaLocalidad: geoFinal.zonaLocalidad || "",
-    localidad: geoFinal.localidad || "",
-    partido: geoFinal.partido || "",
-    provincia: geoFinal.provincia || "",
-    direccion: geoFinal.direccion || "",
-    lat: geoFinal.lat || null,
-    lon: geoFinal.lon || null
-  } : null,
+    fechaDeseada: limpiar($("solFechaDeseada")?.value),
+    horarioDeseado: limpiar($("solHorarioDeseado")?.value),
+    emergencia: !!$("solEmergencia")?.checked,
 
-  fechaDeseada: limpiar($("solFechaDeseada")?.value),
-  horarioDeseado: limpiar($("solHorarioDeseado")?.value),
-  emergencia: !!$("solEmergencia")?.checked,
-  descripcion: limpiar($("solDescripcion")?.value),
-  archivos: [],
-  archivosGaleriaId: "",
-  archivosGaleriaUrl: "",
-  archivosVencenEn: ""
-};
+    serviciosDetalle: [],
+    servicio: "",
+    descripcion: "",
+    archivos: [],
+    archivosGaleriaId: "",
+    archivosGaleriaUrl: "",
+    archivosVencenEn: ""
+  };
 
- if (!data.nombre || !data.telefono || !data.servicio || !data.direccion) {
+  if (!data.nombre || !data.telefono || !data.direccion) {
     if (ventanaWhatsApp) ventanaWhatsApp.close();
-    toastMsg("Completá nombre, WhatsApp, servicio y dirección");
+    toastMsg("Completá nombre, WhatsApp y dirección");
     return;
   }
 
-     if (esEdicionSolicitud) {
-    try {
-      btn.disabled = true;
+  try {
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparando servicios...`;
+
+    data.serviciosDetalle = await obtenerServiciosDetalleParaGuardar(data.telefono);
+
+    data.servicio = servicioResumenDesdeDetalle(data.serviciosDetalle);
+    data.descripcion = descripcionResumenDesdeDetalle(data.serviciosDetalle);
+    data.archivos = archivosPlanosDesdeDetalle(data.serviciosDetalle);
+    data.archivosGaleriaUrl = galeriaPrincipalDesdeDetalle(data.serviciosDetalle);
+    data.archivosGaleriaId = "";
+
+    if (esEdicionSolicitud) {
       btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando cambios...`;
 
       let direccionDetectada = null;
@@ -4115,7 +4761,11 @@ const data = {
       await updateDoc(doc(db, "solicitudes", solicitudEditandoId), {
         clienteNombre: data.nombre,
         clienteTelefono: data.telefono,
+
         servicio: data.servicio,
+        serviciosDetalle: data.serviciosDetalle,
+        serviciosCantidad: data.serviciosDetalle.length,
+
         emergencia: data.emergencia,
         zona: data.zona,
         localidad: data.localidad,
@@ -4125,9 +4775,15 @@ const data = {
         lat: data.lat,
         lon: data.lon,
         geo: data.geo,
+
         fechaDeseada: data.fechaDeseada,
         horarioDeseado: data.horarioDeseado,
+
         descripcion: data.descripcion,
+        archivos: data.archivos,
+        archivosCantidad: data.archivos.length,
+        archivosGaleriaUrl: data.archivosGaleriaUrl,
+
         actualizadoEn: serverTimestamp()
       });
 
@@ -4136,131 +4792,49 @@ const data = {
       cerrarModal(modalSolicitud);
       await renderPaneles();
       return;
-
-    } catch (error) {
-      console.error(error);
-      toastMsg("No se pudo actualizar la solicitud");
-      return;
-
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = `<i class="fa-solid fa-floppy-disk"></i> Guardar cambios`;
-    }
-  }
-
-  if (archivosSeleccionados.length > MAX_ARCHIVOS_SOLICITUD) {
-    if (ventanaWhatsApp) ventanaWhatsApp.close();
-    toastMsg(`Por ahora cargá hasta ${MAX_ARCHIVOS_SOLICITUD} archivos en total`);
-    return;
-  }
-
-  const archivoMuyGrande = archivosSeleccionados.find(archivo => {
-    return archivo.size > MAX_BYTES_ARCHIVO_SOLICITUD;
-  });
-
-  if (archivoMuyGrande) {
-    if (ventanaWhatsApp) ventanaWhatsApp.close();
-    toastMsg(`El archivo ${archivoMuyGrande.name} supera ${MAX_MB_ARCHIVO_SOLICITUD}MB`);
-    return;
-  }
-
-  const archivoNoPermitido = archivosSeleccionados.find(archivo => {
-    const tipo = archivo.type || "";
-    return !tipo.startsWith("image/") && !tipo.startsWith("video/") && !tipo.startsWith("audio/");
-  });
-
-  if (archivoNoPermitido) {
-    if (ventanaWhatsApp) ventanaWhatsApp.close();
-    toastMsg(`Archivo no permitido: ${archivoNoPermitido.name}`);
-    return;
-  }
-
-  try {
-    btn.disabled = true;
-
-         if (!geoDireccionSeleccionada && data.direccion) {
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Validando dirección...`;
-
-      const direccionDetectada = await resolverDireccionEscritaGoogle(data.direccion);
-
-      if (direccionDetectada) {
-        geoDireccionSeleccionada = direccionDetectada;
-        geoZonaSeleccionada = direccionDetectada;
-
-        data.zona = direccionDetectada.zonaLocalidad || direccionDetectada.zona || data.zona;
-        data.localidad = direccionDetectada.localidad || "";
-        data.partido = direccionDetectada.partido || "";
-        data.provincia = direccionDetectada.provincia || "";
-        data.direccion = direccionDetectada.direccion || data.direccion;
-        data.lat = direccionDetectada.lat || null;
-        data.lon = direccionDetectada.lon || null;
-
-        data.geo = {
-          zona: direccionDetectada.zona || "",
-          zonaLocalidad: direccionDetectada.zonaLocalidad || "",
-          localidad: direccionDetectada.localidad || "",
-          partido: direccionDetectada.partido || "",
-          provincia: direccionDetectada.provincia || "",
-          direccion: direccionDetectada.direccion || "",
-          lat: direccionDetectada.lat || null,
-          lon: direccionDetectada.lon || null
-        };
-
-        if (solDireccion && data.direccion) {
-          solDireccion.value = data.direccion;
-        }
-      }
-    }
-
-    if (archivosSeleccionados.length) {
-      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Subiendo archivos...`;
-
- const subida = await subirArchivosSolicitud(archivosSeleccionados, data.telefono);
-
-data.archivos = subida.archivos;
-data.archivosGaleriaId = subida.galeriaId || "";
-data.archivosGaleriaUrl = subida.galeriaUrl || "";
-data.archivosVencenEn = subida.vencenEn;
     }
 
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando solicitud...`;
 
     const id = await guardarSolicitudServicio(data);
 
-abrirWhatsAppConMensaje(
-  mensajeWhatsAppSolicitud({
-    clienteNombre: data.nombre,
-    clienteTelefono: data.telefono,
-    servicio: data.servicio,
-    emergencia: data.emergencia,
-    zona: data.zona,
-    localidad: data.localidad,
-    partido: data.partido,
-    provincia: data.provincia,
-    direccion: data.direccion,
-    lat: data.lat,
-    lon: data.lon,
-    fechaDeseada: data.fechaDeseada,
-    horarioDeseado: data.horarioDeseado,
-    descripcion: data.descripcion,
-    archivos: data.archivos,
-    archivosGaleriaId: data.archivosGaleriaId,
-    archivosGaleriaUrl: data.archivosGaleriaUrl
-  }, id),
-  ventanaWhatsApp
-);
+    abrirWhatsAppConMensaje(
+      mensajeWhatsAppSolicitud({
+        clienteNombre: data.nombre,
+        clienteTelefono: data.telefono,
+        servicio: data.servicio,
+        serviciosDetalle: data.serviciosDetalle,
+        emergencia: data.emergencia,
+        zona: data.zona,
+        localidad: data.localidad,
+        partido: data.partido,
+        provincia: data.provincia,
+        direccion: data.direccion,
+        lat: data.lat,
+        lon: data.lon,
+        fechaDeseada: data.fechaDeseada,
+        horarioDeseado: data.horarioDeseado,
+        descripcion: data.descripcion,
+        archivos: data.archivos,
+        archivosGaleriaId: data.archivosGaleriaId,
+        archivosGaleriaUrl: data.archivosGaleriaUrl
+      }, id),
+      ventanaWhatsApp
+    );
 
-limpiarFormularioSolicitud();
-cerrarModal(modalSolicitud);
-     
-    toastMsg("Solicitud guardada con archivos");
+    limpiarFormularioSolicitud();
+    cerrarModal(modalSolicitud);
+
+    toastMsg("Solicitud guardada");
     await renderPaneles();
+
   } catch (error) {
     console.error(error);
 
     if (ventanaWhatsApp) ventanaWhatsApp.close();
 
     toastMsg(error.message || "No se pudo guardar la solicitud");
+
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Guardar solicitud y abrir WhatsApp`;
