@@ -525,12 +525,18 @@ main{
 
 .ms-home-prestador-card .ms-btn{
   min-width:280px;
-  color:var(--azul-noche);
   font-weight:1000;
 }
 
-.ms-home-prestador-card .ms-btn i{
-  color:var(--azul-noche);
+#btnInscripcionPrestador{
+  background:linear-gradient(135deg,var(--azul-noche),var(--azul-2));
+  color:#fff;
+  border:none;
+  box-shadow:0 12px 24px rgba(7,27,58,.24);
+}
+
+#btnInscripcionPrestador i{
+  color:#fff;
 }
 
 .ms-zonas-card{
@@ -658,7 +664,7 @@ main{
 }
 
 .area-sur{
-  bottom:72px;
+  bottom:18px;
   left:50%;
   transform:translateX(-50%);
 }
@@ -1452,8 +1458,8 @@ main{
     transform:none;
   }
 
-  .area-sur{
-    bottom:46px;
+.area-sur{
+    bottom:24px;
     left:50%;
     transform:translateX(-50%);
   }
@@ -2153,6 +2159,11 @@ main{
 
 .td-check{
   width:36px;
+  text-align:center;
+}
+
+.td-ruta-icon{
+  width:46px;
   text-align:center;
 }
 
@@ -2914,7 +2925,7 @@ button[title="WhatsApp"] i{
 ========================================================= */
 
 .ms-solicitud-grupo-row td{
-  background:#eef4fb !important;
+  background:#fffafc !important;
   border-top:2px solid rgba(7,27,58,.10);
   padding:10px !important;
 }
@@ -2924,6 +2935,7 @@ button[title="WhatsApp"] i{
   align-items:center;
   justify-content:space-between;
   gap:12px;
+  background:#fffafc;
 }
 
 .ms-solicitud-grupo-head strong{
