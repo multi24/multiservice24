@@ -2821,3 +2821,94 @@ button[title="WhatsApp"] i{
     grid-template-columns:1fr;
   }
 }
+
+/* =========================================================
+   DESPLEGABLE SERVICIOS CON CIERRE
+========================================================= */
+
+.ms-servicios-picker-head{
+  grid-column:1 / -1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:4px 2px 8px;
+  border-bottom:1px solid var(--borde);
+  margin-bottom:4px;
+}
+
+.ms-servicios-picker-head strong{
+  color:var(--azul-noche);
+  font-weight:1000;
+}
+
+.ms-servicios-picker-head button{
+  width:32px;
+  height:32px;
+  border:none;
+  border-radius:999px;
+  background:var(--gris-suave);
+  color:var(--azul-noche);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* =========================================================
+   PLANILLA SUBAGRUPADA POR SERVICIO
+========================================================= */
+
+.ms-solicitud-grupo-row td{
+  background:#eef4fb !important;
+  border-top:2px solid rgba(7,27,58,.10);
+  padding:10px !important;
+}
+
+.ms-solicitud-grupo-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+
+.ms-solicitud-grupo-head strong{
+  font-size:15px;
+  color:var(--azul-noche);
+}
+
+.ms-solicitud-grupo-head small{
+  display:block;
+  color:var(--muted);
+  font-weight:800;
+}
+
+.ms-servicio-subfila td{
+  border-bottom:1px solid rgba(7,27,58,.08);
+}
+
+.ms-servicio-subfila .td-service-line strong{
+  color:var(--azul-noche);
+}
+
+.ms-prestador-cell-btn{
+  border:none;
+  background:transparent;
+  color:var(--azul-noche);
+  font-weight:1000;
+  padding:0;
+  text-align:left;
+  cursor:pointer;
+  line-height:1.2;
+}
+
+.ms-prestador-cell-btn:hover{
+  color:var(--rojo);
+  text-decoration:underline;
+}
+
+@media(max-width:800px){
+  .ms-solicitud-grupo-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+}
