@@ -226,39 +226,43 @@ main{
 .ms-home-shell{
   display:grid;
   grid-template-columns:minmax(0,1fr) 330px;
+  grid-template-areas:
+    "hero zonas"
+    "prestador prestador"
+    "como como";
   gap:18px;
-  align-items:start;
+  align-items:stretch;
 }
 
-/* Si el hero, prestador y cómo funciona están dentro de un wrapper, esto permite que se acomoden como partes del grid principal sin tocar HTML. */
+/* Si el hero/prestador/cómo funciona están dentro de un contenedor,
+   esto permite acomodarlos en el grid principal sin tocar el HTML. */
 .ms-home-shell > div:first-child:has(.ms-hero){
   display:contents;
 }
 
 .ms-home-shell .ms-hero{
-  grid-column:1;
-  grid-row:1;
+  grid-area:hero;
 }
 
 .ms-home-shell .ms-home-right{
-  grid-column:2;
-  grid-row:1;
-  align-self:start;
+  grid-area:zonas;
+  min-width:0;
+  align-self:stretch;
+  display:block;
 }
 
-.ms-home-shell .ms-contact-between,
-.ms-home-shell #comoFunciona{
-  grid-column:1 / -1;
+.ms-home-shell .ms-contact-between{
+  grid-area:prestador;
 }
 
 .ms-home-shell #comoFunciona{
+  grid-area:como;
   margin-top:0;
 }
 
 .ms-home-right{
   display:block;
   min-width:0;
-  align-self:start;
 }
 
 .ms-hero{
@@ -537,9 +541,9 @@ main{
   box-shadow:var(--sombra);
   display:flex;
   flex-direction:column;
-  min-height:auto;
-  height:auto;
-  align-self:start;
+  min-height:0;
+  height:100%;
+  align-self:stretch;
   overflow:hidden;
 }
 
@@ -556,8 +560,7 @@ main{
 
 .ms-zonas-mapa-pro{
   position:relative;
-  flex:0 0 auto;
-  height:340px;
+  flex:1 1 auto;
   min-height:0;
   margin-top:18px;
   border-radius:28px;
@@ -1375,6 +1378,11 @@ main{
 .ms-home-shell{
   display:grid;
   grid-template-columns:1fr;
+  grid-template-areas:
+    "hero"
+    "zonas"
+    "prestador"
+    "como";
   align-items:start;
 }
 
@@ -1383,29 +1391,23 @@ main{
 }
 
 .ms-home-shell .ms-hero{
-  grid-column:1;
-  grid-row:auto;
-  order:1;
+  grid-area:hero;
 }
 
 .ms-home-right{
-  grid-column:1;
-  grid-row:auto;
-  order:2;
+  grid-area:zonas;
+  min-width:0;
 }
 
 .ms-contact-between{
-  grid-column:1;
-  order:3;
+  grid-area:prestador;
 }
 
 #comoFunciona{
-  grid-column:1;
-  order:4;
+  grid-area:como;
 }
 
 .ms-zonas-card{
-  order:2;
   min-height:auto;
   height:auto;
   text-align:center;
@@ -1419,9 +1421,11 @@ main{
     margin:0 auto;
   }
 
-  .ms-zonas-mapa-pro{
-    min-height:340px;
-  }
+.ms-zonas-mapa-pro{
+  flex:0 0 auto;
+  height:340px;
+  min-height:0;
+}
 
   .ms-zona-area{
     width:118px;
