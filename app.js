@@ -19,6 +19,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteDoc,
   collection,
   addDoc,
   getDocs,
@@ -2481,6 +2482,91 @@ function actualizarServicioDetalleLocal(solicitud, servicioId, cambios) {
   });
 }
 
+function obtenerServiciosMarcadosParaBorrar() {
+  return Array.from(document.querySelectorAll("[data-ruta-check]:checked"))
+    .map(check => ({
+      solicitudId: check.dataset.rutaCheck || "",
+      servicioId: check.dataset.servicioId || ""
+    }))
+    .filter(item => item.solicitudId);
+}
+
+async function borrarServiciosMarcados(solicitudes) {
+  const marcados = obtenerServiciosMarcadosParaBorrar();
+
+  if (!marcados.length) {
+    toastMsg("Marcá al menos un servicio para borrar");
+    return;
+  }
+
+  const confirma = window.confirm(
+    `¿Borrar ${marcados.length} servicio(s) marcado(s)? Esta acción no se puede deshacer.`
+  );
+
+  if (!confirma) return;
+
+  const mapa = new Map();
+  solicitudes.forEach(s => mapa.set(s.id, s));
+
+  const porSolicitud = new Map();
+
+  marcados.forEach(item => {
+    if (!porSolicitud.has(item.solicitudId)) {
+      porSolicitud.set(item.solicitudId, new Set());
+    }
+
+    porSolicitud.get(item.solicitudId).add(item.servicioId);
+  });
+
+  try {
+    for (const [solicitudId, serviciosIds] of porSolicitud.entries()) {
+      const solicitud = mapa.get(solicitudId);
+      if (!solicitud) continue;
+
+      const detalles = Array.isArray(solicitud.serviciosDetalle)
+        ? solicitud.serviciosDetalle
+        : [];
+
+      /*
+        Si es una solicitud vieja sin serviciosDetalle,
+        o si se marcaron todos los servicios,
+        borramos la solicitud completa.
+      */
+      if (!detalles.length || serviciosIds.has("principal")) {
+        await deleteDoc(doc(db, "solicitudes", solicitudId));
+        continue;
+      }
+
+      const restantes = detalles.filter(item => !serviciosIds.has(String(item.id)));
+
+      if (!restantes.length) {
+        await deleteDoc(doc(db, "solicitudes", solicitudId));
+        continue;
+      }
+
+      const primerServicio = restantes[0];
+
+      await updateDoc(doc(db, "solicitudes", solicitudId), {
+        serviciosDetalle: restantes,
+        serviciosCantidad: restantes.length,
+        servicio: primerServicio.servicio || "",
+        fechaDeseada: primerServicio.fechaDeseada || "",
+        horarioDeseado: primerServicio.horarioDeseado || "",
+        descripcion: primerServicio.descripcion || "",
+        actualizadoEn: serverTimestamp()
+      });
+    }
+
+    hojaRutaSeleccion.clear();
+    toastMsg("Servicios borrados");
+    await renderEquipo();
+
+  } catch (error) {
+    console.error(error);
+    toastMsg("No se pudieron borrar los servicios");
+  }
+}
+
 function fechaSolicitudFiltro(s) {
   const servicios = serviciosDetallePanel(s);
   const primerConFecha = servicios.find(item => item.fechaDeseada);
@@ -2772,7 +2858,7 @@ function renderSolicitudFila(s) {
 
   const header = `
     <tr class="ms-solicitud-grupo-row">
-      <td colspan="8">
+      <td colspan="7">
         <div class="ms-solicitud-grupo-head">
           <div>
             <strong>${escaparHtml(cliente)}</strong>
@@ -2792,6 +2878,7 @@ function renderSolicitudFila(s) {
     const galeria = galeriaServicioPanel(s, item);
     const tieneArchivos = tieneArchivosServicioPanel(s, item);
     const filaClase = claseFilaServicioEstado(s, item);
+    const servicioId = item.id || "principal";
 
     return `
       <tr class="${filaClase} ms-servicio-subfila">
@@ -2799,18 +2886,30 @@ function renderSolicitudFila(s) {
           <input
             type="checkbox"
             data-ruta-check="${s.id}"
+            data-servicio-id="${escaparHtml(servicioId)}"
             ${hojaRutaSeleccion.has(s.id) ? "checked" : ""}
           />
+        </td>
+
+        <td class="td-ruta-icon">
+          ${
+            destino
+              ? `
+                <button class="ms-icon-btn" data-ruta-solicitud="${s.id}" type="button" title="Ver ruta">
+                  <i class="fa-solid fa-location-dot"></i>
+                </button>
+              `
+              : `
+                <button class="ms-icon-btn disabled" type="button" title="Sin dirección">
+                  <i class="fa-solid fa-location-dot"></i>
+                </button>
+              `
+          }
         </td>
 
         <td>
           <strong>${escaparHtml(textoFechaServicioPanel(s, item))}</strong>
           <small>${escaparHtml(horarioServicioPanel(s, item))}</small>
-        </td>
-
-        <td>
-          <strong>${escaparHtml(cliente)}</strong>
-          <small>${escaparHtml(telefono)}</small>
         </td>
 
         <td>
@@ -2842,25 +2941,6 @@ function renderSolicitudFila(s) {
           </div>
         </td>
 
-        <td class="td-direccion">
-          <div class="td-address-line">
-            <span>
-              <strong>${escaparHtml(direccion)}</strong>
-              <small>${escaparHtml(zona || "Sin localidad/partido")}</small>
-            </span>
-
-            ${
-              destino
-                ? `
-                  <button class="ms-icon-btn" data-ruta-solicitud="${s.id}" type="button" title="Ver ruta">
-                    <i class="fa-solid fa-location-dot"></i>
-                  </button>
-                `
-                : ""
-            }
-          </div>
-        </td>
-
         <td>
           <div class="td-state-line">
             ${renderEstadoSelect(s, item)}
@@ -2868,7 +2948,7 @@ function renderSolicitudFila(s) {
             <button
               class="ms-icon-btn"
               data-wa-servicio="${s.id}"
-              data-servicio-id="${escaparHtml(item.id)}"
+              data-servicio-id="${escaparHtml(servicioId)}"
               type="button"
               title="WhatsApp"
             >
@@ -2881,7 +2961,7 @@ function renderSolicitudFila(s) {
           <button
             class="ms-prestador-cell-btn"
             data-ver-prestadores-servicio="${s.id}"
-            data-servicio-id="${escaparHtml(item.id)}"
+            data-servicio-id="${escaparHtml(servicioId)}"
             type="button"
           >
             ${escaparHtml(prestadorServicioPanel(s, item))}
@@ -2953,7 +3033,7 @@ function renderFilasSolicitudesAgrupadas(items) {
 
       separador = `
         <tr class="ms-day-divider">
-          <td colspan="8">
+          <td colspan="7">
             <span>${escaparHtml(tituloGrupoSolicitud(grupo))}</span>
           </td>
         </tr>
@@ -3111,6 +3191,11 @@ function renderTablaEquipo(solicitudes) {
         Crear planilla
       </button>
 
+      <button class="ms-mini-btn red" data-borrar-servicios-marcados type="button">
+  <i class="fa-solid fa-trash"></i>
+  Borrar marcados
+</button>
+
       <span id="hojaRutaContador" class="ms-status">
         ${hojaRutaSeleccion.size} seleccionada${hojaRutaSeleccion.size === 1 ? "" : "s"}
       </span>
@@ -3122,13 +3207,12 @@ function renderTablaEquipo(solicitudes) {
 
     <div class="ms-board-table-wrap">
       <table class="ms-board-table">
-        <thead>
+<thead>
           <tr>
             <th></th>
+            <th></th>
             <th>Fecha / horario</th>
-            <th>Cliente</th>
             <th>Servicio / archivos</th>
-            <th>Dirección / ruta</th>
             <th>Estado / WhatsApp</th>
             <th>Prestador</th>
             <th>Informe</th>
@@ -3141,7 +3225,7 @@ function renderTablaEquipo(solicitudes) {
               ? renderFilasSolicitudesAgrupadas(filtradas)
               : `
                 <tr>
-                  <td colspan="8" class="td-empty">
+                  <td colspan="7" class="td-empty">
                     No hay solicitudes con esos filtros.
                   </td>
                 </tr>
@@ -4595,6 +4679,12 @@ document.querySelectorAll("[data-crear-planilla]").forEach(btn => {
     planillaActivaId = id;
     toastMsg("Planilla creada");
     await renderEquipo();
+  };
+});
+
+document.querySelectorAll("[data-borrar-servicios-marcados]").forEach(btn => {
+  btn.onclick = async () => {
+    await borrarServiciosMarcados(solicitudes);
   };
 });
 
