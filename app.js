@@ -142,6 +142,7 @@ const solAudioEstado = $("solAudioEstado");
 const btnAgregarServicioSolicitud = $("btnAgregarServicioSolicitud");
 const solServiciosTabs = $("solServiciosTabs");
 const solServiciosDetalle = $("solServiciosDetalle");
+const solServiciosPicker = $("solServiciosPicker");
 
 const prestadorHabilidades = $("prestadorHabilidades");
 
@@ -776,6 +777,7 @@ if (solServicio) {
 
 if (!solicitudEditandoId) {
   reiniciarServiciosDetalleSolicitud(servicio);
+  actualizarPickerServiciosSolicitud();
 }
 
 abrirModal(modalSolicitud);
@@ -791,6 +793,18 @@ function renderSelectServicios() {
     `;
   }
 
+  if (solServiciosPicker) {
+    solServiciosPicker.innerHTML = SERVICIOS.map(s => `
+      <label class="ms-servicio-pick">
+        <input type="checkbox" value="${s.nombre}" data-servicio-pick="${s.nombre}" />
+        <span>
+          <i class="${s.icono}"></i>
+          ${s.nombre}
+        </span>
+      </label>
+    `).join("");
+  }
+
   if (prestadorHabilidades) {
     prestadorHabilidades.innerHTML = SERVICIOS.map(s => {
       return `
@@ -801,6 +815,8 @@ function renderSelectServicios() {
       `;
     }).join("");
   }
+
+  actualizarPickerServiciosSolicitud();
 }
 
 function actualizarNotaEmergencia() {
@@ -1244,10 +1260,68 @@ function sincronizarTodosLosServiciosDesdeDom() {
   });
 }
 
+function actualizarPickerServiciosSolicitud() {
+  if (!solServiciosPicker) return;
+
+  const activos = new Set(
+    serviciosDetalleSolicitud
+      .map(item => item.servicio)
+      .filter(Boolean)
+  );
+
+  solServiciosPicker.querySelectorAll("[data-servicio-pick]").forEach(input => {
+    input.checked = activos.has(input.value);
+  });
+}
+
+function agregarServicioDesdePicker(nombre) {
+  const servicio = limpiar(nombre);
+
+  if (!servicio) return;
+
+  sincronizarTodosLosServiciosDesdeDom();
+
+  const existe = serviciosDetalleSolicitud.some(item => item.servicio === servicio);
+
+  if (existe) {
+    actualizarPickerServiciosSolicitud();
+    return;
+  }
+
+  crearServicioDetalleSolicitud(servicio);
+}
+
+function quitarServicioDesdePicker(nombre) {
+  const servicio = limpiar(nombre);
+
+  if (!servicio) return;
+
+  sincronizarTodosLosServiciosDesdeDom();
+
+  serviciosDetalleSolicitud = serviciosDetalleSolicitud.filter(item => item.servicio !== servicio);
+
+  if (servicioActivoSolicitudId && !serviciosDetalleSolicitud.some(item => item.id === servicioActivoSolicitudId)) {
+    servicioActivoSolicitudId = serviciosDetalleSolicitud[0]?.id || "";
+  }
+
+  renderServiciosDetalleSolicitud();
+}
+
 function renderServiciosDetalleSolicitud() {
   if (!solServiciosTabs || !solServiciosDetalle) return;
 
-  asegurarUnServicioSolicitud();
+  if (!serviciosDetalleSolicitud.length) {
+    solServiciosTabs.innerHTML = "";
+
+    solServiciosDetalle.innerHTML = `
+      <div class="ms-servicio-panel ms-servicio-empty">
+        <p>Seleccioná uno o más servicios de la lista de arriba para cargar el detalle.</p>
+      </div>
+    `;
+
+    actualizarPickerServiciosSolicitud();
+    return;
+  }
 
   solServiciosTabs.innerHTML = serviciosDetalleSolicitud.map((item, index) => {
     const nombre = item.servicio || `Servicio ${index + 1}`;
@@ -1270,31 +1344,13 @@ function renderServiciosDetalleSolicitud() {
     return `
       <div class="ms-servicio-panel ${activo ? "" : "hidden"}" data-servicio-panel="${item.id}">
         <div class="ms-servicio-panel-head">
-          <strong>Detalle del servicio ${index + 1}</strong>
+          <strong>${escaparHtml(item.servicio || `Servicio ${index + 1}`)}</strong>
 
-          ${
-            serviciosDetalleSolicitud.length > 1
-              ? `
-                <button class="ms-mini-btn" data-servicio-quitar="${item.id}" type="button">
-                  <i class="fa-solid fa-trash"></i>
-                  Quitar
-                </button>
-              `
-              : ""
-          }
+          <button class="ms-mini-btn" data-servicio-quitar="${item.id}" type="button">
+            <i class="fa-solid fa-trash"></i>
+            Quitar
+          </button>
         </div>
-
-        <label>
-          Tipo de servicio
-          <select data-servicio-select="${item.id}">
-            <option value="">Elegir servicio</option>
-            ${SERVICIOS.map(s => `
-              <option value="${s.nombre}" ${item.servicio === s.nombre ? "selected" : ""}>
-                ${s.nombre}
-              </option>
-            `).join("")}
-          </select>
-        </label>
 
         <label>
           Descripción del problema
@@ -1372,6 +1428,8 @@ function renderServiciosDetalleSolicitud() {
       </div>
     `;
   }).join("");
+
+  actualizarPickerServiciosSolicitud();
 }
 
 function actualizarResumenArchivosServicio(id) {
@@ -4508,27 +4566,14 @@ if (prestadorRecursosInput) {
 
 configurarSugerenciasGeo(solDireccion, solDireccionSugerencias, "direccion");
 
-btnAgregarServicioSolicitud?.addEventListener("click", () => {
-  const servicio = limpiar(solServicio?.value);
+solServiciosPicker?.addEventListener("change", (e) => {
+  const input = e.target.closest("[data-servicio-pick]");
+  if (!input) return;
 
-  if (!servicio) {
-    toastMsg("Elegí un servicio para agregar");
-    return;
-  }
-
-  sincronizarTodosLosServiciosDesdeDom();
-
-  const repetido = serviciosDetalleSolicitud.some(item => item.servicio === servicio);
-
-  if (repetido) {
-    toastMsg("Ese servicio ya está agregado");
-    return;
-  }
-
-  crearServicioDetalleSolicitud(servicio);
-
-  if (solServicio) {
-    solServicio.value = "";
+  if (input.checked) {
+    agregarServicioDesdePicker(input.value);
+  } else {
+    quitarServicioDesdePicker(input.value);
   }
 });
 
@@ -4572,11 +4617,6 @@ solServiciosDetalle?.addEventListener("click", (e) => {
 
   if (quitar) {
     const id = quitar.dataset.servicioQuitar;
-
-    if (serviciosDetalleSolicitud.length <= 1) {
-      toastMsg("La solicitud debe tener al menos un servicio");
-      return;
-    }
 
     serviciosDetalleSolicitud = serviciosDetalleSolicitud.filter(item => item.id !== id);
 
