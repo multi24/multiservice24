@@ -2761,3 +2761,63 @@ button[title="WhatsApp"] i{
     grid-template-columns:1fr;
   }
 }
+
+/* =========================================================
+   DESPLEGABLE MULTI-SERVICIO
+========================================================= */
+
+.ms-servicios-dropdown{
+  position:relative;
+  display:grid;
+  gap:8px;
+}
+
+#btnSolServiciosDropdown{
+  justify-content:space-between;
+}
+
+.ms-servicios-picker{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;
+  padding:10px;
+  border:1px solid var(--borde);
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 16px 34px rgba(7,27,58,.14);
+  max-height:270px;
+  overflow:auto;
+}
+
+.ms-servicio-agenda{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+
+.ms-servicio-agenda label{
+  display:grid;
+  gap:6px;
+}
+
+.ms-servicio-agenda input,
+.ms-servicio-agenda select{
+  width:100%;
+  min-height:44px;
+  border:1px solid var(--borde);
+  border-radius:14px;
+  padding:8px 12px;
+  background:#fff;
+  color:var(--azul-noche);
+  font-weight:800;
+}
+
+@media(max-width:700px){
+  .ms-servicios-picker{
+    grid-template-columns:1fr;
+  }
+
+  .ms-servicio-agenda{
+    grid-template-columns:1fr;
+  }
+}
