@@ -2495,6 +2495,7 @@ button[title="WhatsApp"] i{
   font-size:12px;
   border-top:1px solid rgba(7,27,58,.08);
   border-bottom:1px solid rgba(7,27,58,.08);
+  margin-left:0;
 }
 
 .ms-day-divider span i{
@@ -2537,6 +2538,18 @@ button[title="WhatsApp"] i{
 /* =========================================================
    INFORME DE SERVICIO / FIRMA
 ========================================================= */
+
+.ms-informe-costos-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+
+@media(max-width:700px){
+  .ms-informe-costos-grid{
+    grid-template-columns:1fr;
+  }
+}
 
 .ms-informe-resumen{
   border:1px solid var(--borde);
@@ -2592,20 +2605,33 @@ button[title="WhatsApp"] i{
    PRESTADORES POR SERVICIO
 ========================================================= */
 
+.ms-prestadores-toolbar{
+  display:flex;
+  justify-content:flex-end;
+  margin-bottom:12px;
+}
+
 .ms-prestador-cell-btn{
-  border:none;
-  background:transparent;
+  width:150px;
+  min-height:34px;
+  border-radius:999px;
+  border:1px solid var(--borde);
+  padding:6px 9px;
+  background:#fff;
   color:var(--azul-noche);
   font-weight:1000;
-  padding:0;
   text-align:left;
   cursor:pointer;
   line-height:1.2;
+  display:inline-flex;
+  align-items:center;
+  justify-content:flex-start;
 }
 
 .ms-prestador-cell-btn:hover{
-  color:var(--rojo);
-  text-decoration:underline;
+  background:#eaf4ff;
+  color:var(--azul-noche);
+  text-decoration:none;
 }
 
 .ms-prestador-servicio-item{
@@ -2964,10 +2990,9 @@ button[title="WhatsApp"] i{
 }
 
 .ms-mini-galeria-card{
-  flex:0 0 138px;
+  flex:0 0 112px;
   scroll-snap-align:start;
-  display:grid;
-  gap:6px;
+  display:block;
   text-decoration:none;
   color:var(--azul-noche);
   background:#fff;
@@ -2978,7 +3003,7 @@ button[title="WhatsApp"] i{
 }
 
 .ms-mini-galeria-preview{
-  height:92px;
+  height:112px;
   background:var(--gris-suave);
   display:flex;
   align-items:center;
@@ -2992,22 +3017,6 @@ button[title="WhatsApp"] i{
   height:100%;
   object-fit:cover;
   display:block;
-}
-
-.ms-mini-galeria-card strong{
-  padding:0 10px;
-  color:var(--rojo);
-  font-size:11px;
-  font-weight:1000;
-}
-
-.ms-mini-galeria-card span{
-  padding:0 10px 10px;
-  font-size:11px;
-  font-weight:900;
-  line-height:1.2;
-  color:var(--azul-noche);
-  word-break:break-word;
 }
 
 .ms-solicitud-grupo-row td{
