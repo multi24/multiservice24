@@ -187,6 +187,11 @@ const informeClienteTitulo = $("informeClienteTitulo");
 const informeSolicitudTexto = $("informeSolicitudTexto");
 const informeTrabajo = $("informeTrabajo");
 const informeObservaciones = $("informeObservaciones");
+const informeValorServicio = $("informeValorServicio");
+const informeCostoManoObra = $("informeCostoManoObra");
+const informeCostoMateriales = $("informeCostoMateriales");
+const informeCostoTotal = $("informeCostoTotal");
+const informeGarantiaTiempo = $("informeGarantiaTiempo");
 const informeArchivos = $("informeArchivos");
 const informeArchivosResumen = $("informeArchivosResumen");
 const canvasFirmaCliente = $("canvasFirmaCliente");
@@ -242,11 +247,13 @@ let planillasPanel = [
 let solicitudEditandoId = "";
 let solicitudEditandoData = null;
 let informeSolicitudActual = null;
+let informeServicioDetalleActual = null;
 let informeFirmaDataUrl = "";
 let informeArchivosSeleccionados = [];
 let informeCargadoId = "";
 let informeCargadoData = null;
 let informeModoLectura = false;
+let prestadorAltaManualServicio = "";
 
 let mediaRecorderInforme = null;
 let streamAudioInforme = null;
@@ -1431,9 +1438,6 @@ function renderMiniGaleriaArchivosSolicitud(archivos = []) {
             <div class="ms-mini-galeria-preview">
               ${preview}
             </div>
-
-            <strong>${escaparHtml(tipoGeneral || "Archivo")}</strong>
-            <span>${escaparHtml(nombre)}</span>
           </a>
         `;
       }).join("")}
@@ -2233,6 +2237,93 @@ async function guardarSolicitudServicio(data) {
 /* =========================================================
    PRESTADOR
 ========================================================= */
+
+async function guardarPrestadorManual(data, servicioSugerido = "") {
+  if (!esAdminActual()) {
+    toastMsg("Solo el admin puede agregar prestadores manualmente");
+    return;
+  }
+
+  const ref = doc(collection(db, "prestadores"));
+
+  const habilidades = Array.isArray(data.habilidades) ? [...data.habilidades] : [];
+
+  if (servicioSugerido && !habilidades.includes(servicioSugerido)) {
+    habilidades.push(servicioSugerido);
+  }
+
+  await setDoc(ref, {
+    uid: ref.id,
+    email: "",
+    nombre: data.nombre,
+    telefono: data.telefono,
+    zona: data.zona,
+    movilidadHerramientas: true,
+    habilidades,
+    comentario: data.comentario,
+    habilitado: true,
+    entrevistaEstado: "habilitado",
+    altaManual: true,
+    creadoEn: serverTimestamp(),
+    actualizadoEn: serverTimestamp()
+  });
+
+  toastMsg("Prestador agregado y habilitado");
+}
+
+function abrirAltaManualPrestador(servicio = "") {
+  prestadorAltaManualServicio = servicio || "";
+
+  formPrestador?.reset();
+
+  document.querySelectorAll("[data-prestador-zona]").forEach(input => {
+    input.checked = false;
+  });
+
+  prestadorHabilidades?.querySelectorAll("input").forEach(input => {
+    input.checked = servicio && input.value === servicio;
+  });
+
+  const titulo = modalPrestador?.querySelector("h2");
+  const texto = modalPrestador?.querySelector(".ms-muted");
+  const submit = formPrestador?.querySelector("button[type='submit']");
+
+  if (titulo) {
+    titulo.textContent = servicio
+      ? `Agregar prestador para ${servicio}`
+      : "Agregar prestador";
+  }
+
+  if (texto) {
+    texto.textContent = "Alta manual desde el panel interno. El prestador quedará habilitado.";
+  }
+
+  if (submit) {
+    submit.innerHTML = `<i class="fa-solid fa-user-plus"></i> Agregar prestador`;
+  }
+
+  abrirModal(modalPrestador);
+}
+
+function restaurarModalPrestadorPublico() {
+  prestadorAltaManualServicio = "";
+
+  const titulo = modalPrestador?.querySelector("h2");
+  const texto = modalPrestador?.querySelector(".ms-muted");
+  const submit = formPrestador?.querySelector("button[type='submit']");
+
+  if (titulo) {
+    titulo.textContent = "Inscripción para prestar servicios";
+  }
+
+  if (texto) {
+    texto.textContent = "Esta inscripción no habilita automáticamente. Primero queda pendiente para entrevista y aprobación del admin.";
+  }
+
+  if (submit) {
+    submit.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Enviar inscripción`;
+  }
+}
 
 async function guardarInscripcionPrestador(data) {
   if (!usuarioActual) {
@@ -3041,12 +3132,13 @@ function renderSolicitudFila(s) {
         </td>
 
         <td>
-          <button
-            class="ms-icon-btn ${item.tieneInforme ? "informe-ok" : ""}"
-            data-informe-solicitud="${s.id}"
-            type="button"
-            title="${item.tieneInforme ? "Ver informe" : "Cargar informe"}"
-          >
+<button
+  class="ms-icon-btn ${item.tieneInforme ? "informe-ok" : ""}"
+  data-informe-solicitud="${s.id}"
+  data-servicio-id="${escaparHtml(servicioId)}"
+  type="button"
+  title="${item.tieneInforme ? "Ver informe" : "Cargar informe"}"
+>
             <i class="fa-solid ${item.tieneInforme ? "fa-file-circle-check" : "fa-file-signature"}"></i>
           </button>
         </td>
@@ -3105,9 +3197,7 @@ function renderFilasSolicitudesAgrupadas(items) {
 
       separador = `
         <tr class="ms-day-divider">
-          <td></td>
-          <td></td>
-          <td colspan="5">
+          <td colspan="7">
             <span>
               <i class="fa-solid fa-calendar-check"></i>
               ${escaparHtml(tituloGrupoSolicitud(grupo))}
@@ -4020,13 +4110,20 @@ const servicio = servicioDetalle?.servicio || solicitud.servicio || "";
     ].join(" · ");
   }
 
-  if (listaPrestadoresServicio) {
-    listaPrestadoresServicio.innerHTML = `
-      <article class="ms-item">
-        <p>Buscando prestadores habilitados...</p>
-      </article>
-    `;
-  }
+if (listaPrestadoresServicio) {
+  listaPrestadoresServicio.innerHTML = `
+    <div class="ms-prestadores-toolbar">
+      <button class="ms-mini-btn red" data-agregar-prestador-servicio="${escaparHtml(servicio)}" type="button">
+        <i class="fa-solid fa-user-plus"></i>
+        Agregar prestador
+      </button>
+    </div>
+
+    <article class="ms-item">
+      <p>Buscando prestadores habilitados...</p>
+    </article>
+  `;
+}
 
   abrirModal(modalPrestadoresServicio);
 
@@ -4037,19 +4134,40 @@ const servicio = servicioDetalle?.servicio || solicitud.servicio || "";
       return prestador.habilitado && prestadorTieneServicio(prestador, servicio);
     });
 
-    if (!disponibles.length) {
-      listaPrestadoresServicio.innerHTML = `
-        <article class="ms-item">
-          <h4>No hay prestadores habilitados para ${escaparHtml(servicio)}</h4>
-          <p>
-            Revisá si hay prestadores con esa habilidad cargada o si todavía no fueron habilitados.
-          </p>
-        </article>
-      `;
-      return;
-    }
+if (!disponibles.length) {
+  listaPrestadoresServicio.innerHTML = `
+    <div class="ms-prestadores-toolbar">
+      <button class="ms-mini-btn red" data-agregar-prestador-servicio="${escaparHtml(servicio)}" type="button">
+        <i class="fa-solid fa-user-plus"></i>
+        Agregar prestador
+      </button>
+    </div>
 
-    listaPrestadoresServicio.innerHTML = disponibles.map(prestador => {
+    <article class="ms-item">
+      <h4>No hay prestadores habilitados para ${escaparHtml(servicio)}</h4>
+      <p>
+        Podés agregar un prestador desde este mismo panel y quedará habilitado para este servicio.
+      </p>
+    </article>
+  `;
+
+  document.querySelectorAll("[data-agregar-prestador-servicio]").forEach(btn => {
+    btn.onclick = () => {
+      abrirAltaManualPrestador(btn.dataset.agregarPrestadorServicio || servicio);
+    };
+  });
+
+  return;
+}
+
+listaPrestadoresServicio.innerHTML = `
+  <div class="ms-prestadores-toolbar">
+    <button class="ms-mini-btn red" data-agregar-prestador-servicio="${escaparHtml(servicio)}" type="button">
+      <i class="fa-solid fa-user-plus"></i>
+      Agregar prestador
+    </button>
+  </div>
+` + disponibles.map(prestador => {
       const habilidades = Array.isArray(prestador.habilidades)
         ? prestador.habilidades.join(", ")
         : "Sin habilidades cargadas";
@@ -4135,6 +4253,12 @@ if (cambiosServicio) {
       };
     });
 
+     document.querySelectorAll("[data-agregar-prestador-servicio]").forEach(btn => {
+  btn.onclick = () => {
+    abrirAltaManualPrestador(btn.dataset.agregarPrestadorServicio || servicio);
+  };
+});
+
   } catch (error) {
     console.error(error);
 
@@ -4197,7 +4321,7 @@ function cargarSolicitudEnModalEdicion(solicitud) {
   abrirModal(modalSolicitud);
 }
 
-async function obtenerInformePorSolicitudId(solicitudId) {
+async function obtenerInformePorSolicitudId(solicitudId, servicioId = "") {
   if (!solicitudId) return null;
 
   const snap = await getDocs(collection(db, "informesServicio"));
@@ -4207,7 +4331,17 @@ async function obtenerInformePorSolicitudId(solicitudId) {
       id: d.id,
       ...d.data()
     }))
-    .filter(informe => informe.solicitudId === solicitudId);
+    .filter(informe => {
+      if (informe.solicitudId !== solicitudId) return false;
+
+      const sid = String(servicioId || "");
+
+      if (!sid || sid === "principal") {
+        return !informe.servicioId || informe.servicioId === "principal";
+      }
+
+      return String(informe.servicioId || "") === sid;
+    });
 
   informes.sort((a, b) => {
     const fa = a.creadoEn?.toMillis ? a.creadoEn.toMillis() : 0;
@@ -4259,6 +4393,11 @@ function aplicarModoLecturaInforme(lectura) {
 
   if (informeTrabajo) informeTrabajo.readOnly = informeModoLectura;
   if (informeObservaciones) informeObservaciones.readOnly = informeModoLectura;
+  if (informeValorServicio) informeValorServicio.readOnly = informeModoLectura;
+  if (informeCostoManoObra) informeCostoManoObra.readOnly = informeModoLectura;
+  if (informeCostoMateriales) informeCostoMateriales.readOnly = informeModoLectura;
+  if (informeCostoTotal) informeCostoTotal.readOnly = informeModoLectura;
+  if (informeGarantiaTiempo) informeGarantiaTiempo.readOnly = informeModoLectura;
   if (informeArchivos) informeArchivos.disabled = informeModoLectura;
 
   if (canvasFirmaCliente) {
@@ -4504,31 +4643,43 @@ if (btnLimpiarFirma) {
 }
 }
 
-async function abrirInformeSolicitud(solicitud) {
+async function abrirInformeSolicitud(solicitud, servicioDetalle = null) {
   if (!solicitud) return;
 
   informeSolicitudActual = solicitud;
+  informeServicioDetalleActual = servicioDetalle;
   informeCargadoId = "";
   informeCargadoData = null;
   informeArchivosSeleccionados = [];
   informeFirmaDataUrl = "";
+
+  const servicioActual = servicioDetalle?.servicio || solicitud.servicio || "Servicio";
+  const fechaActual = servicioDetalle?.fechaDeseada || solicitud.fechaDeseada || "";
+  const horarioActual = servicioDetalle?.horarioDeseado || solicitud.horarioDeseado || "";
+  const servicioIdActual = servicioDetalle?.id || "principal";
 
   if (informeSolicitudId) informeSolicitudId.value = solicitud.id;
   if (informeTrabajo) informeTrabajo.value = "";
   if (informeObservaciones) informeObservaciones.value = "";
   if (informeArchivos) informeArchivos.value = "";
 
+  if (informeValorServicio) informeValorServicio.value = "";
+  if (informeCostoManoObra) informeCostoManoObra.value = "";
+  if (informeCostoMateriales) informeCostoMateriales.value = "";
+  if (informeCostoTotal) informeCostoTotal.value = "";
+  if (informeGarantiaTiempo) informeGarantiaTiempo.value = "";
+
   limpiarAudioInforme(false);
 
   if (informeClienteTitulo) {
-    informeClienteTitulo.textContent = `${solicitud.clienteNombre || "Cliente"} · ${solicitud.servicio || "Servicio"}`;
+    informeClienteTitulo.textContent = `${solicitud.clienteNombre || "Cliente"} · ${servicioActual}`;
   }
 
   if (informeSolicitudTexto) {
     informeSolicitudTexto.textContent = [
       solicitud.direccion || "Sin dirección",
-      solicitud.fechaDeseada || "Sin fecha",
-      solicitud.horarioDeseado || "Sin horario"
+      fechaActual || "Sin fecha",
+      horarioActual || "Sin horario"
     ].join(" · ");
   }
 
@@ -4539,37 +4690,41 @@ async function abrirInformeSolicitud(solicitud) {
 
   prepararCanvasFirma();
 
-  if (solicitud.tieneInforme) {
-    const informe = await obtenerInformePorSolicitudId(solicitud.id);
+  const informe = await obtenerInformePorSolicitudId(solicitud.id, servicioIdActual);
 
-    if (informe) {
-      informeCargadoId = informe.id;
-      informeCargadoData = informe;
+  if (informe) {
+    informeCargadoId = informe.id;
+    informeCargadoData = informe;
 
-      if (informeTrabajo) informeTrabajo.value = informe.trabajo || "";
-      if (informeObservaciones) informeObservaciones.value = informe.observaciones || "";
+    if (informeTrabajo) informeTrabajo.value = informe.trabajo || "";
+    if (informeObservaciones) informeObservaciones.value = informe.observaciones || "";
 
-      if (informe.firmaCliente) {
-        informeFirmaDataUrl = informe.firmaCliente;
+    if (informeValorServicio) informeValorServicio.value = informe.valorServicio || "";
+    if (informeCostoManoObra) informeCostoManoObra.value = informe.costoManoObra || "";
+    if (informeCostoMateriales) informeCostoMateriales.value = informe.costoMateriales || "";
+    if (informeCostoTotal) informeCostoTotal.value = informe.costoTotal || "";
+    if (informeGarantiaTiempo) informeGarantiaTiempo.value = informe.garantiaTiempo || "";
 
-        const ctx = canvasFirmaCliente?.getContext("2d");
-        const img = new Image();
+    if (informe.firmaCliente) {
+      informeFirmaDataUrl = informe.firmaCliente;
 
-        img.onload = () => {
-          ctx.clearRect(0, 0, canvasFirmaCliente.width, canvasFirmaCliente.height);
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(0, 0, canvasFirmaCliente.width, canvasFirmaCliente.height);
-          ctx.drawImage(img, 0, 0, canvasFirmaCliente.width, canvasFirmaCliente.height);
-        };
+      const ctx = canvasFirmaCliente?.getContext("2d");
+      const img = new Image();
 
-        img.src = informe.firmaCliente;
-      }
+      img.onload = () => {
+        ctx.clearRect(0, 0, canvasFirmaCliente.width, canvasFirmaCliente.height);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvasFirmaCliente.width, canvasFirmaCliente.height);
+        ctx.drawImage(img, 0, 0, canvasFirmaCliente.width, canvasFirmaCliente.height);
+      };
 
-      cargarAudioExistenteInforme(informe);
-      aplicarModoLecturaInforme(true);
-      abrirModal(modalInformeServicio);
-      return;
+      img.src = informe.firmaCliente;
     }
+
+    cargarAudioExistenteInforme(informe);
+    aplicarModoLecturaInforme(true);
+    abrirModal(modalInformeServicio);
+    return;
   }
 
   aplicarModoLecturaInforme(false);
@@ -4631,11 +4786,14 @@ document.querySelectorAll("[data-ver-prestadores-servicio]").forEach(btn => {
 document.querySelectorAll("[data-informe-solicitud]").forEach(btn => {
   btn.onclick = async () => {
     const id = btn.dataset.informeSolicitud;
+    const servicioId = btn.dataset.servicioId || "";
     const solicitud = mapa.get(id);
 
     if (!solicitud) return;
 
-    await abrirInformeSolicitud(solicitud);
+    const servicioDetalle = servicioDetallePorId(solicitud, servicioId);
+
+    await abrirInformeSolicitud(solicitud, servicioDetalle);
   };
 });
    
@@ -5081,6 +5239,7 @@ btnInscripcionPrestador?.addEventListener("click", () => {
     return;
   }
 
+  restaurarModalPrestadorPublico();
   abrirModal(modalPrestador);
 });
 
@@ -5535,10 +5694,19 @@ const data = {
     return;
   }
 
-  try {
-    await guardarInscripcionPrestador(data);
+try {
+  if (prestadorAltaManualServicio && esAdminActual()) {
+    await guardarPrestadorManual(data, prestadorAltaManualServicio);
     formPrestador.reset();
-  } catch (error) {
+    restaurarModalPrestadorPublico();
+    cerrarModal(modalPrestador);
+    await renderEquipo();
+    return;
+  }
+
+  await guardarInscripcionPrestador(data);
+  formPrestador.reset();
+} catch (error) {
     console.error(error);
     toastMsg("No se pudo enviar la inscripción");
   }
@@ -5576,28 +5744,43 @@ if (archivosInformeParaSubir.length) {
     informeSolicitudActual.clienteTelefono || ""
   );
 }
-    const dataInforme = {
-      solicitudId: informeSolicitudActual.id,
-      clienteNombre: informeSolicitudActual.clienteNombre || "",
-      clienteTelefono: informeSolicitudActual.clienteTelefono || "",
-      servicio: informeSolicitudActual.servicio || "",
-      direccion: informeSolicitudActual.direccion || "",
-      fechaDeseada: informeSolicitudActual.fechaDeseada || "",
-      horarioDeseado: informeSolicitudActual.horarioDeseado || "",
-      trabajo: limpiar(informeTrabajo?.value),
-      observaciones: limpiar(informeObservaciones?.value),
-      firmaCliente: informeFirmaDataUrl || "",
-archivos: [
-  ...(Array.isArray(informeCargadoData?.archivos) ? informeCargadoData.archivos : []),
-  ...(subida.archivos || [])
-],
-archivosGaleriaId: subida.galeriaId || informeCargadoData?.archivosGaleriaId || "",
-archivosGaleriaUrl: subida.galeriaUrl || informeCargadoData?.archivosGaleriaUrl || "",
-actualizadoEn: serverTimestamp(),
-creadoEn: informeCargadoData?.creadoEn || serverTimestamp(),
-creadoPorUid: informeCargadoData?.creadoPorUid || usuarioActual?.uid || "",
-creadoPorEmail: informeCargadoData?.creadoPorEmail || usuarioActual?.email || ""
-    };
+const servicioInformeId = informeServicioDetalleActual?.id || "principal";
+const servicioInformeNombre = informeServicioDetalleActual?.servicio || informeSolicitudActual.servicio || "";
+const fechaInforme = informeServicioDetalleActual?.fechaDeseada || informeSolicitudActual.fechaDeseada || "";
+const horarioInforme = informeServicioDetalleActual?.horarioDeseado || informeSolicitudActual.horarioDeseado || "";
+
+const dataInforme = {
+  solicitudId: informeSolicitudActual.id,
+  servicioId: servicioInformeId,
+  clienteNombre: informeSolicitudActual.clienteNombre || "",
+  clienteTelefono: informeSolicitudActual.clienteTelefono || "",
+  servicio: servicioInformeNombre,
+  direccion: informeSolicitudActual.direccion || "",
+  fechaDeseada: fechaInforme,
+  horarioDeseado: horarioInforme,
+
+  valorServicio: limpiar(informeValorServicio?.value),
+  costoManoObra: limpiar(informeCostoManoObra?.value),
+  costoMateriales: limpiar(informeCostoMateriales?.value),
+  costoTotal: limpiar(informeCostoTotal?.value),
+  garantiaTiempo: limpiar(informeGarantiaTiempo?.value),
+
+  trabajo: limpiar(informeTrabajo?.value),
+  observaciones: limpiar(informeObservaciones?.value),
+  firmaCliente: informeFirmaDataUrl || "",
+
+  archivos: [
+    ...(Array.isArray(informeCargadoData?.archivos) ? informeCargadoData.archivos : []),
+    ...(subida.archivos || [])
+  ],
+
+  archivosGaleriaId: subida.galeriaId || informeCargadoData?.archivosGaleriaId || "",
+  archivosGaleriaUrl: subida.galeriaUrl || informeCargadoData?.archivosGaleriaUrl || "",
+  actualizadoEn: serverTimestamp(),
+  creadoEn: informeCargadoData?.creadoEn || serverTimestamp(),
+  creadoPorUid: informeCargadoData?.creadoPorUid || usuarioActual?.uid || "",
+  creadoPorEmail: informeCargadoData?.creadoPorEmail || usuarioActual?.email || ""
+};
 
 let informeRefId = informeCargadoId;
 
@@ -5608,12 +5791,29 @@ if (informeCargadoId) {
   informeRefId = informeRef.id;
 }
 
-await updateDoc(doc(db, "solicitudes", informeSolicitudActual.id), {
-  tieneInforme: true,
-  informeId: informeRefId,
-  estado: "cerrado",
-  actualizadoEn: serverTimestamp()
-});
+const nuevosServiciosInforme = actualizarServicioDetalleLocal(
+  informeSolicitudActual,
+  servicioInformeId,
+  {
+    tieneInforme: true,
+    informeId: informeRefId,
+    estado: "cerrado"
+  }
+);
+
+if (nuevosServiciosInforme) {
+  await updateDoc(doc(db, "solicitudes", informeSolicitudActual.id), {
+    serviciosDetalle: nuevosServiciosInforme,
+    actualizadoEn: serverTimestamp()
+  });
+} else {
+  await updateDoc(doc(db, "solicitudes", informeSolicitudActual.id), {
+    tieneInforme: true,
+    informeId: informeRefId,
+    estado: "cerrado",
+    actualizadoEn: serverTimestamp()
+  });
+}
 
 toastMsg(informeCargadoId ? "Informe actualizado" : "Informe guardado");
     cerrarModal(modalInformeServicio);
@@ -5637,6 +5837,16 @@ function abrirVistaInformePdf() {
 
   const trabajo = limpiar(informeTrabajo?.value);
   const observaciones = limpiar(informeObservaciones?.value);
+
+const valorServicio = limpiar(informeValorServicio?.value);
+const costoManoObra = limpiar(informeCostoManoObra?.value);
+const costoMateriales = limpiar(informeCostoMateriales?.value);
+const costoTotal = limpiar(informeCostoTotal?.value);
+const garantiaTiempo = limpiar(informeGarantiaTiempo?.value);
+
+const servicioPdf = informeServicioDetalleActual?.servicio || informeSolicitudActual.servicio || "";
+const fechaPdf = informeServicioDetalleActual?.fechaDeseada || informeSolicitudActual.fechaDeseada || "";
+const horarioPdf = informeServicioDetalleActual?.horarioDeseado || informeSolicitudActual.horarioDeseado || "";
 
   const html = `
     <!DOCTYPE html>
@@ -5762,9 +5972,9 @@ function abrirVistaInformePdf() {
 
           <div class="box">
             <strong>Servicio</strong><br>
-            ${escaparHtml(informeSolicitudActual.servicio || "")}<br>
-            ${escaparHtml(informeSolicitudActual.fechaDeseada || "")}
-            ${escaparHtml(informeSolicitudActual.horarioDeseado || "")}
+${escaparHtml(servicioPdf || "")}<br>
+${escaparHtml(fechaPdf || "")}
+${escaparHtml(horarioPdf || "")}
           </div>
 
           <div class="box" style="grid-column:1/-1">
@@ -5773,6 +5983,34 @@ function abrirVistaInformePdf() {
           </div>
         </div>
 
+<h2>Valores / costos</h2>
+<div class="meta">
+  <div class="box">
+    <strong>Valor del servicio</strong><br>
+    ${escaparHtml(valorServicio || "Sin cargar")}
+  </div>
+
+  <div class="box">
+    <strong>Mano de obra</strong><br>
+    ${escaparHtml(costoManoObra || "Sin cargar")}
+  </div>
+
+  <div class="box">
+    <strong>Materiales</strong><br>
+    ${escaparHtml(costoMateriales || "Sin cargar")}
+  </div>
+
+  <div class="box">
+    <strong>Total</strong><br>
+    ${escaparHtml(costoTotal || "Sin cargar")}
+  </div>
+
+  <div class="box" style="grid-column:1/-1">
+    <strong>Garantía</strong><br>
+    ${escaparHtml(garantiaTiempo || "Sin cargar")}
+  </div>
+</div>
+       
         <h2>Trabajo realizado</h2>
         <p>${escaparHtml(trabajo || "Sin detalle cargado.")}</p>
 
