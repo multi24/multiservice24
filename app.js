@@ -2734,6 +2734,246 @@ function prestadorServicioPanel(s, item) {
     || "Sin prestador";
 }
 
+function extraerLocalidadDesdeDireccion(direccion) {
+  const partes = String(direccion || "")
+    .split(",")
+    .map(p => limpiar(p))
+    .filter(Boolean);
+
+  const posible = partes[1] || "";
+
+  return posible
+    .replace(/^B\d{4}[A-Z]{0,3}\s*/i, "")
+    .replace(/Provincia de Buenos Aires/ig, "")
+    .replace(/Argentina/ig, "")
+    .trim();
+}
+
+function direccionCortaSolicitudPanel(s) {
+  const calleAltura = limpiar(s.direccion).split(",")[0] || "";
+  const localidad = limpiar(s.localidad)
+    || extraerLocalidadDesdeDireccion(s.direccion)
+    || limpiar(s.zona);
+
+  return [calleAltura, localidad]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+function numeroWhatsAppArgentina(telefono) {
+  const n = normalizarTelefono(telefono);
+
+  if (!n) return "";
+
+  if (n.startsWith("549")) return n;
+  if (n.startsWith("54")) return `549${n.slice(2).replace(/^9/, "")}`;
+
+  return `549${n.replace(/^0+/, "")}`;
+}
+
+function abrirWhatsAppDestino(telefono, mensaje) {
+  const texto = encodeWhatsAppText(mensaje);
+  const numero = numeroWhatsAppArgentina(telefono);
+
+  const url = numero
+    ? `https://wa.me/${numero}?text=${texto}`
+    : `https://api.whatsapp.com/send?text=${texto}`;
+
+  window.open(url, "_blank");
+}
+
+async function obtenerDestinosPrestadoresWhatsApp(solicitud, serviciosMarcados) {
+  const destinos = [];
+  const usados = new Set();
+
+  const candidatos = [];
+
+  serviciosMarcados.forEach(item => {
+    candidatos.push({
+      uid: item.prestadorAsignadoUid || "",
+      nombre: item.prestadorAsignadoNombre || ""
+    });
+  });
+
+  candidatos.push({
+    uid: solicitud.prestadorAsignadoUid || "",
+    nombre: solicitud.prestadorAsignadoNombre || solicitud.prestadorNombre || ""
+  });
+
+  for (const c of candidatos) {
+    if (!c.uid) continue;
+
+    try {
+      const prestador = await obtenerPrestador(c.uid);
+
+      if (!prestador?.telefono) continue;
+
+      const numero = numeroWhatsAppArgentina(prestador.telefono);
+      if (!numero || usados.has(numero)) continue;
+
+      usados.add(numero);
+
+      destinos.push({
+        tipo: "prestador",
+        nombre: prestador.nombre || c.nombre || "Prestador",
+        telefono: prestador.telefono
+      });
+    } catch (error) {
+      console.warn("No se pudo obtener prestador", error);
+    }
+  }
+
+  const faltanPorNombre = candidatos
+    .map(c => c.nombre)
+    .filter(Boolean)
+    .filter(nombre => nombre !== "Sin prestador");
+
+  if (faltanPorNombre.length && destinos.length === 0) {
+    try {
+      const todos = await obtenerPrestadoresTodos();
+
+      faltanPorNombre.forEach(nombre => {
+        const prestador = todos.find(p => limpiar(p.nombre).toLowerCase() === limpiar(nombre).toLowerCase());
+
+        if (!prestador?.telefono) return;
+
+        const numero = numeroWhatsAppArgentina(prestador.telefono);
+        if (!numero || usados.has(numero)) return;
+
+        usados.add(numero);
+
+        destinos.push({
+          tipo: "prestador",
+          nombre: prestador.nombre || nombre,
+          telefono: prestador.telefono
+        });
+      });
+    } catch (error) {
+      console.warn("No se pudieron buscar prestadores por nombre", error);
+    }
+  }
+
+  return destinos;
+}
+
+function cerrarSelectorWhatsAppEquipo() {
+  const viejo = document.getElementById("modalSelectorWhatsAppEquipo");
+  if (viejo) viejo.remove();
+
+  const hayAbierto = document.querySelector(".ms-modal:not(.hidden)");
+  if (!hayAbierto) {
+    document.body.classList.remove("modal-open");
+  }
+}
+
+function abrirSelectorWhatsAppEquipo({ solicitud, mensaje, destinosPrestador }) {
+  cerrarSelectorWhatsAppEquipo();
+
+  const clienteTelefono = solicitud.clienteTelefono || "";
+  const tieneCliente = !!numeroWhatsAppArgentina(clienteTelefono);
+  const tienePrestador = Array.isArray(destinosPrestador) && destinosPrestador.length > 0;
+
+  const overlay = document.createElement("div");
+  overlay.id = "modalSelectorWhatsAppEquipo";
+  overlay.className = "ms-modal ms-wa-selector-modal";
+
+  overlay.innerHTML = `
+    <div class="ms-modal-card ms-wa-selector-card">
+      <button class="ms-modal-close" data-cerrar-wa-selector type="button" aria-label="Cerrar">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <span class="ms-kicker">WhatsApp</span>
+      <h2>¿A quién enviamos?</h2>
+
+      <p class="ms-muted">
+        Marcá uno o más destinos. Si no marcás ninguno, se abre WhatsApp para elegir destinatario manualmente.
+      </p>
+
+      <div class="ms-wa-selector-options">
+        <label class="${tieneCliente ? "" : "disabled"}">
+          <input type="checkbox" value="cliente" ${tieneCliente ? "" : "disabled"} />
+          <span>
+            <strong>Cliente</strong>
+            <small>${escaparHtml(solicitud.clienteNombre || "Cliente")} · ${escaparHtml(clienteTelefono || "Sin WhatsApp")}</small>
+          </span>
+        </label>
+
+        <label class="${tienePrestador ? "" : "disabled"}">
+          <input type="checkbox" value="prestador" ${tienePrestador ? "" : "disabled"} />
+          <span>
+            <strong>Prestador</strong>
+            <small>${
+              tienePrestador
+                ? escaparHtml(destinosPrestador.map(p => p.nombre).join(" + "))
+                : "Sin prestador asignado con WhatsApp"
+            }</small>
+          </span>
+        </label>
+
+        <label>
+          <input type="checkbox" value="interno" />
+          <span>
+            <strong>Envío interno</strong>
+            <small>Enviar al WhatsApp interno de Multi24</small>
+          </span>
+        </label>
+      </div>
+
+      <div class="ms-wa-selector-actions">
+        <button class="ms-mini-btn" data-cerrar-wa-selector type="button">
+          Cancelar
+        </button>
+
+        <button class="ms-mini-btn red" data-enviar-wa-selector type="button">
+          <i class="fa-brands fa-whatsapp"></i>
+          Continuar
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.classList.add("modal-open");
+
+  overlay.querySelectorAll("[data-cerrar-wa-selector]").forEach(btn => {
+    btn.onclick = cerrarSelectorWhatsAppEquipo;
+  });
+
+  overlay.onclick = (e) => {
+    if (e.target === overlay) {
+      cerrarSelectorWhatsAppEquipo();
+    }
+  };
+
+  overlay.querySelector("[data-enviar-wa-selector]")?.addEventListener("click", () => {
+    const seleccionados = Array.from(
+      overlay.querySelectorAll(".ms-wa-selector-options input:checked")
+    ).map(input => input.value);
+
+    cerrarSelectorWhatsAppEquipo();
+
+    if (!seleccionados.length) {
+      abrirWhatsAppDestino("", mensaje);
+      return;
+    }
+
+    if (seleccionados.includes("cliente")) {
+      abrirWhatsAppDestino(clienteTelefono, mensaje);
+    }
+
+    if (seleccionados.includes("prestador")) {
+      destinosPrestador.forEach(prestador => {
+        abrirWhatsAppDestino(prestador.telefono, mensaje);
+      });
+    }
+
+    if (seleccionados.includes("interno")) {
+      abrirWhatsAppDestino(WHATSAPP_NUMERO, mensaje);
+    }
+  });
+}
+
 function galeriaServicioPanel(s, item) {
   return item?.archivosGaleriaUrl || s.archivosGaleriaUrl || s.galeriaUrl || "";
 }
@@ -3268,7 +3508,8 @@ function renderSolicitudFila(s) {
   const cliente = s.clienteNombre || "Sin cliente";
   const telefono = s.clienteTelefono || "Sin teléfono";
   const direccion = s.direccion || "Sin dirección";
-  const zona = [s.localidad, s.partido].filter(Boolean).join(" · ");
+  const direccionCorta = direccionCortaSolicitudPanel(s);
+
   const destino = s.lat && s.lon
     ? `${s.lat},${s.lon}`
     : direccion;
@@ -3277,9 +3518,13 @@ function renderSolicitudFila(s) {
     <tr class="ms-solicitud-grupo-row">
       <td colspan="7">
         <div class="ms-solicitud-grupo-head">
-          <div>
-            <strong>${escaparHtml(cliente)}</strong>
-            <small>${escaparHtml(telefono)} · ${escaparHtml(direccion)}${zona ? ` · ${escaparHtml(zona)}` : ""}</small>
+          <div class="ms-cliente-info-panel">
+            <div class="ms-cliente-linea">
+              <strong>${escaparHtml(cliente)}</strong>
+              <span>${escaparHtml(telefono)}</span>
+            </div>
+
+            <small>${escaparHtml(direccionCorta || "Sin dirección")}</small>
           </div>
 
           <div class="ms-solicitud-grupo-actions">
@@ -3388,7 +3633,8 @@ function renderSolicitudFila(s) {
             data-servicio-id="${escaparHtml(servicioId)}"
             type="button"
           >
-            ${escaparHtml(prestadorServicioPanel(s, item))}
+            <span>${escaparHtml(prestadorServicioPanel(s, item))}</span>
+            <i class="fa-solid fa-chevron-down"></i>
           </button>
         </td>
 
@@ -5202,7 +5448,7 @@ document.querySelectorAll("[data-informe-solicitud]").forEach(btn => {
 });
    
 document.querySelectorAll("[data-wa-solicitud-marcados]").forEach(btn => {
-  btn.onclick = () => {
+  btn.onclick = async () => {
     const id = btn.dataset.waSolicitudMarcados;
     const solicitud = mapa.get(id);
 
@@ -5215,18 +5461,25 @@ document.querySelectorAll("[data-wa-solicitud-marcados]").forEach(btn => {
       return;
     }
 
-    abrirWhatsAppConMensaje(
-      mensajeWhatsAppSolicitud({
-        ...solicitud,
-        servicio: serviciosMarcados.map(item => item.servicio).filter(Boolean).join(" + "),
-        serviciosDetalle: serviciosMarcados,
-        fechaDeseada: serviciosMarcados[0]?.fechaDeseada || solicitud.fechaDeseada || "",
-        horarioDeseado: serviciosMarcados[0]?.horarioDeseado || solicitud.horarioDeseado || "",
-        descripcion: serviciosMarcados.map(item => item.descripcion).filter(Boolean).join(" / "),
-        archivos: serviciosMarcados.flatMap(item => Array.isArray(item.archivos) ? item.archivos : []),
-        archivosGaleriaUrl: ""
-      }, id)
-    );
+    const dataMensaje = {
+      ...solicitud,
+      servicio: serviciosMarcados.map(item => item.servicio).filter(Boolean).join(" + "),
+      serviciosDetalle: serviciosMarcados,
+      fechaDeseada: serviciosMarcados[0]?.fechaDeseada || solicitud.fechaDeseada || "",
+      horarioDeseado: serviciosMarcados[0]?.horarioDeseado || solicitud.horarioDeseado || "",
+      descripcion: serviciosMarcados.map(item => item.descripcion).filter(Boolean).join(" / "),
+      archivos: serviciosMarcados.flatMap(item => Array.isArray(item.archivos) ? item.archivos : []),
+      archivosGaleriaUrl: ""
+    };
+
+    const mensaje = mensajeWhatsAppSolicitud(dataMensaje, id);
+    const destinosPrestador = await obtenerDestinosPrestadoresWhatsApp(solicitud, serviciosMarcados);
+
+    abrirSelectorWhatsAppEquipo({
+      solicitud,
+      mensaje,
+      destinosPrestador
+    });
   };
 });
 
