@@ -342,10 +342,9 @@
 
   <div class="ms-panel-grid ms-panel-grid-interno">
 
-    <div id="panelEquipoSolicitudes" class="ms-panel-card ms-full-panel ms-board-panel">
-      <h3>Solicitudes recibidas</h3>
-      <div id="listaSolicitudesEquipo" class="ms-list"></div>
-    </div>
+<div id="panelEquipoSolicitudes" class="ms-panel-card ms-full-panel ms-board-panel">
+  <div id="listaSolicitudesEquipo" class="ms-list"></div>
+</div>
 
     <div id="panelEquipoUsuarios" class="ms-panel-card ms-full-panel hidden">
       <h3>Usuarios, roles y prestadores</h3>
@@ -532,37 +531,45 @@
         <span id="informeSolicitudTexto">Sin datos cargados.</span>
       </div>
 
-<div class="ms-full ms-informe-costos-grid">
-  <label>
-    Costo mano de obra
-    <input id="informeCostoManoObra" type="number" min="0" step="1" placeholder="Ej: 30000" />
-  </label>
+<label>
+  Trabajo realizado
+  <textarea id="informeTrabajo" rows="5" placeholder="Ej: Se reparó pérdida, se reemplazó flexible, se verificó funcionamiento..."></textarea>
+</label>
 
-  <label>
-    Costo materiales
-    <input id="informeCostoMateriales" type="number" min="0" step="1" placeholder="Ej: 20000" />
-  </label>
+<div class="ms-full ms-informe-fieldset">
+  <div class="ms-informe-line-title">Costos:</div>
 
-  <label>
-    Costo total
-    <input id="informeCostoTotal" type="number" min="0" step="1" placeholder="Se calcula solo, pero podés editarlo" />
-  </label>
+  <div class="ms-informe-costos-grid">
+    <label>
+      Mano de obra
+      <input id="informeCostoManoObra" type="number" min="0" step="1" placeholder="Ej: 30000" />
+    </label>
 
+    <label>
+      Materiales
+      <input id="informeCostoMateriales" type="number" min="0" step="1" placeholder="Ej: 20000" />
+    </label>
+
+    <label>
+      Total
+      <input id="informeCostoTotal" type="number" min="0" step="1" placeholder="Auto / editable" />
+    </label>
+  </div>
+</div>
+
+<div class="ms-full ms-informe-garantia-row">
   <label>
-    Vencimiento de garantía
+    Garantía hasta
     <input id="informeGarantiaVencimiento" type="date" />
   </label>
 
-  <label class="ms-full">
-    Tiempo de garantía
-    <input id="informeGarantiaTiempo" type="text" placeholder="Ej: 30 días, 3 meses, 6 meses" />
+  <span class="ms-informe-separador">/</span>
+
+  <label>
+    Días
+    <input id="informeGarantiaTiempo" type="number" min="0" step="1" placeholder="30" />
   </label>
 </div>
-     
-      <label>
-        Trabajo realizado
-        <textarea id="informeTrabajo" rows="5" placeholder="Ej: Se reparó pérdida, se reemplazó flexible, se verificó funcionamiento..."></textarea>
-      </label>
 
       <label>
         Observaciones / recomendaciones
