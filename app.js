@@ -2619,6 +2619,7 @@ let filtrosPanelEquipo = {
 };
 
 let resumenPanelEquipoAbierto = false;
+let filtrosManualEquipoAbierto = false;
 
 function filtrosPanelEquipoVacios() {
   return {
@@ -3090,6 +3091,18 @@ function renderResumenEquipo(solicitudes) {
             <strong>${item.valor}</strong>
           </button>
         `).join("")}
+
+        <div class="ms-board-summary-extra">
+          <button class="ms-board-summary-action" data-ver-todo-equipo type="button">
+            <i class="fa-solid fa-list"></i>
+            <span>Ver todo</span>
+          </button>
+
+          <button class="ms-board-summary-action" data-abrir-filtros-manual-equipo type="button">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Filtro manual</span>
+          </button>
+        </div>
       </div>
     </div>
   `;
@@ -3121,48 +3134,75 @@ function renderFiltrosEquipo(solicitudes) {
   const prestadores = obtenerOpcionesUnicas(serviciosFlat, x => prestadorServicioPanel(x.solicitud, x.item));
 
   return `
-    <div class="ms-board-filters">
-      <label>
-        Día
-        <input type="date" data-filtro-equipo="fecha" value="${escaparHtml(filtrosPanelEquipo.fecha)}" />
-      </label>
+    <div
+      id="modalFiltrosEquipo"
+      class="ms-modal ms-filtros-equipo-modal ${filtrosManualEquipoAbierto ? "" : "hidden"}"
+    >
+      <div class="ms-modal-card ms-modal-wide">
+        <button
+          class="ms-modal-close"
+          data-cerrar-filtros-manual-equipo
+          type="button"
+          aria-label="Cerrar filtros"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
 
-      <label>
-        Horario
-        ${renderSelectFiltro("horario", filtrosPanelEquipo.horario, horarios, "Todos")}
-      </label>
+        <span class="ms-kicker">Filtro manual</span>
+        <h2>Filtrar solicitudes</h2>
+        <p class="ms-muted">
+          Elegí día, horario, servicio, estado, prestador o buscá por cliente, teléfono o dirección.
+        </p>
 
-      <label>
-        Servicio
-        ${renderSelectFiltro("servicio", filtrosPanelEquipo.servicio, servicios, "Todos")}
-      </label>
+        <div class="ms-board-filters">
+          <label>
+            Día
+            <input type="date" data-filtro-equipo="fecha" value="${escaparHtml(filtrosPanelEquipo.fecha)}" />
+          </label>
 
-      <label>
-        Estado
-        <select data-filtro-equipo="estado">
-          <option value="">Todos</option>
-          ${ESTADOS_OPERATIVOS.map(e => `
-            <option value="${e.id}" ${filtrosPanelEquipo.estado === e.id ? "selected" : ""}>
-              ${e.label}
-            </option>
-          `).join("")}
-        </select>
-      </label>
+          <label>
+            Horario
+            ${renderSelectFiltro("horario", filtrosPanelEquipo.horario, horarios, "Todos")}
+          </label>
 
-      <label>
-        Prestador
-        ${renderSelectFiltro("prestador", filtrosPanelEquipo.prestador, prestadores, "Todos")}
-      </label>
+          <label>
+            Servicio
+            ${renderSelectFiltro("servicio", filtrosPanelEquipo.servicio, servicios, "Todos")}
+          </label>
 
-      <label class="ms-board-search">
-        Buscar
-        <input type="search" data-filtro-equipo="texto" value="${escaparHtml(filtrosPanelEquipo.texto)}" placeholder="Cliente, teléfono, dirección..." />
-      </label>
+          <label>
+            Estado
+            <select data-filtro-equipo="estado">
+              <option value="">Todos</option>
+              ${ESTADOS_OPERATIVOS.map(e => `
+                <option value="${e.id}" ${filtrosPanelEquipo.estado === e.id ? "selected" : ""}>
+                  ${e.label}
+                </option>
+              `).join("")}
+            </select>
+          </label>
 
-      <button class="ms-mini-btn" data-limpiar-filtros-equipo type="button">
-        <i class="fa-solid fa-eraser"></i>
-        Limpiar filtros
-      </button>
+          <label>
+            Prestador
+            ${renderSelectFiltro("prestador", filtrosPanelEquipo.prestador, prestadores, "Todos")}
+          </label>
+
+          <label class="ms-board-search">
+            Buscar
+            <input type="search" data-filtro-equipo="texto" value="${escaparHtml(filtrosPanelEquipo.texto)}" placeholder="Cliente, teléfono, dirección..." />
+          </label>
+
+          <button class="ms-mini-btn" data-limpiar-filtros-equipo type="button">
+            <i class="fa-solid fa-eraser"></i>
+            Limpiar filtros
+          </button>
+
+          <button class="ms-mini-btn red" data-ver-planilla-equipo type="button">
+            <i class="fa-solid fa-table-list"></i>
+            Ver planilla
+          </button>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -4259,6 +4299,29 @@ function abrirRutaSolicitud(solicitud) {
   window.open(url, "_blank");
 }
 
+function scrollAPlanillaEquipo() {
+  const destino =
+    document.querySelector(".ms-planillas-tabs") ||
+    document.querySelector(".ms-board-table-wrap");
+
+  if (!destino) return;
+
+  setTimeout(() => {
+    destino.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }, 80);
+}
+
+function quitarBloqueoBodySiNoHayModales() {
+  const hayAbierto = document.querySelector(".ms-modal:not(.hidden)");
+
+  if (!hayAbierto) {
+    document.body.classList.remove("modal-open");
+  }
+}
+
 function cerrarResumenEquipoSiClickAfuera(e) {
   const box = document.querySelector("[data-resumen-equipo-box]");
 
@@ -4278,6 +4341,10 @@ function activarFiltrosEquipo(solicitudes) {
       filtrosPanelEquipo.rapido = "";
 
       await renderEquipo();
+
+      if (filtrosManualEquipoAbierto) {
+        document.body.classList.add("modal-open");
+      }
     };
 
     if (control.type === "search") {
@@ -4290,6 +4357,10 @@ function activarFiltrosEquipo(solicitudes) {
         clearTimeout(control.__timerFiltro);
         control.__timerFiltro = setTimeout(async () => {
           await renderEquipo();
+
+          if (filtrosManualEquipoAbierto) {
+            document.body.classList.add("modal-open");
+          }
         }, 250);
       };
     }
@@ -4299,12 +4370,17 @@ function activarFiltrosEquipo(solicitudes) {
     btn.onclick = async () => {
       filtrosPanelEquipo = filtrosPanelEquipoVacios();
       await renderEquipo();
+
+      if (filtrosManualEquipoAbierto) {
+        document.body.classList.add("modal-open");
+      }
     };
   });
 
   document.querySelectorAll("[data-toggle-resumen-equipo]").forEach(btn => {
     btn.onclick = async (e) => {
       e.stopPropagation();
+
       resumenPanelEquipoAbierto = !resumenPanelEquipoAbierto;
       await renderEquipo();
     };
@@ -4319,10 +4395,72 @@ function activarFiltrosEquipo(solicitudes) {
 
       filtrosPanelEquipo = filtrosPanelEquipoVacios();
       filtrosPanelEquipo.rapido = estabaActivo ? "" : tipo;
+      resumenPanelEquipoAbierto = false;
+      filtrosManualEquipoAbierto = false;
 
       await renderEquipo();
+      quitarBloqueoBodySiNoHayModales();
+      scrollAPlanillaEquipo();
     };
   });
+
+  document.querySelectorAll("[data-ver-todo-equipo]").forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+
+      filtrosPanelEquipo = filtrosPanelEquipoVacios();
+      resumenPanelEquipoAbierto = false;
+      filtrosManualEquipoAbierto = false;
+
+      await renderEquipo();
+      quitarBloqueoBodySiNoHayModales();
+      scrollAPlanillaEquipo();
+    };
+  });
+
+  document.querySelectorAll("[data-abrir-filtros-manual-equipo]").forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+
+      filtrosManualEquipoAbierto = true;
+      resumenPanelEquipoAbierto = false;
+
+      await renderEquipo();
+      document.body.classList.add("modal-open");
+    };
+  });
+
+  document.querySelectorAll("[data-cerrar-filtros-manual-equipo]").forEach(btn => {
+    btn.onclick = async () => {
+      filtrosManualEquipoAbierto = false;
+
+      await renderEquipo();
+      quitarBloqueoBodySiNoHayModales();
+    };
+  });
+
+  document.querySelectorAll("[data-ver-planilla-equipo]").forEach(btn => {
+    btn.onclick = async () => {
+      filtrosManualEquipoAbierto = false;
+
+      await renderEquipo();
+      quitarBloqueoBodySiNoHayModales();
+      scrollAPlanillaEquipo();
+    };
+  });
+
+  const modalFiltrosEquipo = $("modalFiltrosEquipo");
+
+  if (modalFiltrosEquipo) {
+    modalFiltrosEquipo.onclick = async (e) => {
+      if (e.target !== modalFiltrosEquipo) return;
+
+      filtrosManualEquipoAbierto = false;
+
+      await renderEquipo();
+      quitarBloqueoBodySiNoHayModales();
+    };
+  }
 
   document.removeEventListener("click", cerrarResumenEquipoSiClickAfuera);
   document.addEventListener("click", cerrarResumenEquipoSiClickAfuera);
