@@ -391,7 +391,7 @@ function actualizarTiempoGarantiaDesdeVencimiento() {
   informeGarantiaEditando = true;
 
   informeGarantiaTiempo.value = dias
-    ? `${dias} días`
+    ? String(dias)
     : "";
 
   informeGarantiaEditando = false;
@@ -2614,8 +2614,23 @@ let filtrosPanelEquipo = {
   servicio: "",
   estado: "",
   prestador: "",
-  texto: ""
+  texto: "",
+  rapido: ""
 };
+
+let resumenPanelEquipoAbierto = false;
+
+function filtrosPanelEquipoVacios() {
+  return {
+    fecha: "",
+    horario: "",
+    servicio: "",
+    estado: "",
+    prestador: "",
+    texto: "",
+    rapido: ""
+  };
+}
 
 function obtenerEstadoOperativo(estado) {
   const normalizado = estado || "pendiente_derivar";
@@ -2920,6 +2935,38 @@ function filtrarSolicitudesEquipo(solicitudes) {
       ])
     ].filter(Boolean).join(" ").toLowerCase();
 
+    if (f.rapido === "hoy") {
+      const hoy = hoyInputFecha();
+      if (!servicios.some(item => fechaServicioPanel(s, item) === hoy)) return false;
+    }
+
+    if (f.rapido === "emergencias" && !s.emergencia) return false;
+
+    if (f.rapido === "sinPrestador") {
+      const sinPrestador = servicios.some(item => {
+        return prestadorServicioPanel(s, item) === "Sin prestador";
+      });
+
+      if (!sinPrestador) return false;
+    }
+
+    if (f.rapido === "coordinados") {
+      if (!servicios.some(item => estadoServicioPanel(s, item) === "programado")) return false;
+    }
+
+    if (f.rapido === "pendientes") {
+      const pendiente = servicios.some(item => {
+        const estado = estadoServicioPanel(s, item);
+        return estado === "pendiente_derivar" || estado === "nuevo";
+      });
+
+      if (!pendiente) return false;
+    }
+
+    if (f.rapido === "terminados") {
+      if (!servicios.some(item => estadoServicioPanel(s, item) === "cerrado")) return false;
+    }
+
     if (f.fecha && !servicios.some(item => fechaServicioPanel(s, item) === f.fecha)) return false;
     if (f.horario && !servicios.some(item => horarioServicioPanel(s, item) === f.horario)) return false;
     if (f.servicio && !servicios.some(item => item.servicio === f.servicio)) return false;
@@ -2932,65 +2979,118 @@ function filtrarSolicitudesEquipo(solicitudes) {
 }
 
 function resumenSolicitudesEquipo(solicitudes) {
-  const hoy = new Date();
-  const yyyy = hoy.getFullYear();
-  const mm = String(hoy.getMonth() + 1).padStart(2, "0");
-  const dd = String(hoy.getDate()).padStart(2, "0");
-  const hoyKey = `${yyyy}-${mm}-${dd}`;
+  const hoyKey = hoyInputFecha();
 
   return {
     total: solicitudes.length,
-    hoy: solicitudes.filter(s => s.fechaDeseada === hoyKey).length,
-    pendientes: solicitudes.filter(s => {
-      const estado = s.estado || "pendiente_derivar";
-      return estado === "pendiente_derivar" || estado === "nuevo";
+
+    hoy: solicitudes.filter(s => {
+      return serviciosDetallePanel(s).some(item => fechaServicioPanel(s, item) === hoyKey);
     }).length,
-    coordinados: solicitudes.filter(s => s.estado === "programado").length,
+
+    pendientes: solicitudes.filter(s => {
+      return serviciosDetallePanel(s).some(item => {
+        const estado = estadoServicioPanel(s, item);
+        return estado === "pendiente_derivar" || estado === "nuevo";
+      });
+    }).length,
+
+    coordinados: solicitudes.filter(s => {
+      return serviciosDetallePanel(s).some(item => estadoServicioPanel(s, item) === "programado");
+    }).length,
+
     emergencias: solicitudes.filter(s => !!s.emergencia).length,
-    sinPrestador: solicitudes.filter(s => !s.prestadorAsignadoUid && !s.prestadorAsignadoNombre).length,
-    terminados: solicitudes.filter(s => s.estado === "cerrado").length
+
+    sinPrestador: solicitudes.filter(s => {
+      return serviciosDetallePanel(s).some(item => prestadorServicioPanel(s, item) === "Sin prestador");
+    }).length,
+
+    terminados: solicitudes.filter(s => {
+      return serviciosDetallePanel(s).some(item => estadoServicioPanel(s, item) === "cerrado");
+    }).length
   };
 }
 
 function renderResumenEquipo(solicitudes) {
   const r = resumenSolicitudesEquipo(solicitudes);
 
+  const items = [
+    {
+      id: "hoy",
+      label: "Hoy",
+      valor: r.hoy,
+      clase: "",
+      icono: "fa-calendar-day"
+    },
+    {
+      id: "emergencias",
+      label: "Emergencias",
+      valor: r.emergencias,
+      clase: "soft-red",
+      icono: "fa-triangle-exclamation"
+    },
+    {
+      id: "sinPrestador",
+      label: "Sin prestador",
+      valor: r.sinPrestador,
+      clase: "",
+      icono: "fa-user-slash"
+    },
+    {
+      id: "coordinados",
+      label: "Coordinados",
+      valor: r.coordinados,
+      clase: "soft-blue",
+      icono: "fa-calendar-check"
+    },
+    {
+      id: "pendientes",
+      label: "Pendientes",
+      valor: r.pendientes,
+      clase: "soft-yellow",
+      icono: "fa-clock"
+    },
+    {
+      id: "terminados",
+      label: "Terminados",
+      valor: r.terminados,
+      clase: "soft-green",
+      icono: "fa-circle-check"
+    }
+  ];
+
   return `
-    <div class="ms-board-summary">
-      <article>
-        <span>Total</span>
+    <div
+      class="ms-board-summary-wrap ${resumenPanelEquipoAbierto ? "open" : ""}"
+      data-resumen-equipo-box
+    >
+      <button class="ms-board-summary-main" data-toggle-resumen-equipo type="button">
+        <span>
+          <i class="fa-solid fa-table-list"></i>
+          Solicitudes recibidas
+        </span>
+
         <strong>${r.total}</strong>
-      </article>
 
-      <article>
-        <span>Hoy</span>
-        <strong>${r.hoy}</strong>
-      </article>
+        <i class="fa-solid ${resumenPanelEquipoAbierto ? "fa-chevron-up" : "fa-chevron-down"}"></i>
+      </button>
 
-      <article class="soft-yellow">
-        <span>Pendientes</span>
-        <strong>${r.pendientes}</strong>
-      </article>
+      <div class="ms-board-summary">
+        ${items.map(item => `
+          <button
+            class="ms-board-summary-card ${item.clase} ${filtrosPanelEquipo.rapido === item.id ? "active" : ""}"
+            data-filtro-rapido-equipo="${item.id}"
+            type="button"
+          >
+            <span>
+              <i class="fa-solid ${item.icono}"></i>
+              ${item.label}
+            </span>
 
-      <article class="soft-blue">
-        <span>Coordinados</span>
-        <strong>${r.coordinados}</strong>
-      </article>
-
-      <article class="soft-red">
-        <span>Emergencias</span>
-        <strong>${r.emergencias}</strong>
-      </article>
-
-      <article>
-        <span>Sin prestador</span>
-        <strong>${r.sinPrestador}</strong>
-      </article>
-
-      <article class="soft-green">
-        <span>Terminados</span>
-        <strong>${r.terminados}</strong>
-      </article>
+            <strong>${item.valor}</strong>
+          </button>
+        `).join("")}
+      </div>
     </div>
   `;
 }
@@ -3144,18 +3244,25 @@ function renderSolicitudFila(s) {
 
           <div class="ms-solicitud-grupo-actions">
             <button
-              class="ms-mini-btn ms-mini-btn-whatsapp"
+              class="ms-mini-btn ms-mini-btn-whatsapp ms-client-action-btn"
               data-wa-solicitud-marcados="${s.id}"
               type="button"
               title="Enviar WhatsApp con los servicios marcados"
+              aria-label="Enviar WhatsApp con los servicios marcados"
             >
               <i class="fa-brands fa-whatsapp"></i>
-              WhatsApp
+              <span class="ms-action-text">WhatsApp</span>
             </button>
 
-            <button class="ms-mini-btn" data-editar-solicitud="${s.id}" type="button">
+            <button
+              class="ms-mini-btn ms-client-action-btn"
+              data-editar-solicitud="${s.id}"
+              type="button"
+              title="Editar solicitud"
+              aria-label="Editar solicitud"
+            >
               <i class="fa-solid fa-pen-to-square"></i>
-              Editar solicitud
+              <span class="ms-action-text">Editar solicitud</span>
             </button>
           </div>
         </div>
@@ -3453,32 +3560,36 @@ function renderTablaEquipo(solicitudes) {
     ${renderResumenEquipo(base)}
 
     <div class="ms-route-toolbar">
-      <button class="ms-mini-btn red" data-abrir-hoja-ruta type="button">
+      <button class="ms-mini-btn red" data-abrir-hoja-ruta type="button" title="Abrir hoja de ruta">
         <i class="fa-solid fa-route"></i>
-        Abrir hoja de ruta
+        <span>Abrir hoja de ruta</span>
       </button>
 
-      <button class="ms-mini-btn" data-seleccionar-todo-ruta type="button">
+      <button class="ms-mini-btn" data-seleccionar-todo-ruta type="button" title="Seleccionar todos">
         <i class="fa-solid fa-check-double"></i>
-        Seleccionar todos
+        <span>Seleccionar todos</span>
       </button>
 
-      <button class="ms-mini-btn" data-limpiar-hoja-ruta type="button">
-        Limpiar selección
+      <button class="ms-mini-btn" data-limpiar-hoja-ruta type="button" title="Limpiar selección">
+        <i class="fa-solid fa-broom"></i>
+        <span>Limpiar selección</span>
       </button>
 
-      <button class="ms-mini-btn" data-crear-planilla type="button">
+      <button class="ms-mini-btn" data-crear-planilla type="button" title="Crear planilla">
         <i class="fa-solid fa-table"></i>
-        Crear planilla
+        <span>Crear planilla</span>
       </button>
 
-      <button class="ms-mini-btn red" data-borrar-servicios-marcados type="button">
-  <i class="fa-solid fa-trash"></i>
-  Borrar marcados
-</button>
+      <button class="ms-mini-btn red" data-borrar-servicios-marcados type="button" title="Borrar marcados">
+        <i class="fa-solid fa-trash"></i>
+        <span>Borrar marcados</span>
+      </button>
 
-      <span id="hojaRutaContador" class="ms-status">
-        ${hojaRutaSeleccion.size} seleccionada${hojaRutaSeleccion.size === 1 ? "" : "s"}
+      <span id="hojaRutaContador" class="ms-status ms-route-counter">
+        <strong class="ms-route-count-number">${hojaRutaSeleccion.size}</strong>
+        <span class="ms-route-count-text">
+          seleccionada${hojaRutaSeleccion.size === 1 ? "" : "s"}
+        </span>
       </span>
     </div>
 
@@ -3488,7 +3599,7 @@ function renderTablaEquipo(solicitudes) {
 
     <div class="ms-board-table-wrap">
       <table class="ms-board-table">
-<thead>
+        <thead>
           <tr>
             <th></th>
             <th></th>
@@ -3574,7 +3685,13 @@ function actualizarContadorHojaRuta() {
   if (!contador) return;
 
   const cantidad = hojaRutaSeleccion.size;
-  contador.textContent = `${cantidad} seleccionada${cantidad === 1 ? "" : "s"}`;
+
+  contador.innerHTML = `
+    <strong class="ms-route-count-number">${cantidad}</strong>
+    <span class="ms-route-count-text">
+      seleccionada${cantidad === 1 ? "" : "s"}
+    </span>
+  `;
 }
 
 function abrirHojaRutaGoogleMaps(solicitudes) {
@@ -4142,18 +4259,33 @@ function abrirRutaSolicitud(solicitud) {
   window.open(url, "_blank");
 }
 
+function cerrarResumenEquipoSiClickAfuera(e) {
+  const box = document.querySelector("[data-resumen-equipo-box]");
+
+  if (!box || !resumenPanelEquipoAbierto) return;
+  if (box.contains(e.target)) return;
+
+  resumenPanelEquipoAbierto = false;
+  renderEquipo();
+}
+
 function activarFiltrosEquipo(solicitudes) {
   document.querySelectorAll("[data-filtro-equipo]").forEach(control => {
     control.onchange = async () => {
       const nombre = control.dataset.filtroEquipo;
+
       filtrosPanelEquipo[nombre] = control.value;
+      filtrosPanelEquipo.rapido = "";
+
       await renderEquipo();
     };
 
     if (control.type === "search") {
       control.oninput = async () => {
         const nombre = control.dataset.filtroEquipo;
+
         filtrosPanelEquipo[nombre] = control.value;
+        filtrosPanelEquipo.rapido = "";
 
         clearTimeout(control.__timerFiltro);
         control.__timerFiltro = setTimeout(async () => {
@@ -4165,18 +4297,35 @@ function activarFiltrosEquipo(solicitudes) {
 
   document.querySelectorAll("[data-limpiar-filtros-equipo]").forEach(btn => {
     btn.onclick = async () => {
-filtrosPanelEquipo = {
-  fecha: "",
-  horario: "",
-  servicio: "",
-  estado: "",
-  prestador: "",
-  texto: ""
-};
+      filtrosPanelEquipo = filtrosPanelEquipoVacios();
+      await renderEquipo();
+    };
+  });
+
+  document.querySelectorAll("[data-toggle-resumen-equipo]").forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+      resumenPanelEquipoAbierto = !resumenPanelEquipoAbierto;
+      await renderEquipo();
+    };
+  });
+
+  document.querySelectorAll("[data-filtro-rapido-equipo]").forEach(btn => {
+    btn.onclick = async (e) => {
+      e.stopPropagation();
+
+      const tipo = btn.dataset.filtroRapidoEquipo || "";
+      const estabaActivo = filtrosPanelEquipo.rapido === tipo;
+
+      filtrosPanelEquipo = filtrosPanelEquipoVacios();
+      filtrosPanelEquipo.rapido = estabaActivo ? "" : tipo;
 
       await renderEquipo();
     };
   });
+
+  document.removeEventListener("click", cerrarResumenEquipoSiClickAfuera);
+  document.addEventListener("click", cerrarResumenEquipoSiClickAfuera);
 }
 
 function normalizarServicioTexto(texto) {
