@@ -1387,6 +1387,60 @@ function opcionesHorarioServicio(actual = "") {
   `;
 }
 
+function urlArchivoSolicitud(archivo) {
+  return archivo?.urlCorta || archivo?.shortUrl || archivo?.url || "";
+}
+
+function renderMiniGaleriaArchivosSolicitud(archivos = []) {
+  const lista = Array.isArray(archivos)
+    ? archivos.filter(archivo => urlArchivoSolicitud(archivo))
+    : [];
+
+  if (!lista.length) return "";
+
+  return `
+    <div class="ms-mini-galeria-solicitud">
+      ${lista.map((archivo, index) => {
+        const url = urlArchivoSolicitud(archivo);
+        const nombre = archivo.nombre || `Archivo ${index + 1}`;
+        const tipo = archivo.tipo || archivo.mime || "";
+        const tipoGeneral = archivo.tipoGeneral || "";
+
+        const esImagen = String(tipo).startsWith("image/") || tipoGeneral === "Foto";
+        const esVideo = String(tipo).startsWith("video/") || tipoGeneral === "Video";
+        const esAudio = String(tipo).startsWith("audio/") || tipoGeneral === "Audio";
+
+        let preview = `<i class="fa-solid fa-file"></i>`;
+
+        if (esImagen) {
+          preview = `<img src="${escaparHtml(url)}" alt="${escaparHtml(nombre)}" loading="lazy" />`;
+        } else if (esVideo) {
+          preview = `<i class="fa-solid fa-video"></i>`;
+        } else if (esAudio) {
+          preview = `<i class="fa-solid fa-microphone-lines"></i>`;
+        }
+
+        return `
+          <a
+            class="ms-mini-galeria-card"
+            href="${escaparHtml(url)}"
+            target="_blank"
+            rel="noopener"
+            title="Abrir archivo"
+          >
+            <div class="ms-mini-galeria-preview">
+              ${preview}
+            </div>
+
+            <strong>${escaparHtml(tipoGeneral || "Archivo")}</strong>
+            <span>${escaparHtml(nombre)}</span>
+          </a>
+        `;
+      }).join("")}
+    </div>
+  `;
+}
+
 function renderServiciosDetalleSolicitud() {
   if (!solServiciosTabs || !solServiciosDetalle) return;
 
@@ -1529,6 +1583,8 @@ function renderServiciosDetalleSolicitud() {
               : ""
           }
 
+${renderMiniGaleriaArchivosSolicitud(archivosGuardados)}
+       
           ${
             archivosGuardados.length && !item.archivosGaleriaUrl
               ? `<p class="ms-file-note">Este servicio ya tiene ${archivosGuardados.length} archivo(s) guardado(s).</p>`
@@ -2410,6 +2466,22 @@ function servicioDetallePorId(solicitud, servicioId) {
     || null;
 }
 
+function serviciosMarcadosParaWhatsApp(solicitud) {
+  if (!solicitud?.id) return [];
+
+  const marcados = Array.from(document.querySelectorAll("[data-ruta-check]"))
+    .filter(check => check.checked && check.dataset.rutaCheck === solicitud.id)
+    .map(check => check.dataset.servicioId || "principal");
+
+  if (!marcados.length) return [];
+
+  const ids = new Set(marcados.map(String));
+
+  return serviciosDetallePanel(solicitud).filter(item => {
+    return ids.has(String(item.id || "principal"));
+  });
+}
+
 function fechaServicioPanel(s, item) {
   return item?.fechaDeseada || s.fechaDeseada || "";
 }
@@ -2865,10 +2937,22 @@ function renderSolicitudFila(s) {
             <small>${escaparHtml(telefono)} · ${escaparHtml(direccion)}${zona ? ` · ${escaparHtml(zona)}` : ""}</small>
           </div>
 
-          <button class="ms-mini-btn" data-editar-solicitud="${s.id}" type="button">
-            <i class="fa-solid fa-pen-to-square"></i>
-            Editar solicitud
-          </button>
+          <div class="ms-solicitud-grupo-actions">
+            <button
+              class="ms-mini-btn ms-mini-btn-whatsapp"
+              data-wa-solicitud-marcados="${s.id}"
+              type="button"
+              title="Enviar WhatsApp con los servicios marcados"
+            >
+              <i class="fa-brands fa-whatsapp"></i>
+              WhatsApp
+            </button>
+
+            <button class="ms-mini-btn" data-editar-solicitud="${s.id}" type="button">
+              <i class="fa-solid fa-pen-to-square"></i>
+              Editar solicitud
+            </button>
+          </div>
         </div>
       </td>
     </tr>
@@ -2907,16 +2991,14 @@ function renderSolicitudFila(s) {
           }
         </td>
 
-        <td>
-          <strong>${escaparHtml(textoFechaServicioPanel(s, item))}</strong>
-          <small>${escaparHtml(horarioServicioPanel(s, item))}</small>
+        <td class="td-horario">
+          <strong>${escaparHtml(horarioServicioPanel(s, item))}</strong>
         </td>
 
         <td>
           <div class="td-service-line">
             <span>
               <strong>${escaparHtml(item.servicio || "Servicio")}</strong>
-              <small>${escaparHtml(item.descripcion || "Sin detalle")}</small>
             </span>
 
             ${
@@ -2944,16 +3026,6 @@ function renderSolicitudFila(s) {
         <td>
           <div class="td-state-line">
             ${renderEstadoSelect(s, item)}
-
-            <button
-              class="ms-icon-btn"
-              data-wa-servicio="${s.id}"
-              data-servicio-id="${escaparHtml(servicioId)}"
-              type="button"
-              title="WhatsApp"
-            >
-              <i class="fa-brands fa-whatsapp"></i>
-            </button>
           </div>
         </td>
 
@@ -3033,8 +3105,13 @@ function renderFilasSolicitudesAgrupadas(items) {
 
       separador = `
         <tr class="ms-day-divider">
-          <td colspan="7">
-            <span>${escaparHtml(tituloGrupoSolicitud(grupo))}</span>
+          <td></td>
+          <td></td>
+          <td colspan="5">
+            <span>
+              <i class="fa-solid fa-calendar-check"></i>
+              ${escaparHtml(tituloGrupoSolicitud(grupo))}
+            </span>
           </td>
         </tr>
       `;
@@ -3211,9 +3288,9 @@ function renderTablaEquipo(solicitudes) {
           <tr>
             <th></th>
             <th></th>
-            <th>Fecha / horario</th>
+            <th>Horario</th>
             <th>Servicio / archivos</th>
-            <th>Estado / WhatsApp</th>
+            <th>Estado</th>
             <th>Prestador</th>
             <th>Informe</th>
           </tr>
@@ -4562,36 +4639,30 @@ document.querySelectorAll("[data-informe-solicitud]").forEach(btn => {
   };
 });
    
-   document.querySelectorAll("[data-wa-solicitud]").forEach(btn => {
-    btn.onclick = () => {
-      const id = btn.dataset.waSolicitud;
-      const solicitud = mapa.get(id);
-      if (!solicitud) return;
-
-      abrirWhatsAppConMensaje(mensajeWhatsAppSolicitud(solicitud, id));
-    };
-  });
-
-   document.querySelectorAll("[data-wa-servicio]").forEach(btn => {
+document.querySelectorAll("[data-wa-solicitud-marcados]").forEach(btn => {
   btn.onclick = () => {
-    const id = btn.dataset.waServicio;
-    const servicioId = btn.dataset.servicioId;
+    const id = btn.dataset.waSolicitudMarcados;
     const solicitud = mapa.get(id);
 
     if (!solicitud) return;
 
-    const servicioDetalle = servicioDetallePorId(solicitud, servicioId);
+    const serviciosMarcados = serviciosMarcadosParaWhatsApp(solicitud);
+
+    if (!serviciosMarcados.length) {
+      toastMsg("Marcá uno o más servicios de esta solicitud para enviar por WhatsApp");
+      return;
+    }
 
     abrirWhatsAppConMensaje(
       mensajeWhatsAppSolicitud({
         ...solicitud,
-        servicio: servicioDetalle?.servicio || solicitud.servicio,
-        serviciosDetalle: servicioDetalle ? [servicioDetalle] : [],
-        fechaDeseada: servicioDetalle?.fechaDeseada || solicitud.fechaDeseada || "",
-        horarioDeseado: servicioDetalle?.horarioDeseado || solicitud.horarioDeseado || "",
-        descripcion: servicioDetalle?.descripcion || solicitud.descripcion || "",
-        archivos: servicioDetalle?.archivos || [],
-        archivosGaleriaUrl: servicioDetalle?.archivosGaleriaUrl || ""
+        servicio: serviciosMarcados.map(item => item.servicio).filter(Boolean).join(" + "),
+        serviciosDetalle: serviciosMarcados,
+        fechaDeseada: serviciosMarcados[0]?.fechaDeseada || solicitud.fechaDeseada || "",
+        horarioDeseado: serviciosMarcados[0]?.horarioDeseado || solicitud.horarioDeseado || "",
+        descripcion: serviciosMarcados.map(item => item.descripcion).filter(Boolean).join(" / "),
+        archivos: serviciosMarcados.flatMap(item => Array.isArray(item.archivos) ? item.archivos : []),
+        archivosGaleriaUrl: ""
       }, id)
     );
   };
@@ -4825,6 +4896,8 @@ async function mostrarVista(vista) {
   }
 
   vistaActual = vista;
+   const mostrarWhatsappHome = vista === "inicio" || vista === "comoFunciona";
+   btnWhatsappFlotante?.classList.toggle("hidden", !mostrarWhatsappHome);
 
   const mostrarHome = vista === "inicio" || vista === "comoFunciona";
 
