@@ -2612,13 +2612,13 @@ button[title="WhatsApp"] i{
 
   .ms-servicio-subfila{
     display:grid;
-    grid-template-columns:25px 30px minmax(62px,.72fr) minmax(0,1.55fr) 28px;
+    grid-template-columns:24px 28px minmax(70px,1fr) minmax(0,1fr) 52px;
     grid-template-areas:
       "check ruta horario servicio informe"
       "estado estado estado prestador prestador";
     align-items:center;
     width:100%;
-    column-gap:2px;
+    column-gap:1px;
     row-gap:2px;
   }
 
@@ -2626,7 +2626,7 @@ button[title="WhatsApp"] i{
     display:flex;
     align-items:center;
     min-width:0;
-    padding:4px 2px !important;
+    padding:3px 1px !important;
   }
 
   .ms-servicio-subfila td:nth-child(1){
@@ -2708,9 +2708,10 @@ button[title="WhatsApp"] i{
   .ms-prestador-cell-btn{
     width:100%;
     max-width:100%;
-    min-height:30px;
+    min-height:31px;
+    height:31px;
     border-radius:999px;
-    padding:4px 6px;
+    padding:3px 7px;
     font-size:11.5px;
     text-align:center;
     justify-content:center;
@@ -2718,6 +2719,26 @@ button[title="WhatsApp"] i{
     overflow:hidden;
     text-overflow:ellipsis;
     text-decoration:none !important;
+  }
+
+  .ms-prestador-cell-btn{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:5px;
+  }
+
+  .ms-prestador-cell-btn span{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    text-align:center;
+  }
+
+  .ms-prestador-cell-btn i{
+    font-size:10px;
+    color:var(--muted);
   }
 }
 
@@ -3470,13 +3491,38 @@ button[title="WhatsApp"] i{
   background:#fffafc;
 }
 
-.ms-solicitud-grupo-head strong{
-  font-size:15px;
+.ms-cliente-info-panel{
+  min-width:0;
+}
+
+.ms-cliente-linea{
+  display:flex;
+  align-items:baseline;
+  gap:7px;
+  min-width:0;
+}
+
+.ms-cliente-linea strong{
   color:var(--azul-noche);
+  font-size:15px;
+  line-height:1.1;
+  min-width:0;
+  max-width:58%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.ms-cliente-linea span{
+  color:var(--muted);
+  font-size:12px;
+  font-weight:1000;
+  white-space:nowrap;
 }
 
 .ms-solicitud-grupo-head small{
   display:block;
+  margin-top:4px;
   color:var(--muted);
   font-weight:800;
 }
@@ -3497,17 +3543,31 @@ button[title="WhatsApp"] i{
   background:#edf3fb;
   color:var(--azul-noche);
   font-weight:1000;
-  padding:6px 10px;
+  padding:6px 9px;
   text-align:center;
   cursor:pointer;
   line-height:1.2;
   border-radius:999px;
-  display:inline-flex;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
   align-items:center;
-  justify-content:center;
+  gap:6px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
+}
+
+.ms-prestador-cell-btn span{
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  text-align:center;
+}
+
+.ms-prestador-cell-btn i{
+  font-size:11px;
+  color:var(--muted);
 }
 
 .ms-prestador-cell-btn:hover{
@@ -3527,9 +3587,14 @@ button[title="WhatsApp"] i{
     gap:5px;
   }
 
-  .ms-solicitud-grupo-head strong{
-    font-size:15px;
+  .ms-cliente-linea strong{
+    font-size:14px;
     line-height:1.1;
+    max-width:48%;
+  }
+
+  .ms-cliente-linea span{
+    font-size:11.5px;
   }
 
   .ms-solicitud-grupo-head small{
@@ -3562,5 +3627,83 @@ button[title="WhatsApp"] i{
 
   .ms-client-action-btn .ms-action-text{
     display:none;
+  }
+}
+
+/* =========================================================
+   SELECTOR DESTINO WHATSAPP
+========================================================= */
+
+.ms-wa-selector-modal{
+  z-index:260;
+}
+
+.ms-wa-selector-card{
+  max-width:420px;
+}
+
+.ms-wa-selector-options{
+  display:grid;
+  gap:8px;
+  margin-top:14px;
+}
+
+.ms-wa-selector-options label{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:10px;
+  align-items:center;
+  padding:11px;
+  border-radius:18px;
+  border:1px solid var(--borde);
+  background:#f8fbff;
+  cursor:pointer;
+}
+
+.ms-wa-selector-options label.disabled{
+  opacity:.48;
+  cursor:not-allowed;
+}
+
+.ms-wa-selector-options input{
+  width:18px;
+  height:18px;
+}
+
+.ms-wa-selector-options span{
+  min-width:0;
+  display:grid;
+  gap:2px;
+}
+
+.ms-wa-selector-options strong{
+  color:var(--azul-noche);
+  font-size:14px;
+}
+
+.ms-wa-selector-options small{
+  color:var(--muted);
+  font-weight:800;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.ms-wa-selector-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:14px;
+}
+
+@media(max-width:700px){
+  .ms-wa-selector-card{
+    width:min(420px,100%);
+    padding:18px;
+  }
+
+  .ms-wa-selector-options label{
+    padding:10px;
+    border-radius:16px;
   }
 }
