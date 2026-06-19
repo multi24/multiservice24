@@ -187,11 +187,11 @@ const informeClienteTitulo = $("informeClienteTitulo");
 const informeSolicitudTexto = $("informeSolicitudTexto");
 const informeTrabajo = $("informeTrabajo");
 const informeObservaciones = $("informeObservaciones");
-const informeValorServicio = $("informeValorServicio");
 const informeCostoManoObra = $("informeCostoManoObra");
 const informeCostoMateriales = $("informeCostoMateriales");
 const informeCostoTotal = $("informeCostoTotal");
 const informeGarantiaTiempo = $("informeGarantiaTiempo");
+const informeGarantiaVencimiento = $("informeGarantiaVencimiento");
 const informeArchivos = $("informeArchivos");
 const informeArchivosResumen = $("informeArchivosResumen");
 const canvasFirmaCliente = $("canvasFirmaCliente");
@@ -253,6 +253,8 @@ let informeArchivosSeleccionados = [];
 let informeCargadoId = "";
 let informeCargadoData = null;
 let informeModoLectura = false;
+let informeTotalEditadoManual = false;
+let informeGarantiaEditando = false;
 let prestadorAltaManualServicio = "";
 
 let mediaRecorderInforme = null;
@@ -282,6 +284,118 @@ let audioServicioSolicitud = {
 /* =========================================================
    HELPERS
 ========================================================= */
+function numeroInforme(valor) {
+  const n = Number(String(valor || "").replace(",", "."));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function hoyInputFecha() {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  const y = hoy.getFullYear();
+  const m = String(hoy.getMonth() + 1).padStart(2, "0");
+  const d = String(hoy.getDate()).padStart(2, "0");
+
+  return `${y}-${m}-${d}`;
+}
+
+function fechaInputDesdeDate(fecha) {
+  const f = new Date(fecha);
+  f.setHours(0, 0, 0, 0);
+
+  const y = f.getFullYear();
+  const m = String(f.getMonth() + 1).padStart(2, "0");
+  const d = String(f.getDate()).padStart(2, "0");
+
+  return `${y}-${m}-${d}`;
+}
+
+function dateDesdeInputFecha(valor) {
+  if (!valor) return null;
+
+  const partes = String(valor).split("-");
+  if (partes.length !== 3) return null;
+
+  const fecha = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+  fecha.setHours(0, 0, 0, 0);
+
+  return fecha;
+}
+
+function extraerDiasGarantia(texto) {
+  const t = String(texto || "").toLowerCase().trim();
+  const numero = Number((t.match(/\d+/) || [0])[0]);
+
+  if (!numero) return 0;
+
+  if (t.includes("mes")) {
+    return numero * 30;
+  }
+
+  if (t.includes("año") || t.includes("ano")) {
+    return numero * 365;
+  }
+
+  return numero;
+}
+
+function calcularDiasEntreHoy(fechaInput) {
+  const destino = dateDesdeInputFecha(fechaInput);
+  if (!destino) return 0;
+
+  const hoy = dateDesdeInputFecha(hoyInputFecha());
+  const diff = destino.getTime() - hoy.getTime();
+
+  return Math.max(0, Math.round(diff / 86400000));
+}
+
+function actualizarTotalInforme() {
+  if (!informeCostoManoObra || !informeCostoMateriales || !informeCostoTotal) return;
+  if (informeTotalEditadoManual) return;
+
+  const mano = numeroInforme(informeCostoManoObra.value);
+  const materiales = numeroInforme(informeCostoMateriales.value);
+  const total = mano + materiales;
+
+  informeCostoTotal.value = total ? String(total) : "";
+}
+
+function actualizarVencimientoGarantiaDesdeTiempo() {
+  if (informeGarantiaEditando) return;
+  if (!informeGarantiaTiempo || !informeGarantiaVencimiento) return;
+
+  const dias = extraerDiasGarantia(informeGarantiaTiempo.value);
+
+  if (!dias) {
+    informeGarantiaVencimiento.value = "";
+    return;
+  }
+
+  informeGarantiaEditando = true;
+
+  const base = dateDesdeInputFecha(hoyInputFecha());
+  base.setDate(base.getDate() + dias);
+
+  informeGarantiaVencimiento.value = fechaInputDesdeDate(base);
+
+  informeGarantiaEditando = false;
+}
+
+function actualizarTiempoGarantiaDesdeVencimiento() {
+  if (informeGarantiaEditando) return;
+  if (!informeGarantiaTiempo || !informeGarantiaVencimiento) return;
+
+  const dias = calcularDiasEntreHoy(informeGarantiaVencimiento.value);
+
+  informeGarantiaEditando = true;
+
+  informeGarantiaTiempo.value = dias
+    ? `${dias} días`
+    : "";
+
+  informeGarantiaEditando = false;
+}
 
 function limpiar(valor) {
   return String(valor || "").trim();
@@ -4393,11 +4507,12 @@ function aplicarModoLecturaInforme(lectura) {
 
   if (informeTrabajo) informeTrabajo.readOnly = informeModoLectura;
   if (informeObservaciones) informeObservaciones.readOnly = informeModoLectura;
-  if (informeValorServicio) informeValorServicio.readOnly = informeModoLectura;
-  if (informeCostoManoObra) informeCostoManoObra.readOnly = informeModoLectura;
-  if (informeCostoMateriales) informeCostoMateriales.readOnly = informeModoLectura;
-  if (informeCostoTotal) informeCostoTotal.readOnly = informeModoLectura;
-  if (informeGarantiaTiempo) informeGarantiaTiempo.readOnly = informeModoLectura;
+if (informeCostoManoObra) informeCostoManoObra.readOnly = informeModoLectura;
+if (informeCostoMateriales) informeCostoMateriales.readOnly = informeModoLectura;
+if (informeCostoTotal) informeCostoTotal.readOnly = informeModoLectura;
+if (informeGarantiaTiempo) informeGarantiaTiempo.readOnly = informeModoLectura;
+if (informeGarantiaVencimiento) informeGarantiaVencimiento.readOnly = informeModoLectura;
+   
   if (informeArchivos) informeArchivos.disabled = informeModoLectura;
 
   if (canvasFirmaCliente) {
@@ -4663,11 +4778,13 @@ async function abrirInformeSolicitud(solicitud, servicioDetalle = null) {
   if (informeObservaciones) informeObservaciones.value = "";
   if (informeArchivos) informeArchivos.value = "";
 
-  if (informeValorServicio) informeValorServicio.value = "";
-  if (informeCostoManoObra) informeCostoManoObra.value = "";
-  if (informeCostoMateriales) informeCostoMateriales.value = "";
-  if (informeCostoTotal) informeCostoTotal.value = "";
-  if (informeGarantiaTiempo) informeGarantiaTiempo.value = "";
+informeTotalEditadoManual = false;
+
+if (informeCostoManoObra) informeCostoManoObra.value = "";
+if (informeCostoMateriales) informeCostoMateriales.value = "";
+if (informeCostoTotal) informeCostoTotal.value = "";
+if (informeGarantiaTiempo) informeGarantiaTiempo.value = "";
+if (informeGarantiaVencimiento) informeGarantiaVencimiento.value = "";
 
   limpiarAudioInforme(false);
 
@@ -4699,11 +4816,11 @@ async function abrirInformeSolicitud(solicitud, servicioDetalle = null) {
     if (informeTrabajo) informeTrabajo.value = informe.trabajo || "";
     if (informeObservaciones) informeObservaciones.value = informe.observaciones || "";
 
-    if (informeValorServicio) informeValorServicio.value = informe.valorServicio || "";
-    if (informeCostoManoObra) informeCostoManoObra.value = informe.costoManoObra || "";
-    if (informeCostoMateriales) informeCostoMateriales.value = informe.costoMateriales || "";
-    if (informeCostoTotal) informeCostoTotal.value = informe.costoTotal || "";
-    if (informeGarantiaTiempo) informeGarantiaTiempo.value = informe.garantiaTiempo || "";
+if (informeCostoManoObra) informeCostoManoObra.value = informe.costoManoObra || "";
+if (informeCostoMateriales) informeCostoMateriales.value = informe.costoMateriales || "";
+if (informeCostoTotal) informeCostoTotal.value = informe.costoTotal || "";
+if (informeGarantiaTiempo) informeGarantiaTiempo.value = informe.garantiaTiempo || "";
+if (informeGarantiaVencimiento) informeGarantiaVencimiento.value = informe.garantiaVencimiento || "";
 
     if (informe.firmaCliente) {
       informeFirmaDataUrl = informe.firmaCliente;
@@ -5759,11 +5876,11 @@ const dataInforme = {
   fechaDeseada: fechaInforme,
   horarioDeseado: horarioInforme,
 
-  valorServicio: limpiar(informeValorServicio?.value),
-  costoManoObra: limpiar(informeCostoManoObra?.value),
-  costoMateriales: limpiar(informeCostoMateriales?.value),
-  costoTotal: limpiar(informeCostoTotal?.value),
-  garantiaTiempo: limpiar(informeGarantiaTiempo?.value),
+costoManoObra: limpiar(informeCostoManoObra?.value),
+costoMateriales: limpiar(informeCostoMateriales?.value),
+costoTotal: limpiar(informeCostoTotal?.value),
+garantiaTiempo: limpiar(informeGarantiaTiempo?.value),
+garantiaVencimiento: limpiar(informeGarantiaVencimiento?.value),
 
   trabajo: limpiar(informeTrabajo?.value),
   observaciones: limpiar(informeObservaciones?.value),
@@ -5838,11 +5955,11 @@ function abrirVistaInformePdf() {
   const trabajo = limpiar(informeTrabajo?.value);
   const observaciones = limpiar(informeObservaciones?.value);
 
-const valorServicio = limpiar(informeValorServicio?.value);
 const costoManoObra = limpiar(informeCostoManoObra?.value);
 const costoMateriales = limpiar(informeCostoMateriales?.value);
 const costoTotal = limpiar(informeCostoTotal?.value);
 const garantiaTiempo = limpiar(informeGarantiaTiempo?.value);
+const garantiaVencimiento = limpiar(informeGarantiaVencimiento?.value);
 
 const servicioPdf = informeServicioDetalleActual?.servicio || informeSolicitudActual.servicio || "";
 const fechaPdf = informeServicioDetalleActual?.fechaDeseada || informeSolicitudActual.fechaDeseada || "";
@@ -5986,11 +6103,6 @@ ${escaparHtml(horarioPdf || "")}
 <h2>Valores / costos</h2>
 <div class="meta">
   <div class="box">
-    <strong>Valor del servicio</strong><br>
-    ${escaparHtml(valorServicio || "Sin cargar")}
-  </div>
-
-  <div class="box">
     <strong>Mano de obra</strong><br>
     ${escaparHtml(costoManoObra || "Sin cargar")}
   </div>
@@ -6005,10 +6117,11 @@ ${escaparHtml(horarioPdf || "")}
     ${escaparHtml(costoTotal || "Sin cargar")}
   </div>
 
-  <div class="box" style="grid-column:1/-1">
-    <strong>Garantía</strong><br>
-    ${escaparHtml(garantiaTiempo || "Sin cargar")}
-  </div>
+<div class="box" style="grid-column:1/-1">
+  <strong>Garantía</strong><br>
+  ${escaparHtml(garantiaTiempo || "Sin cargar")}
+  ${garantiaVencimiento ? `<br><small>Vence: ${escaparHtml(fechaDeseadaBonita(garantiaVencimiento))}</small>` : ""}
+</div>
 </div>
        
         <h2>Trabajo realizado</h2>
@@ -6047,6 +6160,16 @@ ${escaparHtml(horarioPdf || "")}
 }
 
 btnVistaInformePdf?.addEventListener("click", abrirVistaInformePdf);
+
+informeCostoManoObra?.addEventListener("input", actualizarTotalInforme);
+informeCostoMateriales?.addEventListener("input", actualizarTotalInforme);
+
+informeCostoTotal?.addEventListener("input", () => {
+  informeTotalEditadoManual = true;
+});
+
+informeGarantiaTiempo?.addEventListener("input", actualizarVencimientoGarantiaDesdeTiempo);
+informeGarantiaVencimiento?.addEventListener("input", actualizarTiempoGarantiaDesdeVencimiento);
 
 /* =========================================================
    AUTH STATE
