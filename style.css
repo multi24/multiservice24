@@ -2048,7 +2048,9 @@ main{
 }
 
 .ms-board-summary-main strong{
-  font-size:30px;
+  min-width:38px;
+  text-align:right;
+  font-size:24px;
   line-height:1;
   color:var(--azul-noche);
 }
@@ -2124,6 +2126,48 @@ main{
 
 .ms-board-summary-card.soft-green{
   background:#ecfff4;
+}
+
+.ms-board-summary-extra{
+  grid-column:1 / -1;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+
+.ms-board-summary-action{
+  min-height:44px;
+  border:none;
+  border-radius:15px;
+  background:#fff;
+  border:1px solid var(--borde);
+  color:var(--azul-noche);
+  font-weight:1000;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  box-shadow:var(--sombra-suave);
+}
+
+.ms-board-summary-action i{
+  color:var(--rojo);
+}
+
+.ms-filtros-equipo-modal{
+  z-index:220;
+}
+
+.ms-filtros-equipo-modal .ms-modal-card{
+  max-width:720px;
+}
+
+.ms-filtros-equipo-modal .ms-board-filters{
+  margin:14px 0 0;
+}
+
+.ms-filtros-equipo-modal [data-ver-planilla-equipo]{
+  justify-content:center;
 }
 
 .ms-route-toolbar{
@@ -2326,13 +2370,18 @@ button[title="WhatsApp"] i{
 
 .ms-estado-select{
   width:150px;
+  max-width:100%;
   min-height:34px;
   border:1px solid var(--borde);
   border-radius:999px;
-  padding:6px 12px;
+  padding:6px 10px;
   color:var(--azul-noche);
   font-weight:1000;
   background:#fff;
+  text-align:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 .ms-estado-select.estado-sin-coordinar{
@@ -2427,7 +2476,7 @@ button[title="WhatsApp"] i{
   }
 
   .ms-board-summary-main strong{
-    font-size:28px;
+    font-size:24px;
   }
 
   .ms-board-summary{
@@ -2544,10 +2593,10 @@ button[title="WhatsApp"] i{
 
   .ms-servicio-subfila{
     display:grid;
-    grid-template-columns:32px 42px minmax(0,1fr) minmax(0,1fr) 38px;
+    grid-template-columns:32px 42px minmax(0,1fr) minmax(0,1fr) 36px;
     grid-template-areas:
       "check ruta horario servicio informe"
-      "estado estado prestador prestador prestador";
+      "estado estado estado prestador prestador";
     align-items:center;
     width:100%;
   }
@@ -2630,20 +2679,19 @@ button[title="WhatsApp"] i{
     font-size:15px;
   }
 
-  .ms-estado-select{
-    width:100%;
-    min-height:32px;
-    font-size:12px;
-  }
-
+  .ms-estado-select,
   .ms-prestador-cell-btn{
     width:100%;
-    min-height:32px;
+    max-width:100%;
+    min-height:34px;
     border-radius:999px;
-    padding:6px 10px;
-    background:#edf3fb;
-    text-align:center;
+    padding:6px 8px;
     font-size:12px;
+    text-align:center;
+    justify-content:center;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
     text-decoration:none !important;
   }
 }
@@ -3417,15 +3465,24 @@ button[title="WhatsApp"] i{
 }
 
 .ms-prestador-cell-btn{
-  border:none;
+  width:150px;
+  max-width:100%;
+  min-height:34px;
+  border:1px solid var(--borde);
   background:#edf3fb;
   color:var(--azul-noche);
   font-weight:1000;
-  padding:7px 11px;
+  padding:6px 10px;
   text-align:center;
   cursor:pointer;
   line-height:1.2;
   border-radius:999px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 
 .ms-prestador-cell-btn:hover{
@@ -3465,16 +3522,16 @@ button[title="WhatsApp"] i{
   }
 
   .ms-client-action-btn{
-    width:38px;
-    height:38px;
-    min-height:38px;
+    width:34px;
+    height:34px;
+    min-height:34px;
     padding:0;
-    border-radius:14px;
+    border-radius:13px;
     justify-content:center;
   }
 
   .ms-client-action-btn i{
-    font-size:18px;
+    font-size:15px;
   }
 
   .ms-client-action-btn .ms-action-text{
