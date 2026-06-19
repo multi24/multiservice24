@@ -2431,39 +2431,56 @@ button[title="WhatsApp"] i{
 @media(max-width:900px){
   main{
     width:100%;
-    padding:6px 8px 86px;
+    padding:4px 2px 86px;
+  }
+
+  #paneles:has(#panelEquipo:not(.hidden)){
+    padding:0;
+    border:none;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
   }
 
   #panelEquipo{
-    padding:6px;
+    padding:2px;
+    margin-top:6px;
+    border-radius:0;
+    border:none;
+    background:transparent;
+    box-shadow:none;
   }
 
   #panelEquipo .ms-panel-head{
-    margin-bottom:8px;
+    margin-bottom:6px;
   }
 
   #panelEquipo .ms-panel-head h2{
-    font-size:24px;
+    font-size:22px;
     margin:0;
   }
 
   #panelEquipo .ms-panel-head p{
-    margin:4px 0 0;
-    line-height:1.2;
+    margin:3px 0 0;
+    line-height:1.15;
   }
 
   #panelEquipo .ms-panel-card{
+    padding:2px;
+    border-radius:16px;
+  }
+
+  #panelEquipo .ms-list{
+    gap:6px;
+  }
+
+  .ms-section{
     padding:8px;
     border-radius:20px;
   }
 
-  .ms-section{
-    padding:10px;
-    border-radius:22px;
-  }
-
   .ms-panel{
-    padding:8px;
+    padding:4px;
   }
 
   .ms-board-summary-main{
@@ -2557,7 +2574,9 @@ button[title="WhatsApp"] i{
 
   .ms-board-table-wrap{
     overflow:visible;
-    border-radius:18px;
+    border-radius:14px;
+    margin-left:-1px;
+    margin-right:-1px;
   }
 
   .ms-board-table{
@@ -2593,19 +2612,21 @@ button[title="WhatsApp"] i{
 
   .ms-servicio-subfila{
     display:grid;
-    grid-template-columns:32px 42px minmax(0,1fr) minmax(0,1fr) 36px;
+    grid-template-columns:25px 30px minmax(62px,.72fr) minmax(0,1.55fr) 28px;
     grid-template-areas:
       "check ruta horario servicio informe"
       "estado estado estado prestador prestador";
     align-items:center;
     width:100%;
+    column-gap:2px;
+    row-gap:2px;
   }
 
   .ms-servicio-subfila td{
     display:flex;
     align-items:center;
     min-width:0;
-    padding:7px 5px !important;
+    padding:4px 2px !important;
   }
 
   .ms-servicio-subfila td:nth-child(1){
@@ -2648,45 +2669,49 @@ button[title="WhatsApp"] i{
   }
 
   .td-check input{
-    width:18px;
-    height:18px;
+    width:16px;
+    height:16px;
   }
 
   .td-horario strong{
-    font-size:13px;
-    line-height:1.15;
+    font-size:12.5px;
+    line-height:1.08;
+    white-space:nowrap;
   }
 
   .td-service-line{
     width:100%;
     display:grid;
-    grid-template-columns:minmax(0,1fr) 32px;
+    grid-template-columns:minmax(0,1fr) 26px;
     align-items:center;
-    gap:5px;
+    gap:2px;
   }
 
   .td-service-line strong{
-    font-size:13px;
-    line-height:1.15;
+    font-size:12.5px;
+    line-height:1.08;
     white-space:normal;
-    overflow-wrap:anywhere;
+    word-break:normal;
+    overflow-wrap:normal;
+    hyphens:none;
   }
 
   .ms-icon-btn{
-    width:32px;
-    height:32px;
-    border-radius:11px;
-    font-size:15px;
+    width:27px;
+    height:27px;
+    min-width:27px;
+    border-radius:9px;
+    font-size:13px;
   }
 
   .ms-estado-select,
   .ms-prestador-cell-btn{
     width:100%;
     max-width:100%;
-    min-height:34px;
+    min-height:30px;
     border-radius:999px;
-    padding:6px 8px;
-    font-size:12px;
+    padding:4px 6px;
+    font-size:11.5px;
     text-align:center;
     justify-content:center;
     white-space:nowrap;
@@ -3490,15 +3515,16 @@ button[title="WhatsApp"] i{
 }
 
 @media(max-width:800px){
-  .ms-solicitud-grupo-row td{
-    padding:8px !important;
+ 
+   .ms-solicitud-grupo-row td{
+    padding:6px 5px !important;
   }
 
   .ms-solicitud-grupo-head{
     display:grid;
     grid-template-columns:minmax(0,1fr) auto;
     align-items:start;
-    gap:8px;
+    gap:5px;
   }
 
   .ms-solicitud-grupo-head strong{
@@ -3522,16 +3548,16 @@ button[title="WhatsApp"] i{
   }
 
   .ms-client-action-btn{
-    width:34px;
-    height:34px;
-    min-height:34px;
+    width:30px;
+    height:30px;
+    min-height:30px;
     padding:0;
-    border-radius:13px;
+    border-radius:11px;
     justify-content:center;
   }
 
   .ms-client-action-btn i{
-    font-size:15px;
+    font-size:13px;
   }
 
   .ms-client-action-btn .ms-action-text{
