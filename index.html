@@ -532,12 +532,7 @@
         <span id="informeSolicitudTexto">Sin datos cargados.</span>
       </div>
 
-      <div class="ms-full ms-informe-costos-grid">
-  <label>
-    Valor del servicio
-    <input id="informeValorServicio" type="number" min="0" step="1" placeholder="Ej: 50000" />
-  </label>
-
+<div class="ms-full ms-informe-costos-grid">
   <label>
     Costo mano de obra
     <input id="informeCostoManoObra" type="number" min="0" step="1" placeholder="Ej: 30000" />
@@ -550,7 +545,12 @@
 
   <label>
     Costo total
-    <input id="informeCostoTotal" type="number" min="0" step="1" placeholder="Ej: 50000" />
+    <input id="informeCostoTotal" type="number" min="0" step="1" placeholder="Se calcula solo, pero podés editarlo" />
+  </label>
+
+  <label>
+    Vencimiento de garantía
+    <input id="informeGarantiaVencimiento" type="date" />
   </label>
 
   <label class="ms-full">
