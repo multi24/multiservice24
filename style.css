@@ -2485,14 +2485,21 @@ button[title="WhatsApp"] i{
 }
 
 .ms-day-divider span{
-  display:block;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
   padding:8px 10px;
-  background:#ffebf2;
+  background:#ffeef2;
   color:var(--azul-noche);
   font-weight:1000;
   font-size:12px;
   border-top:1px solid rgba(7,27,58,.08);
   border-bottom:1px solid rgba(7,27,58,.08);
+}
+
+.ms-day-divider span i{
+  color:var(--rojo);
+  font-size:12px;
 }
 
 @media(max-width:900px){
@@ -2923,6 +2930,85 @@ button[title="WhatsApp"] i{
 /* =========================================================
    PLANILLA SUBAGRUPADA POR SERVICIO
 ========================================================= */
+
+.ms-solicitud-grupo-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.ms-mini-btn-whatsapp{
+  background:rgba(37,211,102,.12);
+  color:#087c3a;
+  border:1px solid rgba(37,211,102,.25);
+}
+
+.ms-mini-btn-whatsapp i{
+  color:#25d366;
+}
+
+.td-horario strong{
+  display:block;
+  color:var(--azul-noche);
+  font-size:13px;
+}
+
+.ms-mini-galeria-solicitud{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding:10px 2px 4px;
+  scroll-snap-type:x mandatory;
+}
+
+.ms-mini-galeria-card{
+  flex:0 0 138px;
+  scroll-snap-align:start;
+  display:grid;
+  gap:6px;
+  text-decoration:none;
+  color:var(--azul-noche);
+  background:#fff;
+  border:1px solid var(--borde);
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:var(--sombra-suave);
+}
+
+.ms-mini-galeria-preview{
+  height:92px;
+  background:var(--gris-suave);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--azul-noche);
+  font-size:26px;
+}
+
+.ms-mini-galeria-preview img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.ms-mini-galeria-card strong{
+  padding:0 10px;
+  color:var(--rojo);
+  font-size:11px;
+  font-weight:1000;
+}
+
+.ms-mini-galeria-card span{
+  padding:0 10px 10px;
+  font-size:11px;
+  font-weight:900;
+  line-height:1.2;
+  color:var(--azul-noche);
+  word-break:break-word;
+}
 
 .ms-solicitud-grupo-row td{
   background:#fffafc !important;
