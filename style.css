@@ -1169,16 +1169,16 @@ main{
 }
 
 .ms-file-box{
-  border:1px dashed rgba(7,27,58,.22);
+  border:2px dashed rgba(7,27,58,.28);
   border-radius:22px;
   padding:14px;
-  background:#f8fbff;
+  background:#f2f8ff;
 }
 
 .ms-file-input-row{
   margin-top:10px;
   min-height:54px;
-  border:1px solid var(--borde);
+  border:2px solid rgba(7,27,58,.22);
   border-radius:18px;
   background:#fff;
   color:var(--azul-noche);
@@ -1189,6 +1189,7 @@ main{
   gap:10px;
   cursor:pointer;
   text-align:center;
+  box-shadow:0 8px 18px rgba(7,27,58,.07);
 }
 
 .ms-file-input-row i{
@@ -1224,24 +1225,33 @@ main{
 .ms-form select,
 .ms-form textarea{
   width:100%;
-  border:1px solid var(--borde);
+  border:2px solid rgba(7,27,58,.24);
   border-radius:16px;
   padding:13px 14px;
-  background:#fff;
+  background:#f7fbff;
   color:var(--texto);
   font-size:16px;
+  font-weight:800;
   outline:none;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.85),
+    0 4px 12px rgba(7,27,58,.05);
 }
 
-.ms-form textarea{
-  resize:vertical;
+.ms-form input::placeholder,
+.ms-form textarea::placeholder{
+  color:#7d8aa0;
+  font-weight:700;
 }
 
 .ms-form input:focus,
 .ms-form select:focus,
 .ms-form textarea:focus{
+  background:#fff;
   border-color:var(--azul-2);
-  box-shadow:0 0 0 4px rgba(18,63,122,.10);
+  box-shadow:
+    0 0 0 4px rgba(18,63,122,.14),
+    0 10px 24px rgba(7,27,58,.10);
 }
 
 .ms-check{
@@ -3114,12 +3124,13 @@ button[title="WhatsApp"] i{
 ========================================================= */
 
 .ms-servicios-solicitud-box{
-  border:1px solid rgba(7,27,58,.14);
+  border:2px solid rgba(7,27,58,.18);
   border-radius:22px;
   padding:14px;
-  background:#f8fbff;
+  background:#eef6ff;
   display:grid;
   gap:12px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8);
 }
 
 .ms-servicio-add-row{
@@ -3202,12 +3213,23 @@ button[title="WhatsApp"] i{
 .ms-servicio-panel select,
 .ms-servicio-panel textarea{
   width:100%;
-  border:1px solid var(--borde);
+  border:2px solid rgba(7,27,58,.24);
   border-radius:14px;
   padding:10px 12px;
-  background:#fff;
+  background:#f7fbff;
   color:var(--texto);
   font-weight:800;
+  outline:none;
+  box-shadow:0 4px 12px rgba(7,27,58,.05);
+}
+
+.ms-servicio-panel select:focus,
+.ms-servicio-panel textarea:focus{
+  background:#fff;
+  border-color:var(--azul-2);
+  box-shadow:
+    0 0 0 4px rgba(18,63,122,.14),
+    0 10px 24px rgba(7,27,58,.10);
 }
 
 .ms-servicio-panel textarea{
@@ -3357,12 +3379,23 @@ button[title="WhatsApp"] i{
 .ms-servicio-agenda select{
   width:100%;
   min-height:44px;
-  border:1px solid var(--borde);
+  border:2px solid rgba(7,27,58,.24);
   border-radius:14px;
   padding:8px 12px;
-  background:#fff;
+  background:#f7fbff;
   color:var(--azul-noche);
   font-weight:800;
+  outline:none;
+  box-shadow:0 4px 12px rgba(7,27,58,.05);
+}
+
+.ms-servicio-agenda input:focus,
+.ms-servicio-agenda select:focus{
+  background:#fff;
+  border-color:var(--azul-2);
+  box-shadow:
+    0 0 0 4px rgba(18,63,122,.14),
+    0 10px 24px rgba(7,27,58,.10);
 }
 
 @media(max-width:700px){
