@@ -281,6 +281,8 @@ let audioServicioSolicitud = {
   chunks: []
 };
 
+let ultimosDatosSolicitudActual = null;
+
 /* =========================================================
    HELPERS
 ========================================================= */
@@ -912,17 +914,7 @@ function renderServicios() {
   document.querySelectorAll("[data-servicio-card]").forEach(card => {
     card.addEventListener("click", () => {
       const servicio = card.dataset.servicioCard || "";
-
-if (solServicio) {
-  solServicio.value = "";
-}
-
-if (!solicitudEditandoId) {
-  reiniciarServiciosDetalleSolicitud(servicio);
-  actualizarPickerServiciosSolicitud();
-}
-
-abrirModal(modalSolicitud);
+      abrirNuevaSolicitud(servicio);
     });
   });
 }
@@ -1239,7 +1231,7 @@ function configurarSugerenciasGeo(input, contenedor, modo) {
 function limpiarFormularioSolicitud() {
   formSolicitudServicio?.reset();
 
-     solicitudEditandoId = "";
+  solicitudEditandoId = "";
   solicitudEditandoData = null;
 
   const titulo = modalSolicitud?.querySelector("h2");
@@ -1255,9 +1247,9 @@ function limpiarFormularioSolicitud() {
   }
 
   if (submit) {
-    submit.innerHTML = `<i class="fa-brands fa-whatsapp"></i> Guardar solicitud y abrir WhatsApp`;
+    submit.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Guardar solicitud y abrir WhatsApp`;
   }
-   
+
   geoZonaSeleccionada = null;
   geoDireccionSeleccionada = null;
 
@@ -1290,6 +1282,163 @@ function cerrarModalControlado(modal) {
   }
 
   cerrarModal(modal);
+}
+
+function datosInicialesSolicitudVacios() {
+  return {
+    nombre: "",
+    telefono: "",
+    direccion: "",
+    zona: "",
+    localidad: "",
+    partido: "",
+    provincia: "",
+    lat: null,
+    lon: null,
+    geo: null
+  };
+}
+
+function normalizarUltimosDatosSolicitud(data = {}) {
+  const geoBase = data.geo && typeof data.geo === "object" ? data.geo : null;
+
+  const normalizado = {
+    nombre: limpiar(data.nombre || data.clienteNombre || ""),
+    telefono: normalizarTelefono(data.telefono || data.clienteTelefono || ""),
+    direccion: limpiar(data.direccion || ""),
+    zona: limpiar(data.zona || geoBase?.zona || ""),
+    localidad: limpiar(data.localidad || geoBase?.localidad || ""),
+    partido: limpiar(data.partido || geoBase?.partido || ""),
+    provincia: limpiar(data.provincia || geoBase?.provincia || ""),
+    lat: data.lat ?? geoBase?.lat ?? null,
+    lon: data.lon ?? geoBase?.lon ?? null,
+    geo: null
+  };
+
+  if (geoBase || normalizado.direccion) {
+    normalizado.geo = {
+      zona: normalizado.zona,
+      zonaLocalidad: limpiar(data.zonaLocalidad || geoBase?.zonaLocalidad || normalizado.zona),
+      localidad: normalizado.localidad,
+      partido: normalizado.partido,
+      provincia: normalizado.provincia,
+      direccion: normalizado.direccion,
+      lat: normalizado.lat,
+      lon: normalizado.lon
+    };
+  }
+
+  return normalizado;
+}
+
+function hayUltimosDatosSolicitud(data) {
+  return !!(
+    limpiar(data?.nombre) ||
+    limpiar(data?.telefono) ||
+    limpiar(data?.direccion)
+  );
+}
+
+function datosInicialesDesdeSolicitud(solicitud) {
+  return normalizarUltimosDatosSolicitud({
+    nombre: solicitud?.clienteNombre || "",
+    telefono: solicitud?.clienteTelefono || "",
+    direccion: solicitud?.direccion || "",
+    zona: solicitud?.zona || "",
+    localidad: solicitud?.localidad || "",
+    partido: solicitud?.partido || "",
+    provincia: solicitud?.provincia || "",
+    lat: solicitud?.lat || null,
+    lon: solicitud?.lon || null,
+    geo: solicitud?.geo || null
+  });
+}
+
+function aplicarUltimosDatosSolicitudAlFormulario(data) {
+  const datos = normalizarUltimosDatosSolicitud(data || {});
+
+  if ($("solNombre")) $("solNombre").value = datos.nombre || "";
+  if ($("solTelefono")) $("solTelefono").value = datos.telefono || "";
+  if ($("solDireccion")) $("solDireccion").value = datos.direccion || "";
+
+  geoDireccionSeleccionada = datos.geo || null;
+  geoZonaSeleccionada = datos.geo || null;
+}
+
+async function cargarUltimosDatosSolicitud() {
+  if (!usuarioActual) {
+    ultimosDatosSolicitudActual = datosInicialesSolicitudVacios();
+    return ultimosDatosSolicitudActual;
+  }
+
+  const desdePerfil = normalizarUltimosDatosSolicitud(perfilActual?.ultimosDatosSolicitud || {});
+
+  if (hayUltimosDatosSolicitud(desdePerfil)) {
+    ultimosDatosSolicitudActual = desdePerfil;
+    return ultimosDatosSolicitudActual;
+  }
+
+  try {
+    const misSolicitudes = await obtenerMisSolicitudes();
+
+    const ultimaSolicitud = misSolicitudes.find(s => {
+      return s.tipo === "solicitud_servicio" &&
+        (
+          limpiar(s.clienteNombre) ||
+          limpiar(s.clienteTelefono) ||
+          limpiar(s.direccion)
+        );
+    });
+
+    if (ultimaSolicitud) {
+      ultimosDatosSolicitudActual = datosInicialesDesdeSolicitud(ultimaSolicitud);
+      await guardarUltimosDatosSolicitudUsuario(ultimosDatosSolicitudActual);
+      return ultimosDatosSolicitudActual;
+    }
+
+  } catch (error) {
+    console.warn("No se pudieron leer los últimos datos de solicitud:", error);
+  }
+
+  ultimosDatosSolicitudActual = datosInicialesSolicitudVacios();
+  return ultimosDatosSolicitudActual;
+}
+
+async function guardarUltimosDatosSolicitudUsuario(data) {
+  if (!usuarioActual) return;
+
+  const ultimosDatosSolicitud = normalizarUltimosDatosSolicitud(data);
+
+  ultimosDatosSolicitudActual = ultimosDatosSolicitud;
+
+  if (perfilActual) {
+    perfilActual = {
+      ...perfilActual,
+      ultimosDatosSolicitud
+    };
+  }
+
+  try {
+    await setDoc(doc(db, "usuarios", usuarioActual.uid), {
+      ultimosDatosSolicitud,
+      actualizadoEn: serverTimestamp()
+    }, { merge: true });
+
+  } catch (error) {
+    console.warn("La solicitud se guardó, pero no se pudieron actualizar los últimos datos del usuario:", error);
+  }
+}
+
+async function abrirNuevaSolicitud(servicioInicial = "") {
+  limpiarFormularioSolicitud();
+
+  const datos = await cargarUltimosDatosSolicitud();
+  aplicarUltimosDatosSolicitudAlFormulario(datos);
+
+  reiniciarServiciosDetalleSolicitud(servicioInicial || "");
+  actualizarPickerServiciosSolicitud();
+
+  abrirModal(modalSolicitud);
 }
 
 function obtenerExtensionAudio(tipo) {
@@ -1350,15 +1499,25 @@ function obtenerServicioActivoSolicitud() {
 }
 
 function asegurarUnServicioSolicitud() {
-  if (!serviciosDetalleSolicitud.length) {
-    crearServicioDetalleSolicitud(solServicio?.value || "");
+  const servicio = limpiar(solServicio?.value);
+
+  if (!serviciosDetalleSolicitud.length && servicio) {
+    crearServicioDetalleSolicitud(servicio);
   }
 }
 
 function reiniciarServiciosDetalleSolicitud(servicioInicial = "") {
   serviciosDetalleSolicitud = [];
   servicioActivoSolicitudId = "";
-  crearServicioDetalleSolicitud(servicioInicial || "");
+
+  const servicio = limpiar(servicioInicial);
+
+  if (servicio) {
+    crearServicioDetalleSolicitud(servicio);
+    return;
+  }
+
+  renderServiciosDetalleSolicitud();
 }
 
 function cargarServiciosDetalleDesdeSolicitud(solicitud) {
@@ -2177,6 +2336,7 @@ async function obtenerOCrearPerfil(user) {
       email: user.email || "",
       foto: user.photoURL || "",
       rol: debeSerAdmin ? "admin" : "usuario",
+      ultimosDatosSolicitud: datosInicialesSolicitudVacios(),
       creadoEn: serverTimestamp(),
       actualizadoEn: serverTimestamp()
     };
@@ -2202,6 +2362,7 @@ async function obtenerOCrearPerfil(user) {
     email: perfil.email || user.email || "",
     foto: perfil.foto || user.photoURL || "",
     rol: perfil.rol || "usuario",
+    ultimosDatosSolicitud: normalizarUltimosDatosSolicitud(perfil.ultimosDatosSolicitud || {}),
     creadoEn: perfil.creadoEn || null,
     actualizadoEn: perfil.actualizadoEn || null
   };
@@ -2328,7 +2489,6 @@ async function guardarSolicitudServicio(data) {
     archivosCantidad: Array.isArray(data.archivos) ? data.archivos.length : 0,
     archivosGaleriaId: data.archivosGaleriaId || "",
     archivosGaleriaUrl: data.archivosGaleriaUrl || "",
-    archivosRetencionMeses: 6,
     archivosVencenEn: data.archivosVencenEn || "",
 
     estado: "pendiente_derivar",
@@ -2337,6 +2497,8 @@ async function guardarSolicitudServicio(data) {
     creadoEn: serverTimestamp(),
     actualizadoEn: serverTimestamp()
   });
+
+  await guardarUltimosDatosSolicitudUsuario(data);
 
   await crearAvisoInterno({
     tipoAviso: "nueva_solicitud",
@@ -5810,8 +5972,8 @@ btnLoginGoogle?.addEventListener("click", loginGoogle);
 btnCerrarSesion?.addEventListener("click", cerrarSesionActual);
 
 btnAbrirContacto?.addEventListener("click", () => abrirModal(modalContacto));
-btnAbrirSolicitud?.addEventListener("click", () => abrirModal(modalSolicitud));
-btnPanelNuevaSolicitud?.addEventListener("click", () => abrirModal(modalSolicitud));
+btnAbrirSolicitud?.addEventListener("click", () => abrirNuevaSolicitud(""));
+btnPanelNuevaSolicitud?.addEventListener("click", () => abrirNuevaSolicitud(""));
 
 btnLlamadaRapida?.addEventListener("click", () => {
   const acepta = window.confirm("¿Desea realizar una consulta por llamada?");
@@ -5848,17 +6010,58 @@ btnCompartirApp?.addEventListener("click", async () => {
 
 let eventoInstalacionPWA = null;
 
+function esIOS() {
+  return /iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+}
+
+function estaEnModoAppInstalada() {
+  return window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+}
+
+function prepararBotonInstalarApp() {
+  if (!btnInstalarApp) return;
+
+  if (estaEnModoAppInstalada()) {
+    btnInstalarApp.classList.add("hidden");
+    return;
+  }
+
+  if (esIOS()) {
+    btnInstalarApp.classList.remove("hidden");
+    btnInstalarApp.innerHTML = `
+      <i class="fa-solid fa-mobile-screen-button"></i>
+      Instalar en iPhone
+    `;
+  }
+}
+
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
 
   eventoInstalacionPWA = e;
 
-  if (btnInstalarApp) {
+  if (btnInstalarApp && !estaEnModoAppInstalada()) {
     btnInstalarApp.classList.remove("hidden");
+    btnInstalarApp.innerHTML = `
+      <i class="fa-solid fa-download"></i>
+      Instalar app
+    `;
   }
 });
 
 btnInstalarApp?.addEventListener("click", async () => {
+  if (esIOS() && !eventoInstalacionPWA) {
+    alert(
+      "Para instalar Multi24 en iPhone:\n\n" +
+      "1. Abrí esta página en Safari.\n" +
+      "2. Tocá el botón Compartir.\n" +
+      "3. Elegí Agregar a pantalla de inicio.\n" +
+      "4. Tocá Agregar."
+    );
+    return;
+  }
+
   if (!eventoInstalacionPWA) {
     toastMsg("La instalación todavía no está lista. Actualizá la página y esperá unos segundos.");
     return;
@@ -5888,6 +6091,8 @@ window.addEventListener("appinstalled", () => {
 
   toastMsg("App instalada");
 });
+
+prepararBotonInstalarApp();
 
 btnInscripcionPrestador?.addEventListener("click", () => {
   if (!usuarioActual) {
@@ -6257,6 +6462,14 @@ data.horarioDeseado = primerServicioConAgenda?.horarioDeseado || "";
 
         actualizadoEn: serverTimestamp()
       });
+
+      const edicionEsDelUsuarioActual =
+        solicitudEditandoData?.clienteUid === usuarioActual?.uid ||
+        emailLower(solicitudEditandoData?.clienteEmail) === emailLower(usuarioActual?.email);
+
+      if (edicionEsDelUsuarioActual) {
+        await guardarUltimosDatosSolicitudUsuario(data);
+      }
 
       toastMsg("Solicitud actualizada");
       limpiarFormularioSolicitud();
@@ -6719,6 +6932,7 @@ onAuthStateChanged(auth, async (user) => {
   usuarioActual = user || null;
   perfilActual = null;
   prestadorActual = null;
+  ultimosDatosSolicitudActual = null;
 
   if (!user) {
     if (btnCuenta) {
