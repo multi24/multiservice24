@@ -428,11 +428,44 @@ main{
   color:#fff;
 }
 
+.ms-hero-call-share{
+  width:100%;
+  display:grid;
+  grid-template-columns:minmax(0,7fr) minmax(0,3fr);
+  gap:10px;
+  align-items:stretch;
+}
+
+.ms-hero-call-share .ms-phone-big{
+  width:100%;
+  margin:0;
+}
+
+#btnCompartirApp.ms-btn-share-app{
+  width:100%;
+  min-height:100%;
+  border-radius:26px;
+  padding:12px 10px;
+  background:#fff;
+  color:var(--azul-noche);
+  border:1px solid var(--borde);
+  box-shadow:var(--sombra-suave);
+  font-size:14px;
+  font-weight:1000;
+  line-height:1.15;
+  text-align:center;
+}
+
+#btnCompartirApp.ms-btn-share-app i{
+  color:var(--azul-noche);
+}
+
 .ms-hero-card-points{
   margin-top:0;
   display:flex;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
   justify-content:flex-start;
+  align-items:center;
   gap:7px;
 }
 
@@ -448,6 +481,7 @@ main{
   border-radius:999px;
   padding:8px 10px;
   white-space:nowrap;
+  flex:0 0 auto;
 }
 
 .ms-hero-card-points i{
@@ -1652,14 +1686,30 @@ main{
     border-radius:22px;
   }
 
-  .ms-hero-card-points{
+.ms-hero-card-points{
     gap:5px;
+    justify-content:center;
+    flex-wrap:wrap;
   }
 
   .ms-hero-card-points span{
     font-size:12px;
     padding:7px 8px;
     gap:5px;
+  }
+
+  .ms-hero-call-share{
+    gap:6px;
+  }
+
+  .ms-hero-call-share .ms-phone-big{
+    font-size:19px;
+    padding:12px 10px;
+  }
+
+  #btnCompartirApp.ms-btn-share-app{
+    font-size:11.5px;
+    padding:9px 6px;
   }
 
   .ms-services-grid{
