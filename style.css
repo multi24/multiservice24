@@ -179,8 +179,14 @@ a{
   min-height:44px;
 }
 
-.ms-btn:hover{
-  transform:translateY(-1px);
+@media (hover:hover) and (pointer:fine){
+  .ms-btn:hover{
+    transform:translateY(-1px);
+  }
+}
+
+.ms-btn:active{
+  transform:scale(.985);
 }
 
 .ms-btn-primary{
@@ -798,9 +804,15 @@ main{
   content:none;
 }
 
-.ms-service-card:hover{
-  transform:translateY(-1px);
-  box-shadow:0 8px 18px rgba(7,27,58,.08);
+@media (hover:hover) and (pointer:fine){
+  .ms-service-card:hover{
+    transform:translateY(-1px);
+    box-shadow:0 8px 18px rgba(7,27,58,.08);
+  }
+}
+
+.ms-service-card:active{
+  transform:scale(.985);
 }
 
 .ms-service-icon{
@@ -823,11 +835,12 @@ main{
   line-height:1.1;
 }
 
-.ms-service-card:hover .ms-service-icon{
-  background:rgba(225,31,42,.10);
-  color:var(--rojo);
+@media (hover:hover) and (pointer:fine){
+  .ms-service-card:hover .ms-service-icon{
+    background:rgba(225,31,42,.10);
+    color:var(--rojo);
+  }
 }
-
 /* =========================================================
    STEPS
 ========================================================= */
@@ -3317,6 +3330,9 @@ button[title="WhatsApp"] i{
 /* =========================================================
    DESPLEGABLE MULTI-SERVICIO
 ========================================================= */
+/* =========================================================
+   DESPLEGABLE MULTI-SERVICIO
+========================================================= */
 
 .ms-servicios-dropdown{
   position:relative;
@@ -3326,6 +3342,20 @@ button[title="WhatsApp"] i{
 
 #btnSolServiciosDropdown{
   justify-content:space-between;
+  position:sticky;
+  top:0;
+  z-index:20;
+  box-shadow:0 10px 22px rgba(7,27,58,.10);
+}
+
+#btnSolServiciosDropdown.is-open{
+  background:var(--azul-noche);
+  color:#fff;
+  border-color:var(--azul-noche);
+}
+
+#btnSolServiciosDropdown.is-open i{
+  color:#fff;
 }
 
 .ms-servicios-picker{
@@ -3333,12 +3363,13 @@ button[title="WhatsApp"] i{
   grid-template-columns:repeat(2,minmax(0,1fr));
   gap:8px;
   padding:10px;
-  border:1px solid var(--borde);
+  border:2px solid rgba(7,27,58,.18);
   border-radius:18px;
   background:#fff;
   box-shadow:0 16px 34px rgba(7,27,58,.14);
-  max-height:270px;
-  overflow:auto;
+
+  max-height:none;
+  overflow:visible;
 }
 
 .ms-servicio-agenda{
@@ -3383,38 +3414,6 @@ button[title="WhatsApp"] i{
   .ms-servicio-agenda{
     grid-template-columns:1fr;
   }
-}
-
-/* =========================================================
-   DESPLEGABLE SERVICIOS CON CIERRE
-========================================================= */
-
-.ms-servicios-picker-head{
-  grid-column:1 / -1;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px;
-  padding:4px 2px 8px;
-  border-bottom:1px solid var(--borde);
-  margin-bottom:4px;
-}
-
-.ms-servicios-picker-head strong{
-  color:var(--azul-noche);
-  font-weight:1000;
-}
-
-.ms-servicios-picker-head button{
-  width:32px;
-  height:32px;
-  border:none;
-  border-radius:999px;
-  background:var(--gris-suave);
-  color:var(--azul-noche);
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
 }
 
 /* =========================================================
