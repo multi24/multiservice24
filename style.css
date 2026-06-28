@@ -702,13 +702,13 @@ main{
 .ms-online-note{
   width:100%;
   min-height:0;
-  padding:8px 10px 2px;
+  padding:7px 4px 2px;
   margin:8px auto 0;
   border-radius:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:12px;
+  gap:8px;
   background:transparent;
   color:var(--rojo);
   border:none;
@@ -717,30 +717,25 @@ main{
 
   font-family:"Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive;
   font-style:italic;
-  font-size:27px;
-  font-weight:1000;
-  line-height:1.02;
-  letter-spacing:.15px;
+  font-size:clamp(21px, 5.4vw, 26px);
+  font-weight:800;
+  line-height:1;
+  letter-spacing:.1px;
   transform:rotate(-1deg);
   position:relative;
   z-index:2;
-
-  text-shadow:
-    .35px 0 currentColor,
-    -.35px 0 currentColor,
-    0 .35px currentColor;
+  white-space:nowrap;
 }
 
 .ms-online-note::before,
 .ms-online-note::after{
   content:"•";
   color:var(--azul-noche);
-  font-size:13px;
+  font-size:11px;
   font-weight:1000;
   line-height:1;
   transform:translateY(-1px);
   flex:0 0 auto;
-  text-shadow:none;
 }
 
 .ms-online-note i{
