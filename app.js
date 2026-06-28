@@ -6194,21 +6194,32 @@ function abrirCerrarSelectorServicios(forzar = null) {
   const estaAbierto = !solServiciosPicker.classList.contains("hidden");
   const abrir = forzar === null ? !estaAbierto : !!forzar;
 
-  solServiciosPicker.classList.toggle("hidden", !abrir);
-
-  const contenedor = btnSolServiciosDropdown.closest(".ms-servicios-dropdown");
-  contenedor?.classList.toggle("is-open", abrir);
-
-  actualizarBotonSelectorServicios(abrir);
-
   if (abrir) {
+    actualizarPickerServiciosSolicitud();
+
+    solServiciosPicker.classList.remove("hidden");
+
+    const contenedor = btnSolServiciosDropdown.closest(".ms-servicios-dropdown");
+    contenedor?.classList.add("is-open");
+
+    actualizarBotonSelectorServicios(true);
+
     requestAnimationFrame(() => {
       btnSolServiciosDropdown.scrollIntoView({
         behavior: "smooth",
         block: "start"
       });
     });
+
+    return;
   }
+
+  solServiciosPicker.classList.add("hidden");
+
+  const contenedor = btnSolServiciosDropdown.closest(".ms-servicios-dropdown");
+  contenedor?.classList.remove("is-open");
+
+  actualizarBotonSelectorServicios(false);
 }
 
 btnSolServiciosDropdown?.addEventListener("click", (e) => {
@@ -6218,12 +6229,17 @@ btnSolServiciosDropdown?.addEventListener("click", (e) => {
   abrirCerrarSelectorServicios();
 });
 
-solServiciosPicker?.addEventListener("click", (e) => {
-  const cerrar = e.target.closest("[data-cerrar-servicios-picker]");
+solServiciosPicker?.addEventListener("change", (e) => {
+  const input = e.target.closest("[data-servicio-pick]");
+  if (!input) return;
 
-  if (cerrar) {
-    abrirCerrarSelectorServicios(false);
+  if (input.checked) {
+    agregarServicioDesdePicker(input.value);
+  } else {
+    quitarServicioDesdePicker(input.value);
   }
+
+  actualizarPickerServiciosSolicitud();
 });
 
 document.addEventListener("click", (e) => {
