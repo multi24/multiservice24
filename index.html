@@ -433,21 +433,36 @@
         <i class="fa-solid fa-xmark"></i>
       </button>
 
-      <span class="ms-kicker">Solicitud de servicio</span>
-      <h2>Programar un servicio</h2>
-      <p class="ms-muted">
-        La solicitud queda registrada y el equipo puede verla desde el panel interno.
-      </p>
+      <h2>Solicitud de Servicio</h2>
 
       <form id="formSolicitudServicio" class="ms-form ms-form-two">
+
+        <div class="ms-full ms-servicios-solicitud-box">
+          <select id="solServicio" class="hidden" aria-hidden="true"></select>
+
+          <div class="ms-servicios-dropdown">
+            <button id="btnSolServiciosDropdown" class="ms-btn ms-btn-light ms-full" type="button">
+              <i class="fa-solid fa-list-check"></i>
+              <span>Elegir servicios</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </button>
+
+            <div id="solServiciosPicker" class="ms-servicios-picker hidden"></div>
+          </div>
+
+          <div id="solServiciosTabs" class="ms-servicios-tabs"></div>
+
+          <div id="solServiciosDetalle" class="ms-servicios-detalle"></div>
+        </div>
+
         <label>
           Nombre
-          <input id="solNombre" type="text" required />
+          <input id="solNombre" type="text" autocomplete="name" required />
         </label>
 
         <label>
           WhatsApp
-<input id="solTelefono" type="tel" required />
+          <input id="solTelefono" type="tel" autocomplete="tel" required />
         </label>
 
         <label class="ms-full ms-autocomplete-wrap">
@@ -456,47 +471,14 @@
           <div id="solDireccionSugerencias" class="ms-suggest-box hidden"></div>
         </label>
 
-<label class="ms-full ms-emergencia-row">
-          <input id="solEmergencia" type="checkbox" />
-          <span>Es emergencia</span>
-        </label>
-
-        <p id="emergenciaNota" class="ms-full ms-alert-soft hidden">
-          Las emergencias se priorizan según disponibilidad y confirmación.
-        </p>
-
-<div class="ms-full ms-servicios-solicitud-box">
-  <strong class="ms-label-title">Servicios solicitados</strong>
-
-  <p class="ms-form-note">
-    Podés cargar uno o más servicios. Cada servicio tendrá su propia descripción, audio y archivos.
-  </p>
-
-<select id="solServicio" class="hidden" aria-hidden="true"></select>
-
-<div class="ms-servicios-dropdown">
-  <button id="btnSolServiciosDropdown" class="ms-btn ms-btn-light ms-full" type="button">
-    <i class="fa-solid fa-list-check"></i>
-    <span>Elegir servicios</span>
-    <i class="fa-solid fa-chevron-down"></i>
-  </button>
-
-  <div id="solServiciosPicker" class="ms-servicios-picker hidden"></div>
-</div>
-
-  <div id="solServiciosTabs" class="ms-servicios-tabs"></div>
-
-  <div id="solServiciosDetalle" class="ms-servicios-detalle"></div>
-</div>
-
-<button class="ms-btn ms-btn-primary ms-full" type="submit">
-  <i class="fa-solid fa-paper-plane"></i>
-  Guardar solicitud y abrir WhatsApp
-</button>
+        <button class="ms-btn ms-btn-primary ms-full" type="submit">
+          <i class="fa-solid fa-paper-plane"></i>
+          Guardar solicitud y abrir WhatsApp
+        </button>
       </form>
     </div>
   </div>
-
+  
 <!-- MODAL PRESTADORES POR SERVICIO -->
 <div id="modalPrestadoresServicio" class="ms-modal hidden">
   <div class="ms-modal-card ms-modal-wide">
