@@ -930,14 +930,6 @@ function renderSelectServicios() {
 
   if (solServiciosPicker) {
     solServiciosPicker.innerHTML = `
-      <div class="ms-servicios-picker-head">
-        <strong>Elegí uno o más servicios</strong>
-
-        <button data-cerrar-servicios-picker type="button" title="Cerrar">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
       ${SERVICIOS.map(s => `
         <label class="ms-servicio-pick">
           <input type="checkbox" value="${s.nombre}" data-servicio-pick="${s.nombre}" />
@@ -5971,8 +5963,25 @@ btnLoginGoogle?.addEventListener("click", loginGoogle);
 btnCerrarSesion?.addEventListener("click", cerrarSesionActual);
 
 btnAbrirContacto?.addEventListener("click", () => abrirModal(modalContacto));
-btnAbrirSolicitud?.addEventListener("click", () => abrirNuevaSolicitud(""));
-btnPanelNuevaSolicitud?.addEventListener("click", () => abrirNuevaSolicitud(""));
+
+function abrirSolicitudDesdeBotonPrincipal() {
+  btnAbrirSolicitud?.blur();
+  btnPanelNuevaSolicitud?.blur();
+
+  if (!modalSolicitud) return;
+
+  abrirModal(modalSolicitud);
+
+  requestAnimationFrame(() => {
+    const card = modalSolicitud.querySelector(".ms-modal-card");
+    if (card) card.scrollTop = 0;
+
+    abrirCerrarSelectorServicios(false);
+  });
+}
+
+btnAbrirSolicitud?.addEventListener("click", abrirSolicitudDesdeBotonPrincipal);
+btnPanelNuevaSolicitud?.addEventListener("click", abrirSolicitudDesdeBotonPrincipal);
 
 btnLlamadaRapida?.addEventListener("click", () => {
   const acepta = window.confirm("¿Desea realizar una consulta por llamada?");
@@ -6153,29 +6162,61 @@ if (prestadorRecursosInput) {
 
 configurarSugerenciasGeo(solDireccion, solDireccionSugerencias, "direccion");
 
-btnSolServiciosDropdown?.addEventListener("click", () => {
-  solServiciosPicker?.classList.toggle("hidden");
+function actualizarBotonSelectorServicios(abierto) {
+  if (!btnSolServiciosDropdown) return;
+
+  const texto = btnSolServiciosDropdown.querySelector("span");
+  const flecha = btnSolServiciosDropdown.querySelector(".fa-chevron-down, .fa-chevron-up");
+
+  btnSolServiciosDropdown.classList.toggle("is-open", abierto);
+  btnSolServiciosDropdown.setAttribute("aria-expanded", abierto ? "true" : "false");
+
+  if (texto) {
+    texto.textContent = abierto ? "Cerrar servicios" : "Elegir servicios";
+  }
+
+  if (flecha) {
+    flecha.classList.toggle("fa-chevron-down", !abierto);
+    flecha.classList.toggle("fa-chevron-up", abierto);
+  }
+}
+
+function abrirCerrarSelectorServicios(forzar = null) {
+  if (!solServiciosPicker || !btnSolServiciosDropdown) return;
+
+  const estaAbierto = !solServiciosPicker.classList.contains("hidden");
+  const abrir = forzar === null ? !estaAbierto : !!forzar;
+
+  solServiciosPicker.classList.toggle("hidden", !abrir);
+
+  const contenedor = btnSolServiciosDropdown.closest(".ms-servicios-dropdown");
+  contenedor?.classList.toggle("is-open", abrir);
+
+  actualizarBotonSelectorServicios(abrir);
+
+  if (abrir) {
+    requestAnimationFrame(() => {
+      btnSolServiciosDropdown.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    });
+  }
+}
+
+btnSolServiciosDropdown?.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  abrirCerrarSelectorServicios();
 });
 
 solServiciosPicker?.addEventListener("click", (e) => {
   const cerrar = e.target.closest("[data-cerrar-servicios-picker]");
 
   if (cerrar) {
-    solServiciosPicker.classList.add("hidden");
+    abrirCerrarSelectorServicios(false);
   }
-});
-
-solServiciosPicker?.addEventListener("change", (e) => {
-  const input = e.target.closest("[data-servicio-pick]");
-  if (!input) return;
-
-  if (input.checked) {
-    agregarServicioDesdePicker(input.value);
-  } else {
-    quitarServicioDesdePicker(input.value);
-  }
-
-  /* IMPORTANTE: No cerramos la lista al elegir un servicio. Se cierra con la X o tocando afuera. */
 });
 
 document.addEventListener("click", (e) => {
@@ -6189,7 +6230,7 @@ document.addEventListener("click", (e) => {
     return;
   }
 
-  solServiciosPicker.classList.add("hidden");
+  abrirCerrarSelectorServicios(false);
 });
 
 solServiciosTabs?.addEventListener("click", (e) => {
