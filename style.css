@@ -696,7 +696,7 @@ main{
 }
 
 .ms-online-note{
-  width:auto;
+  width:100%;
   min-height:0;
   padding:2px 6px;
   margin:0 auto;
@@ -704,9 +704,9 @@ main{
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:0;
+  gap:10px;
   background:transparent;
-  color:rgba(7,27,58,.82);
+  color:var(--rojo);
   border:none;
   box-shadow:none;
   text-align:center;
@@ -714,21 +714,52 @@ main{
   font-family:"Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive;
   font-style:italic;
   font-size:25px;
-  font-weight:500;
+  font-weight:900;
   line-height:1.15;
   letter-spacing:.2px;
   transform:rotate(-1deg);
+}
+
+.ms-online-note::before,
+.ms-online-note::after{
+  content:"•";
+  color:var(--azul-noche);
+  font-size:14px;
+  font-weight:1000;
+  line-height:1;
+  transform:translateY(-1px);
 }
 
 .ms-online-note i{
   display:none;
 }
 
+.ms-hero-call-share{
+  width:100%;
+  display:grid;
+  grid-template-columns:minmax(0,7fr) minmax(0,3fr);
+  gap:10px;
+  align-items:stretch;
+}
+
+.ms-hero-call-share .ms-phone-big{
+  width:100%;
+  margin:0;
+}
+
 #btnCompartirApp.ms-btn-share-app{
+  width:100%;
+  min-height:100%;
+  border-radius:26px;
+  padding:12px 10px;
   background:#fff;
   color:var(--azul-noche);
   border:1px solid var(--borde);
   box-shadow:var(--sombra-suave);
+  font-size:14px;
+  font-weight:1000;
+  line-height:1.15;
+  text-align:center;
 }
 
 #btnCompartirApp.ms-btn-share-app i{
