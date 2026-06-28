@@ -1675,14 +1675,18 @@ main{
     grid-template-columns:1fr;
   }
 
-  .ms-modal{
-    align-items:flex-end;
-    padding:10px;
+.ms-modal{
+    align-items:center;
+    justify-content:center;
+    padding:12px;
+    min-height:100dvh;
+    overflow:auto;
   }
 
   .ms-modal-card{
     border-radius:26px;
-    max-height:90vh;
+    max-height:calc(100dvh - 24px);
+    margin:auto;
   }
 
   .ms-whatsapp-float{
