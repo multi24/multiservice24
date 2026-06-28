@@ -128,9 +128,6 @@ const solDireccion = $("solDireccion");
 const solZonaSugerencias = $("solZonaSugerencias");
 const solDireccionSugerencias = $("solDireccionSugerencias");
 
-const solEmergencia = $("solEmergencia");
-const emergenciaNota = $("emergenciaNota");
-
 const solArchivos = $("solArchivos");
 const solArchivosResumen = $("solArchivosResumen");
 
@@ -809,11 +806,6 @@ function mensajeWhatsAppSolicitud(data, id = "") {
     partes.push(`*Servicio:* ${data.servicio || "Sin servicio"}`);
   }
 
-  if (data.emergencia) {
-    partes.push("");
-    partes.push("*Emergencia:* Sí");
-  }
-
   partes.push("");
 
   if (data.zona) partes.push(`*Zona:* ${data.zona}`);
@@ -838,6 +830,10 @@ function mensajeWhatsAppSolicitud(data, id = "") {
       partes.push("");
       partes.push(`${index + 1}. *${item.servicio || "Servicio"}*`);
 
+      if (item.emergencia) {
+        partes.push(`Emergencia: Sí`);
+      }
+
       if (item.fechaDeseada) {
         partes.push(`Fecha: ${fechaDeseadaBonita(item.fechaDeseada)}`);
       }
@@ -855,6 +851,11 @@ function mensajeWhatsAppSolicitud(data, id = "") {
       }
     });
   } else {
+    if (data.emergencia) {
+      partes.push("");
+      partes.push("*Emergencia:* Sí");
+    }
+
     if (data.fechaDeseada) {
       partes.push(`*Fecha deseada:* ${fechaDeseadaBonita(data.fechaDeseada)}`);
     }
@@ -961,12 +962,6 @@ function renderSelectServicios() {
   }
 
   actualizarPickerServiciosSolicitud();
-}
-
-function actualizarNotaEmergencia() {
-  if (!solEmergencia || !emergenciaNota) return;
-
-  emergenciaNota.classList.toggle("hidden", !solEmergencia.checked);
 }
 
 let geoZonaSeleccionada = null;
@@ -1235,15 +1230,10 @@ function limpiarFormularioSolicitud() {
   solicitudEditandoData = null;
 
   const titulo = modalSolicitud?.querySelector("h2");
-  const texto = modalSolicitud?.querySelector(".ms-muted");
   const submit = formSolicitudServicio?.querySelector("button[type='submit']");
 
   if (titulo) {
-    titulo.textContent = "Programar un servicio";
-  }
-
-  if (texto) {
-    texto.textContent = "La solicitud queda registrada y el equipo puede verla desde el panel interno.";
+    titulo.textContent = "Solicitud de Servicio";
   }
 
   if (submit) {
@@ -1256,7 +1246,6 @@ function limpiarFormularioSolicitud() {
   cerrarCajaSugerencias(solZonaSugerencias);
   cerrarCajaSugerencias(solDireccionSugerencias);
 
-  actualizarNotaEmergencia();
   reiniciarServiciosDetalleSolicitud("");
   borrarAudioSolicitud(false);
 
@@ -1471,6 +1460,8 @@ function crearServicioDetalleSolicitud(nombre = "") {
     fechaDeseada: primerServicio.fechaDeseada || "",
     horarioDeseado: primerServicio.horarioDeseado || "",
 
+    emergencia: false,
+
     audioFile: null,
     audioUrl: "",
 
@@ -1534,6 +1525,8 @@ function cargarServiciosDetalleDesdeSolicitud(solicitud) {
       fechaDeseada: item.fechaDeseada || solicitud?.fechaDeseada || "",
       horarioDeseado: item.horarioDeseado || solicitud?.horarioDeseado || "",
 
+      emergencia: !!item.emergencia,
+
       audioFile: null,
       audioUrl: "",
 
@@ -1556,6 +1549,8 @@ function cargarServiciosDetalleDesdeSolicitud(solicitud) {
 
       fechaDeseada: solicitud?.fechaDeseada || "",
       horarioDeseado: solicitud?.horarioDeseado || "",
+
+      emergencia: !!solicitud?.emergencia,
 
       audioFile: null,
       audioUrl: "",
@@ -1584,10 +1579,12 @@ function sincronizarServicioDesdeDom(id) {
   const textarea = document.querySelector(`[data-servicio-descripcion="${id}"]`);
   const fecha = document.querySelector(`[data-servicio-fecha="${id}"]`);
   const horario = document.querySelector(`[data-servicio-horario="${id}"]`);
+  const emergencia = document.querySelector(`[data-servicio-emergencia="${id}"]`);
 
   if (textarea) item.descripcion = limpiar(textarea.value);
   if (fecha) item.fechaDeseada = limpiar(fecha.value);
   if (horario) item.horarioDeseado = limpiar(horario.value);
+  if (emergencia) item.emergencia = !!emergencia.checked;
 }
 
 function sincronizarTodosLosServiciosDesdeDom() {
@@ -1726,7 +1723,7 @@ function renderServiciosDetalleSolicitud() {
 
     solServiciosDetalle.innerHTML = `
       <div class="ms-servicio-panel ms-servicio-empty">
-        <p>Seleccioná uno o más servicios desde “Elegir servicios”.</p>
+        <p>Elegí un servicio para cargar fecha deseada, descripción, audio y archivos.</p>
       </div>
     `;
 
@@ -1860,8 +1857,8 @@ function renderServiciosDetalleSolicitud() {
               : ""
           }
 
-${renderMiniGaleriaArchivosSolicitud(archivosGuardados)}
-       
+          ${renderMiniGaleriaArchivosSolicitud(archivosGuardados)}
+
           ${
             archivosGuardados.length && !item.archivosGaleriaUrl
               ? `<p class="ms-file-note">Este servicio ya tiene ${archivosGuardados.length} archivo(s) guardado(s).</p>`
@@ -1870,6 +1867,15 @@ ${renderMiniGaleriaArchivosSolicitud(archivosGuardados)}
 
           <p class="ms-file-summary hidden" data-servicio-archivos-resumen="${item.id}"></p>
         </div>
+
+        <label class="ms-emergencia-row ms-servicio-emergencia-row">
+          <input
+            type="checkbox"
+            data-servicio-emergencia="${item.id}"
+            ${item.emergencia ? "checked" : ""}
+          />
+          <span>Es emergencia</span>
+        </label>
       </div>
     `;
   }).join("");
@@ -2059,7 +2065,8 @@ async function obtenerServiciosDetalleParaGuardar(telefono) {
       servicio: limpiar(item.servicio),
       descripcion: limpiar(item.descripcion),
       fechaDeseada: limpiar(item.fechaDeseada),
-      horarioDeseado: limpiar(item.horarioDeseado)
+      horarioDeseado: limpiar(item.horarioDeseado),
+      emergencia: !!item.emergencia
     }))
     .filter(item => item.servicio);
 
@@ -2086,14 +2093,14 @@ async function obtenerServiciosDetalleParaGuardar(telefono) {
     };
 
     if (archivosLocales.length) {
-  subida = await subirArchivosSolicitud(
-  archivosLocales,
-  telefono,
-  {
-    titulo: `Archivos de ${item.servicio}`,
-    descripcion: item.descripcion || ""
-  }
-);
+      subida = await subirArchivosSolicitud(
+        archivosLocales,
+        telefono,
+        {
+          titulo: `Archivos de ${item.servicio}`,
+          descripcion: item.descripcion || ""
+        }
+      );
     }
 
     const archivosFinales = [
@@ -2108,6 +2115,7 @@ async function obtenerServiciosDetalleParaGuardar(telefono) {
 
       fechaDeseada: item.fechaDeseada || "",
       horarioDeseado: item.horarioDeseado || "",
+      emergencia: !!item.emergencia,
 
       archivos: archivosFinales,
       archivosCantidad: archivosFinales.length,
@@ -5091,9 +5099,7 @@ function cargarSolicitudEnModalEdicion(solicitud) {
   if ($("solTelefono")) $("solTelefono").value = solicitud.clienteTelefono || "";
   if ($("solServicio")) $("solServicio").value = solicitud.servicio || "";
   if ($("solDireccion")) $("solDireccion").value = solicitud.direccion || "";
-  if ($("solFechaDeseada")) $("solFechaDeseada").value = solicitud.fechaDeseada || "";
-  if ($("solHorarioDeseado")) $("solHorarioDeseado").value = solicitud.horarioDeseado || "";
-  if ($("solEmergencia")) $("solEmergencia").checked = !!solicitud.emergencia;
+
   cargarServiciosDetalleDesdeSolicitud(solicitud);
 
   geoDireccionSeleccionada = solicitud.geo || {
@@ -5109,18 +5115,11 @@ function cargarSolicitudEnModalEdicion(solicitud) {
 
   geoZonaSeleccionada = geoDireccionSeleccionada;
 
-  actualizarNotaEmergencia();
-
   const titulo = modalSolicitud?.querySelector("h2");
-  const texto = modalSolicitud?.querySelector(".ms-muted");
   const submit = formSolicitudServicio?.querySelector("button[type='submit']");
 
   if (titulo) {
-    titulo.textContent = "Editar solicitud";
-  }
-
-  if (texto) {
-    texto.textContent = "Modificá los datos de coordinación, dirección, servicio o detalle.";
+    titulo.textContent = "Editar Solicitud de Servicio";
   }
 
   if (submit) {
@@ -6145,8 +6144,6 @@ function actualizarBotonSubirArriba() {
 window.addEventListener("scroll", actualizarBotonSubirArriba, { passive:true });
 actualizarBotonSubirArriba();
 
-solEmergencia?.addEventListener("change", actualizarNotaEmergencia);
-
 const prestadorRecursosInput = $("prestadorRecursos");
 
 if (prestadorRecursosInput) {
@@ -6208,6 +6205,7 @@ solServiciosDetalle?.addEventListener("change", (e) => {
   const inputArchivos = e.target.closest("[data-servicio-archivos]");
   const fecha = e.target.closest("[data-servicio-fecha]");
   const horario = e.target.closest("[data-servicio-horario]");
+  const emergencia = e.target.closest("[data-servicio-emergencia]");
 
   if (inputArchivos) {
     const id = inputArchivos.dataset.servicioArchivos;
@@ -6228,6 +6226,11 @@ solServiciosDetalle?.addEventListener("change", (e) => {
 
   if (horario) {
     sincronizarServicioDesdeDom(horario.dataset.servicioHorario);
+    return;
+  }
+
+  if (emergencia) {
+    sincronizarServicioDesdeDom(emergencia.dataset.servicioEmergencia);
   }
 });
 
@@ -6364,7 +6367,7 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
 
     fechaDeseada: limpiar($("solFechaDeseada")?.value),
     horarioDeseado: limpiar($("solHorarioDeseado")?.value),
-    emergencia: !!$("solEmergencia")?.checked,
+    emergencia: false,
 
     serviciosDetalle: [],
     servicio: "",
@@ -6386,6 +6389,7 @@ formSolicitudServicio?.addEventListener("submit", async (e) => {
     btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Preparando servicios...`;
 
     data.serviciosDetalle = await obtenerServiciosDetalleParaGuardar(data.telefono);
+    data.emergencia = data.serviciosDetalle.some(item => !!item.emergencia);
 
      const primerServicioConAgenda = data.serviciosDetalle.find(item => item.fechaDeseada || item.horarioDeseado)
   || data.serviciosDetalle[0]
