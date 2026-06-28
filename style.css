@@ -717,7 +717,7 @@ main{
 
   font-family:"Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive;
   font-style:italic;
-  font-size:clamp(22px, 5.7vw, 26px);
+  font-size:clamp(23px, 5.9vw, 27px);
   font-weight:1000;
   line-height:1;
   letter-spacing:.1px;
