@@ -1715,7 +1715,7 @@ function renderServiciosDetalleSolicitud() {
 
     solServiciosDetalle.innerHTML = `
       <div class="ms-servicio-panel ms-servicio-empty">
-        <p>Elegí un servicio para cargar fecha deseada, descripción, audio y archivos.</p>
+        <p>Elegí un servicio para cargar la solicitud.</p>
       </div>
     `;
 
@@ -1773,20 +1773,15 @@ function renderServiciosDetalleSolicitud() {
         </div>
 
         <label>
-          Descripción del problema
+          Comentarios
           <textarea
             data-servicio-descripcion="${item.id}"
             rows="4"
-            placeholder="Contanos qué necesitás para este servicio, qué pasó, desde cuándo ocurre y cualquier detalle importante"
           >${escaparHtml(item.descripcion || "")}</textarea>
         </label>
 
         <div class="ms-audio-box">
-          <strong class="ms-label-title">Audio de este servicio</strong>
-
-          <p class="ms-form-note">
-            Grabá un audio específico para este servicio.
-          </p>
+          <strong class="ms-label-title">Descripción en audio</strong>
 
           <div class="ms-audio-actions">
             <button class="ms-btn ms-btn-light" data-servicio-audio-grabar="${item.id}" type="button">
@@ -1812,17 +1807,13 @@ function renderServiciosDetalleSolicitud() {
             controls
           ></audio>
 
-          <p class="ms-file-note" data-servicio-audio-estado="${item.id}">
-            ${item.audioFile ? "Audio grabado listo para enviar." : "Sin audio grabado."}
+          <p class="ms-file-note ${item.audioFile ? "" : "hidden"}" data-servicio-audio-estado="${item.id}">
+            ${item.audioFile ? "Audio grabado listo para enviar." : ""}
           </p>
         </div>
 
         <div class="ms-file-box">
-          <strong class="ms-label-title">Fotos, videos o audios de este servicio</strong>
-
-          <p class="ms-form-note">
-            Cargá archivos específicos para ${escaparHtml(item.servicio || "este servicio")}.
-          </p>
+          <strong class="ms-label-title">Mostrar problema en foto/video</strong>
 
           <label class="ms-file-input-row">
             <i class="fa-solid fa-cloud-arrow-up"></i>
