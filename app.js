@@ -6166,13 +6166,20 @@ function actualizarBotonSelectorServicios(abierto) {
   if (!btnSolServiciosDropdown) return;
 
   const texto = btnSolServiciosDropdown.querySelector("span");
-  const flecha = btnSolServiciosDropdown.querySelector(".fa-chevron-down, .fa-chevron-up");
+  const iconos = btnSolServiciosDropdown.querySelectorAll("i");
+  const iconoPrincipal = iconos[0] || null;
+  const flecha = iconos[iconos.length - 1] || null;
 
   btnSolServiciosDropdown.classList.toggle("is-open", abierto);
   btnSolServiciosDropdown.setAttribute("aria-expanded", abierto ? "true" : "false");
 
   if (texto) {
-    texto.textContent = abierto ? "Cerrar servicios" : "Elegir servicios";
+    texto.textContent = abierto ? "Listo" : "Elegir servicios";
+  }
+
+  if (iconoPrincipal) {
+    iconoPrincipal.classList.toggle("fa-list-check", !abierto);
+    iconoPrincipal.classList.toggle("fa-check", abierto);
   }
 
   if (flecha) {
