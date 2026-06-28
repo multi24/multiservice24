@@ -697,22 +697,29 @@ main{
 
 .ms-online-note{
   width:100%;
-  min-height:48px;
-  border-radius:22px;
+  min-height:auto;
+  padding:4px 8px;
+  border-radius:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:9px;
-  background:#fff;
+  gap:8px;
+  background:transparent;
   color:var(--azul-noche);
-  border:1px solid var(--borde);
-  font-weight:1000;
-  box-shadow:var(--sombra-suave);
+  border:none;
+  box-shadow:none;
   text-align:center;
+
+  font-family:Georgia, "Times New Roman", serif;
+  font-style:italic;
+  font-size:18px;
+  font-weight:700;
+  line-height:1.25;
 }
 
 .ms-online-note i{
   color:var(--rojo);
+  font-size:15px;
 }
 
 #btnCompartirApp.ms-btn-share-app{
