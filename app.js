@@ -7040,7 +7040,7 @@ renderSelectServicios();
 actualizarNotaEmergencia();
 mostrarVista(obtenerVistaDesdeHash());
 
-const SW_VERSION = "2026-06-17-hero-side-01";
+const SW_VERSION = "2026-07-11-iphone-01";
 
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", async () => {
