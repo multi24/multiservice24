@@ -1,4 +1,4 @@
-const CACHE_NAME = "multi24-v2026-06-12-02";
+const CACHE_NAME = "multi24-v2026-07-11-iphone-01";
 
 const CORE_ASSETS = [
   "./manifest.webmanifest",
