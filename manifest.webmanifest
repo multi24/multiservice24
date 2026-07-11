@@ -1,7 +1,8 @@
 {
   "name": "Multi24",
-  "short_name": "Multi24",
-  "description": "Servicios programados y emergencias",
+"short_name": "Multi24",
+"id": "./",
+"description": "Servicios programados y emergencias",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
